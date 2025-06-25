@@ -124,13 +124,19 @@ const AdminStockHistoryPage = () => {
     };
 
     const chartData = {
-        labels: Array.isArray(historyResponse?.data?.data)
-            ? historyResponse.data.data.map((a) => new Date(a.assignedAt).toLocaleDateString("en-US", { timeZone: "Africa/Nairobi" }))
+        labels: Array.isArray(historyResponse)
+            ? historyResponse.map((a) =>
+                new Date(a.assignedAt).toLocaleDateString("en-US", {
+                    timeZone: "Africa/Nairobi",
+                }),
+            )
             : [],
         datasets: [
             {
                 label: "Assigned Weight Over Time",
-                data: Array.isArray(historyResponse?.data?.data) ? historyResponse.data.data.map((a) => a.assignedWeight) : [],
+                data: Array.isArray(historyResponse)
+                    ? historyResponse.map((a) => a.assignedWeight)
+                    : [],
                 borderColor: "#1976d2",
                 backgroundColor: "rgba(25, 118, 210, 0.2)",
                 fill: true,
@@ -140,6 +146,7 @@ const AdminStockHistoryPage = () => {
             },
         ],
     };
+
 
     const chartOptions = {
         responsive: true,
@@ -327,7 +334,8 @@ const AdminStockHistoryPage = () => {
                                         ? historyError.data.message || historyError.data.error || "Failed to load stock history."
                                         : "An unexpected error occurred while loading stock history."}
                                 </Alert>
-                            ) : !Array.isArray(historyResponse?.data?.data) || historyResponse?.data?.data.length === 0 ? (
+                            ) : !Array.isArray(historyResponse) || historyResponse.length === 0
+                                ? (
                                 <Alert severity="info" sx={{ borderRadius: 2, mb: 3 }} data-testid="no-history">
                                     No stock assignments found for this user.
                                 </Alert>
@@ -376,7 +384,7 @@ const AdminStockHistoryPage = () => {
                                                 </TableRow>
                                             </TableHead>
                                             <TableBody>
-                                                {historyResponse.data.data.map((assignment, index) => (
+                                                {historyResponse.map((assignment, index) => (
                                                     <TableRow
                                                         key={assignment.id}
                                                         sx={{
@@ -386,7 +394,8 @@ const AdminStockHistoryPage = () => {
                                                         }}
                                                         data-testid={`history-row-${assignment.id}`}
                                                     >
-                                                        <TableCell>{assignment.stocksId}</TableCell>
+
+                                                    <TableCell>{assignment.stocksId}</TableCell>
                                                         <TableCell>{assignment.details.saleCode || "N/A"}</TableCell>
                                                         <TableCell>{assignment.details.lotNo || "N/A"}</TableCell>
                                                         <TableCell>{assignment.details.grade || "N/A"}</TableCell>
@@ -404,7 +413,7 @@ const AdminStockHistoryPage = () => {
                                         <TablePagination
                                             rowsPerPageOptions={[5, 10, 25]}
                                             component="div"
-                                            count={historyResponse?.data?.meta?.total || 0}
+                                            count={historyResponse?.length || 0}
                                             rowsPerPage={historyRowsPerPage}
                                             page={historyPage}
                                             onPageChange={handleHistoryChangePage}
