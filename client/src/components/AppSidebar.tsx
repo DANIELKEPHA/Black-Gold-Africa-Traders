@@ -54,7 +54,6 @@ const AppSidebar = ({ userType }: AppSidebarProps) => {
                 { icon: ShoppingCart, label: "Out Lots", href: "/admin/outLots" },
                 { icon: DollarSign, label: "Selling PriceS", href: "/admin/sellingPrices" },
                 { icon: BarChart, label: "Reports", href: "/admin/reports" },
-                { icon: Settings, label: "Settings", href: "/admin/settings" },
             ]
             : [
                 { icon: Home, label: "Home", href: "/" },
@@ -64,7 +63,6 @@ const AppSidebar = ({ userType }: AppSidebarProps) => {
                 { icon: ShoppingCart, label: "Out Lots", href: "/user/outLots" },
                 { icon: DollarSign, label: "Selling Price", href: "/user/sellingPrices" },
                 { icon: BarChart, label: "Shipments", href: "/user/shipments" },
-                { icon: Settings, label: "Settings", href: "/user/settings" },
             ];
 
     return (

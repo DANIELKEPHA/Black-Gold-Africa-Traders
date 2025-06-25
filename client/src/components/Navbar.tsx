@@ -50,7 +50,6 @@ const Navbar = () => {
         { href: "/admin/outLots", label: "Out Lots", icon: ShoppingCart },
         { href: "/admin/sellingPrices", label: "Selling Prices", icon: DollarSign },
         { href: "/admin/reports", label: "Reports", icon: BarChart },
-        { href: "/admin/settings", label: "Settings", icon: Settings },
     ];
 
     const userLinks: NavLink[] = [
@@ -60,7 +59,6 @@ const Navbar = () => {
         { href: "/user/outLots", label: "Out Lots", icon: ShoppingCart },
         { href: "/user/sellingPrices", label: "Selling Prices", icon: DollarSign },
         { href: "/user/shipments", label: "Shipments", icon: User },
-        { href: "/user/settings", label: "Settings", icon: Settings },
     ];
 
     const navLinks = authUser
