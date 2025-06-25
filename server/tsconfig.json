@@ -4,7 +4,8 @@
     "module": "nodenext",
     "moduleResolution": "nodenext",
     "resolveJsonModule": true,
-    "outDir": "./dist",
+    "rootDir": "src",
+    "outDir": "dist",
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
     "strict": true,
@@ -30,7 +31,7 @@
   "include": [
     "src/**/*",
     "src/data/**/*.json",
-    "prisma/**/*",
+    "src/prisma/**/*",
     "types/**/*.d.ts"
   ]
 }
