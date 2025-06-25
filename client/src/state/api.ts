@@ -1117,7 +1117,7 @@ export const api = createApi({
         }),
         exportStocksCsv: builder.mutation<
             { success: boolean },
-            { stockIds?: string } & Partial<StockFilters>
+            { stockIds?: string | number[] } & Partial<StockFilters>
         >({
             query: ({ stockIds, ...filters }) => {
                 const params = cleanParams({
@@ -1131,7 +1131,7 @@ export const api = createApi({
                     category: filters.category === "any" ? undefined : filters.category,
                     grade: filters.grade === "any" ? undefined : filters.grade,
                     lotNo: filters.lotNo,
-                    stockIds: stockIds?.join(","),
+                    stockIds: Array.isArray(stockIds) ? stockIds.join(",") : stockIds,
                 });
                 console.log(
                     `[${new Date().toLocaleString("en-US", { timeZone: "Africa/Nairobi" })}] Sending export request with params:`,
@@ -1166,7 +1166,9 @@ export const api = createApi({
                         category: arg.category === "any" ? undefined : arg.category,
                         grade: arg.grade === "any" ? undefined : arg.grade,
                         lotNo: arg.lotNo,
-                        stockIds: arg.stockIds?.join(","),
+                        stockIds: Array.isArray(arg.stockIds)
+                            ? arg.stockIds.join(",")
+                            : arg.stockIds,
                     });
                     const response = await fetch("http://localhost:3001/stocks/export-csv", {
                         method: "POST",

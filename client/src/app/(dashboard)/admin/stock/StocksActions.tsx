@@ -45,7 +45,7 @@ const StocksActions: React.FC<StocksActionsProps> = ({
                 ids,
             );
             await exportStocksCsv({
-                stockIds: ids,
+                stockIds: ids.join(","),
             }).unwrap();
             toast.success(t("stocksActions:success.csvDownloaded", { defaultValue: "CSV downloaded successfully" }));
             toast.success("CSV file downloaded successfully");
