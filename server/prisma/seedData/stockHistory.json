@@ -1,0 +1,26 @@
+[
+  {
+    "lotNo": "12937",
+    "userCognitoId": "3408c408-5021-7092-4c4e-3a8fc204a8e2",
+    "adminCognitoId": "04e8d4b8-90e1-704e-4ea4-746a81eedcd0",
+    "assignedWeight": 1356.0,
+    "createdAt": "2025-06-01T11:00:00Z",
+    "updatedAt": "2025-06-01T11:00:00Z"
+  },
+  {
+    "lotNo": "45165",
+    "userCognitoId": "3408c408-5021-7092-4c4e-3a8fc204a8e2",
+    "adminCognitoId": "04e8d4b8-90e1-704e-4ea4-746a81eedcd0",
+    "assignedWeight": 1360.0,
+    "createdAt": "2025-06-02T14:00:00Z",
+    "updatedAt": "2025-06-02T14:00:00Z"
+  },
+  {
+    "lotNo": "25756",
+    "userCognitoId": "3408c408-5021-7092-4c4e-3a8fc204a8e2",
+    "adminCognitoId": "04e8d4b8-90e1-704e-4ea4-746a81eedcd0",
+    "assignedWeight": 1292.0,
+    "createdAt": "2025-06-01T12:00:00Z",
+    "updatedAt": "2025-06-01T12:00:00Z"
+  }
+]

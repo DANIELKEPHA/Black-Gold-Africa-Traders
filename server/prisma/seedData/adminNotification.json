@@ -1,0 +1,39 @@
+[
+  {
+    "adminCognitoId": "04e8d4b8-90e1-704e-4ea4-746a81eedcd0",
+    "message": "New shipment created: SHIP-001",
+    "details": {
+      "consignee": "TeaCorp",
+      "vessel": "first",
+      "shipmark": "SHIP-001",
+      "packagingInstructions": "oneJuteOnePolly",
+      "items": [
+        {
+          "lotNo": "12937",
+          "invoiceNo": "MO24250481",
+          "bags": 40,
+          "netWeight": 2712.0,
+          "totalWeight": 2712.0
+        }
+      ]
+    },
+    "createdAt": "2025-06-01T12:00:00Z"
+  },
+  {
+    "adminCognitoId": "04e8d4b8-90e1-704e-4ea4-746a81eedcd0",
+    "message": "Shipment status updated: SHIP-002",
+    "details": {
+      "status": "Shipped",
+      "items": [
+        {
+          "lotNo": "45165",
+          "invoiceNo": "OL24250468",
+          "bags": 40,
+          "netWeight": 2720.0,
+          "totalWeight": 2720.0
+        }
+      ]
+    },
+    "createdAt": "2025-06-02T15:30:00Z"
+  }
+]

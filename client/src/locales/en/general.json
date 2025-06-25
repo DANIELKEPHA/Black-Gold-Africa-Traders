@@ -1,0 +1,56 @@
+{
+  "pagination": {
+    "previous": "Previous",
+    "next": "Next",
+    "page": "Page {{page}} of {{totalPages}}",
+    "pageOf": "Page {{page}} of {{total}}"
+  },
+  "selectedCount": "{{count}} item(s) selected",
+  "reprinting": "Reprinting...",
+  "loading": "Loading...",
+  "characters": "characters",
+  "noCatalog": "No Catalog",
+  "noData": "N/A",
+  "login": "Login",
+  "back": "Back",
+  "searchPlaceholder": "Search catalogs...",
+  "anyCategory": "Any Category number",
+  "anyGrade": "Any Grade number",
+  "actions": {
+    "allFilters": "All Filters",
+    "upload": "Upload",
+    "new": "New",
+    "downloadCsv": "Download CSV"
+  },
+  "downloading": "Downloading",
+  "listView": "List View",
+  "gridView": "Grid View",
+  "success": {
+    "csvDownloaded": "CSV exported successfully",
+    "csvDownloadedDesc": "The catalog data has been downloaded"
+  },
+  "errors": {
+    "csvError": "Failed to export CSV",
+    "csvFailed": "An error occurred while exporting the catalog data"
+  },
+  "anyCountry": "Any Country",
+  "anyBroker": "Any Broker",
+  "shipmentIdPlaceholder": "Shipment ID",
+  "favoriteIdsPlaceholder": "Favorite IDs (comma-separated)",
+  "userCognitoIdPlaceholder": "User ID",
+  "isActivePlaceholder": "Status",
+  "anyStatus": "Any status",
+  "active": "Active",
+  "inactive": "Inactive",
+  "apply": "Apply filters",
+  "resetFilters": "Reset filters",
+  "filterApplied": "Filters applied successfully",
+  "filtersReset": "Filters reset",
+  "cancel": "Cancel",
+  "save": "Save",
+  "adjust": "Adjust",
+  "close": "Close",
+  "previous": "Previous",
+  "next": "Next",
+  "pageOf": "Page {{page}} of {{total}}"
+}

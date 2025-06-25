@@ -1,0 +1,112 @@
+{
+  "createShipment": "Create Shipment",
+  "editShipment": "Edit Shipment",
+  "noItemsSelected": "No items selected",
+  "noItems": "At least one item is required",
+  "fixItemErrors": "Please fix item errors before submitting",
+  "positiveBags": "Number of bags must be positive",
+  "invalidBags": "Cannot exceed {max} available bags",
+  "catalogNotFound": "Catalog item not found",
+  "unknown": "Unknown",
+  "loading": "Loading...",
+  "submissionError": "Failed to submit shipment",
+  "catalogFetchError": "Failed to fetch catalog data",
+  "errors.unauthorized": "Unauthorized access",
+  "success.shipmentCreated": "Shipment created successfully",
+  "success.shipmentUpdated": "Shipment updated successfully",
+  "shipmentDetails": "Shipment Details",
+  "consignee": "Consignee",
+  "vessel": "Vessel",
+  "selectVessel": "Select Vessel",
+  "shipmark": "Shipmark",
+  "packagingInstructions": "Packaging Instructions",
+  "selectPackaging": "Select Packaging",
+  "additionalInstructions": "Additional Instructions",
+  "shipDate": "Shipment Date",
+  "lotNo": "Lot Number",
+  "tareWeight": "Tare Weight",
+  "availableBags": "Available Bags",
+  "bags": "Bags",
+  "totalWeight": "Total Weight",
+  "vessel.first": "First Vessel",
+  "vessel.second": "Second Vessel",
+  "vessel.third": "Third Vessel",
+  "vessel.fourth": "Fourth Vessel",
+  "packages.oneJutetwoPolly": "One Jute, Two Polly",
+  "packages.oneJuteOnePolly": "One Jute, One Polly",
+  "dashboardTitle": "Shipment Dashboard",
+  "filters": {
+    "searchPlaceholder": "Search by lot number or shipmark...",
+    "search": "Search",
+    "status": "Status",
+    "statusPlaceholder": "Select Status",
+    "anyStatus": "Any Status",
+    "allStatuses": "All Statuses",
+    "listView": "List View",
+    "gridView": "Grid View"
+  },
+  "actions": {
+    "createShipment": "Create Shipment",
+    "createFavoritesShipment": "Favorites Shipment",
+    "edit": "Edit Shipment",
+    "delete": "Delete Shipment",
+    "listView": "List View",
+    "gridView": "Grid View"
+
+  },
+  "columns": {
+    "shipmark": "Shipmark",
+    "consignee": "Consignee",
+    "status": "Status",
+    "vessel": "Vessel",
+    "items": "Items",
+    "actions": "Actions",
+    "catalog": "Catalog",
+    "quantity": "Quantity (kg)",
+    "packaging": "Packaging",
+    "instructions": "Instructions",
+    "packagingInstructions": "Packaging Instructions",
+    "additionalInstructions": "Additional Instructions"
+  },
+  "fields": {
+    "status": "Status",
+    "packagingInstructions": "Packaging Instructions",
+    "additionalInstructions": "Additional Instructions"
+  },
+  "modals": {
+    "editTitle": "Edit Shipment",
+    "deleteTitle": "Delete Shipment",
+    "deleteMessage": "Are you sure you want to delete this shipment? This action cannot be undone."
+  },
+  "warnings": {
+    "noItemsSelected": "Please select at least one item to create a shipment."
+  },
+  "errors": {
+    "authError": "Authentication error. Please log in again.",
+    "loadFailed": "Failed to load shipments",
+    "updateFailed": "Failed to update shipment",
+    "deleteFailed": "Failed to delete shipment"
+
+  },
+  "success": {
+    "updated": "Shipment updated successfully",
+    "deleted": "Shipment deleted successfully"
+  },
+  "noData": "No shipments found. Try adjusting your filters or create a new shipment.",
+  "pagination": {
+    "previous": "Previous",
+    "next": "Next",
+    "page": "Page {{page}} of {{totalPages}}"
+  },
+  "login": "Log In",
+  "retry": "Retry",
+  "save": "Save",
+  "delete": "Delete",
+  "deleting": "Deleting...",
+  "addItem": "Add Item",
+  "packagingOptions": {
+    "oneJutetwoPolly": "One Jute, Two Polly",
+    "oneJuteOnePolly": "One Jute, One Polly"
+  },
+  "cancel": "Cancel"
+}

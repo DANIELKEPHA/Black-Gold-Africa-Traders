@@ -1,0 +1,21 @@
+[
+  { "grade": "PD", "category": "M1" },
+  { "grade": "DUST1", "category": "M1" },
+  { "grade": "PF1", "category": "M2" },
+  { "grade": "BP1", "category": "M3" },
+  { "grade": "BP2", "category": "M3" },
+  { "grade": "FNGS", "category": "S1" },
+  { "grade": "FNGS1", "category": "S1" },
+  { "grade": "FNGS2", "category": "S1" },
+  { "grade": "BMF", "category": "S1" },
+  { "grade": "BMF1", "category": "S1" },
+  { "grade": "BMFD", "category": "S1" },
+  { "grade": "DUST", "category": "S1" },
+  { "grade": "DUST2", "category": "S1" },
+  { "grade": "PF2", "category": "S1" },
+  { "grade": "PF", "category": "S1" },
+  { "grade": "BOP", "category": "S1" },
+  { "grade": "BOPF", "category": "S1" },
+  { "grade": "PD2", "category": "S1" },
+  { "grade": "BP", "category": "S1" }
+]

@@ -1,0 +1,310 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Admin {
+  id              Int            @id @default(autoincrement())
+  adminCognitoId  String         @unique
+  name            String?
+  email           String?        @unique
+  phoneNumber     String?
+  catalogs        Catalog[]
+  stocks          Stocks[]
+  sellingPrices   SellingPrice[]
+  outLots         OutLots[]
+  notifications   AdminNotification[]
+  shipments       Shipment[]     @relation("AdminShipments")
+  stockHistory    StockHistory[] @relation("StockHistoryAdmin")
+  shipmentHistory ShipmentHistory[] @relation("ShipmentHistoryAdmin")
+}
+
+model User {
+  id                Int      @id @default(autoincrement())
+  userCognitoId     String   @unique
+  name              String?
+  email             String?  @unique
+  role              String   @default("user")
+  phoneNumber       String?
+  shipments         Shipment[]     @relation("UserShipments")
+  stockHistory      StockHistory[]  @relation("StockHistoryUser")
+  shipmentHistory   ShipmentHistory[] @relation("ShipmentHistoryUser")
+  favorites         Favorite[]      @relation("UserFavorites")
+  createdAt         DateTime   @default(now())
+  updatedAt         DateTime   @updatedAt
+  assignments       StockAssignment[]
+  contacts          Contact[]      @relation("UserContacts")
+}
+
+model Catalog {
+  id              Int          @id @default(autoincrement())
+  broker          Broker
+  lotNo           String       @unique
+  sellingMark     String
+  grade           TeaGrade
+  invoiceNo       String
+  saleCode        String
+  category        TeaCategory
+  reprint         Int          @default(0)
+  bags            Int
+  netWeight       Float
+  totalWeight     Float
+  askingPrice     Float
+  producerCountry String?
+  manufactureDate DateTime
+  adminCognitoId  String?
+  userCognitoId   String?
+  admin           Admin?       @relation(fields: [adminCognitoId], references: [adminCognitoId])
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+  @@index([lotNo, saleCode])
+}
+
+model SellingPrice {
+  id              Int          @id @default(autoincrement())
+  broker          Broker
+  lotNo           String       @unique
+  sellingMark     String
+  grade           TeaGrade
+  invoiceNo       String
+  saleCode        String
+  category        TeaCategory
+  reprint         Int          @default(0)
+  bags            Int
+  netWeight       Float
+  totalWeight     Float
+  askingPrice     Float
+  purchasePrice   Float
+  producerCountry String?
+  manufactureDate DateTime
+  adminCognitoId  String?
+  userCognitoId   String?
+  admin           Admin?       @relation(fields: [adminCognitoId], references: [adminCognitoId])
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+  @@index([lotNo, saleCode])
+}
+
+model OutLots {
+  id              Int          @id @default(autoincrement())
+  auction         String
+  lotNo           String       @unique
+  broker          Broker
+  sellingMark     String
+  grade           TeaGrade
+  invoiceNo       String
+  bags            Int
+  netWeight       Float
+  totalWeight     Float
+  baselinePrice   Float
+  manufactureDate DateTime
+  adminCognitoId  String?
+  userCognitoId   String?
+  admin           Admin?       @relation(fields: [adminCognitoId], references: [adminCognitoId])
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+  @@index([lotNo, auction])
+}
+
+model Stocks {
+  id                Int            @id @default(autoincrement())
+  saleCode          String
+  broker            Broker
+  lotNo             String         @unique
+  mark              String
+  grade             TeaGrade
+  invoiceNo         String
+  bags              Int
+  weight            Float
+  purchaseValue     Float
+  totalPurchaseValue Float
+  agingDays         Int
+  penalty           Float
+  bgtCommission     Float
+  maerskFee         Float
+  commission        Float
+  netPrice          Float
+  total             Float
+  batchNumber       String?
+  lowStockThreshold Float?
+  adminCognitoId    String
+  admin             Admin          @relation(fields: [adminCognitoId], references: [adminCognitoId])
+  assignments       StockAssignment[]
+  shipmentItems     ShipmentItem[]
+  history           StockHistory[]
+  favorites         Favorite[]     @relation("StockFavorites")
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
+  @@index([lotNo, saleCode])
+}
+
+model StockAssignment {
+  id            Int          @id @default(autoincrement())
+  stocksId      Int
+  userCognitoId String
+  assignedWeight Float
+  assignedAt    DateTime     @default(now())
+  stocks        Stocks       @relation(fields: [stocksId], references: [id], onDelete: Cascade)
+  user          User         @relation(fields: [userCognitoId], references: [userCognitoId], onDelete: Cascade)
+  @@unique([stocksId, userCognitoId])
+  @@index([userCognitoId, assignedAt])
+}
+
+model Shipment {
+  id                    Int                 @id @default(autoincrement())
+  shipmentDate          DateTime
+  status                ShipmentStatus
+  historyEntries        ShipmentHistory[]   @relation("ShipmentHistory")
+  stockHistory          StockHistory[]      @relation("StockHistoryShipment")
+  userCognitoId         String
+  adminCognitoId        String?
+  consignee             String
+  vessel                Vessel
+  shipmark              String              @unique
+  packagingInstructions PackagingInstructions
+  additionalInstructions String?
+  stocks                ShipmentItem[]
+  user                  User                @relation("UserShipments", fields: [userCognitoId], references: [userCognitoId])
+  admin                 Admin?              @relation("AdminShipments", fields: [adminCognitoId], references: [adminCognitoId])
+  createdAt             DateTime            @default(now())
+}
+
+model ShipmentItem {
+  id             Int      @id @default(autoincrement())
+  shipmentId     Int
+  stocksId       Int
+  assignedWeight Float
+  shipment       Shipment @relation(fields: [shipmentId], references: [id], onDelete: Cascade)
+  stocks         Stocks   @relation(fields: [stocksId], references: [id], onDelete: Cascade)
+  @@unique([shipmentId, stocksId])
+}
+
+model StockHistory {
+  id             Int        @id @default(autoincrement())
+  stocksId       Int
+  action         String
+  timestamp      DateTime   @default(now())
+  userCognitoId  String?
+  adminCognitoId String?
+  details        Json?
+  shipmentId     Int?
+  stocks         Stocks     @relation(fields: [stocksId], references: [id], onDelete: Cascade)
+  user           User?      @relation("StockHistoryUser", fields: [userCognitoId], references: [userCognitoId], onDelete: SetNull)
+  admin          Admin?     @relation("StockHistoryAdmin", fields: [adminCognitoId], references: [adminCognitoId], onDelete: SetNull)
+  shipment       Shipment?  @relation("StockHistoryShipment", fields: [shipmentId], references: [id], onDelete: SetNull)
+}
+
+model ShipmentHistory {
+  id             Int        @id @default(autoincrement())
+  shipmentId     Int
+  action         String
+  timestamp      DateTime   @default(now())
+  userCognitoId  String?
+  adminCognitoId String?
+  details        Json?
+  shipment       Shipment   @relation("ShipmentHistory", fields: [shipmentId], references: [id], onDelete: Cascade)
+  user           User?      @relation("ShipmentHistoryUser", fields: [userCognitoId], references: [userCognitoId], onDelete: SetNull)
+  admin          Admin?     @relation("ShipmentHistoryAdmin", fields: [adminCognitoId], references: [adminCognitoId], onDelete: SetNull)
+  @@index([shipmentId, timestamp])
+}
+
+model AdminNotification {
+  id             Int      @id @default(autoincrement())
+  adminCognitoId String
+  message        String
+  details        Json
+  createdAt      DateTime @default(now())
+  admin          Admin    @relation(fields: [adminCognitoId], references: [adminCognitoId])
+}
+
+model Contact {
+  id             Int      @id @default(autoincrement())
+  name           String
+  email          String
+  subject        String?
+  message        String
+  privacyConsent Boolean
+  userCognitoId  String?
+  user           User?    @relation("UserContacts", fields: [userCognitoId], references: [userCognitoId], onDelete: SetNull)
+  createdAt      DateTime @default(now())
+}
+
+model Favorite {
+  id            Int      @id @default(autoincrement())
+  userCognitoId String
+  stocksId      Int?
+  createdAt     DateTime @default(now())
+  user          User     @relation("UserFavorites", fields: [userCognitoId], references: [userCognitoId], onDelete: Cascade)
+  stocks        Stocks?  @relation("StockFavorites", fields: [stocksId], references: [id], onDelete: Cascade)
+  @@unique([userCognitoId, stocksId], name: "user_stocks_favorite")
+}
+
+enum TeaGrade {
+  PD
+  PD2
+  DUST
+  DUST1
+  DUST2
+  PF
+  PF1
+  BP
+  BP1
+  FNGS1
+  BOP
+  BOPF
+  FNGS
+  FNGS2
+  BMF
+  BMFD
+  PF2
+  BMF1
+}
+
+enum Broker {
+  AMBR
+  ANJL
+  ATBL
+  ATLS
+  BICL
+  BTBL
+  CENT
+  COMK
+  CTBL
+  PRME
+  PTBL
+  TBEA
+  UNTB
+  VENS
+  TTBL
+}
+
+enum TeaCategory {
+  M1
+  M2
+  M3
+  S1
+}
+
+enum ShipmentStatus {
+  Pending
+  Approved
+  Shipped
+  Delivered
+  Cancelled
+}
+
+enum Vessel {
+  first
+  second
+  third
+  fourth
+}
+
+enum PackagingInstructions {
+  oneJutetwoPolly
+  oneJuteOnePolly
+}

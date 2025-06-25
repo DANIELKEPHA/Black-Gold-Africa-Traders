@@ -1,0 +1,89 @@
+{
+  "actions": {
+    "allFilters": "All Filters",
+    "download": "Download",
+    "toggleViewMode": "Toggle View Mode",
+    "createSellingPrice": "Create Selling Price",
+    "selectAll": "Select All",
+    "submit": "Submit",
+    "selectItem": "Select item {lotNo}"
+  },
+  "downloading": "Downloading...",
+  "listView": "List View",
+  "gridView": "Grid View",
+  "searchPlaceholder": "Search selling prices...",
+  "salePlaceholder": "Sale",
+  "lotNoPlaceholder": "Lot No",
+  "sellingMarkPlaceholder": "Selling Mark",
+  "categoryPlaceholder": "Category",
+  "anyCategory": "Any Category",
+  "gradePlaceholder": "Grade",
+  "anyGrade": "Any Grade",
+  "brokerPlaceholder": "Broker",
+  "anyBroker": "Any Broker",
+  "producerCountryPlaceholder": "Producer Country",
+  "anyProducerCountry": "Any Country",
+  "manufactureDatePlaceholder": "Manufacture Date",
+  "success": {
+    "csvDownloaded": "CSV downloaded successfully",
+    "csvDownloadedDesc": "Selling prices data exported to CSV",
+    "sellingPriceCreated": "Selling price created successfully"
+  },
+  "errors": {
+    "csvError": "CSV Export Failed",
+    "csvFailed": "Failed to export selling prices to CSV",
+    "authRequired": "Authentication required",
+    "invalidSellingPriceId": "No selling prices found for this user",
+    "unauthorized": "You are not authorized to access this page",
+    "error": "An error occurred. Please try again",
+    "sellingPriceCreateFailed": "Failed to create selling price",
+    "sellingPriceCreateFailedDesc": "An error occurred while creating the selling price"
+  },
+  "pagination": {
+    "previous": "Previous",
+    "next": "Next",
+    "page": "Page {page} of {totalPages}"
+  },
+  "placeholders": {
+    "lotNo": "Lot Number",
+    "sellingMark": "Selling Mark",
+    "grade": "Grade",
+    "invoiceNo": "Invoice Number",
+    "saleCode": "Sale Code",
+    "category": "Category",
+    "broker": "Broker",
+    "bags": "Number of Bags",
+    "netWeight": "Net Weight",
+    "totalWeight": "Total Weight",
+    "askingPrice": "Asking Price",
+    "purchasePrice": "Purchase Price",
+    "country": "Country",
+    "manufactureDate": "Manufacture Date",
+    "reprint": "Reprint"
+  },
+  "catalog": {
+    "noSellingPrices": "No selling prices found",
+    "listView": "List View",
+    "gridView": "Grid View"
+  },
+  "headers": {
+    "select": "Select",
+    "broker": "Broker",
+    "saleCode": "Sale Code",
+    "lotNo": "Lot Number",
+    "sellingMark": "Selling Mark",
+    "grade": "Grade",
+    "invoiceNo": "Invoice Number",
+    "category": "Category",
+    "reprint": "Reprint",
+    "bags": "Bags",
+    "netWeight": "Net Weight",
+    "totalWeight": "Total Weight",
+    "askingPrice": "Asking Price",
+    "purchasePrice": "Purchase Price",
+    "producerCountry": "Producer Country",
+    "manufactureDate": "Manufacture Date"
+  },
+  "selectedCount": "Selected: {count}",
+  "noSellingPrices": "No selling prices found"
+}
