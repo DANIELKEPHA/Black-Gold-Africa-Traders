@@ -31,6 +31,9 @@ app.use((0, cors_1.default)());
 app.get("/", (req, res) => {
     res.send("This is home route");
 });
+app.get('/health', (req, res) => {
+    res.status(200).json({ status: 'healthy' });
+});
 // Mount routes
 console.log("Mounting routes...");
 app.use("/admin", adminRoutes_1.default);
@@ -42,6 +45,13 @@ app.use("/stocks", teaStocksRoutes_1.default);
 app.use("/shipments", shipmentRoutes_1.default);
 /* SERVER */
 const port = Number(process.env.PORT) || 3002;
-app.listen(port, "0.0.0.0", () => {
-    console.log(`Server running on port ${port}`);
-});
+// Add error handling for server startup
+try {
+    app.listen(port, "0.0.0.0", () => {
+        console.log(`Server running on port ${port}`);
+    });
+}
+catch (error) {
+    console.error("Failed to start server:", error);
+    process.exit(1);
+}
