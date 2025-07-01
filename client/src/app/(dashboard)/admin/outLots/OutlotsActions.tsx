@@ -30,12 +30,13 @@ const OutLotsActions: React.FC<OutLotsActionsProps> = ({
     const { data: authUser } = useGetAuthUserQuery();
     const isAdmin = authUser?.userRole === "admin";
     const [exportOutLotsCsv, { isLoading: isExporting }] = useExportOutLotsCsvMutation();
+    // Fetch all outlots with limit: 10000 (now supported by backend)
     const { data: allOutLotsData, isLoading: isAllOutLotsLoading, error: allOutLotsError } = useGetOutlotsQuery(
         {
             page: 1,
-            limit: 10000,
+            limit: 10000, // Now supported by backend
         },
-        { skip: !authUser?.cognitoInfo?.userId }
+        { skip: !authUser?.cognitoInfo?.userId || !selectAllAcrossPages }
     );
 
     if (!isAdmin) return null;

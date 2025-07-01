@@ -21,8 +21,8 @@ import {
 import { Loader2 } from "lucide-react";
 import Loading from "@/components/Loading";
 import OutlotsActions from "@/app/(dashboard)/admin/outLots/OutlotsActions";
-import OutLotsTable from "@/app/(dashboard)/admin/outLots/OutlotsTable";
-import OutLotsGrid from "@/app/(dashboard)/admin/outLots/OutlotsGrid";
+import OutlotsTable from "@/app/(dashboard)/admin/outLots/OutlotsTable";
+import OutlotsGrid from "@/app/(dashboard)/admin/outLots/OutlotsGrid";
 
 const OutLots: React.FC = () => {
     const { t } = useTranslation(["catalog", "general"]);
@@ -52,7 +52,7 @@ const OutLots: React.FC = () => {
         {
             ...filters,
             page: 1,
-            limit: 10000, // Fetch all outlots
+            limit: 10000, // Now supported by backend
         },
         { skip: !authUser?.cognitoInfo?.userId || !selectAllAcrossPages }
     );
@@ -135,17 +135,18 @@ const OutLots: React.FC = () => {
             <OutlotsActions
                 outLotsData={outLotsData}
                 selectedItems={selectedItems}
+                selectAllAcrossPages={selectAllAcrossPages}
                 handleSelectAll={handleSelectAll}
                 handleBulkDelete={handleBulkDelete}
             />
             {viewMode === "list" ? (
-                <OutLotsTable
+                <OutlotsTable
                     OutLotsData={outLotsData}
                     selectedItems={selectedItems}
                     handleSelectItem={handleSelectItem}
                 />
             ) : (
-                <OutLotsGrid
+                <OutlotsGrid
                     OutLotsData={outLotsData}
                     selectedItems={selectedItems}
                     handleSelectItem={handleSelectItem}

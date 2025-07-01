@@ -62,7 +62,7 @@ export const csvRecordSchema = z.object({
 
 export const querySchema = z.object({
     page: z.coerce.number().int().min(1).optional().default(1),
-    limit: z.coerce.number().int().min(0).max(1000).optional().default(100),
+    limit: z.coerce.number().int().min(0).max(10000).optional().default(100), // Changed max from 1000 to 10000
     auction: z.string().optional(),
     lotNo: z.string().optional(),
     sellingMark: z.string().optional(),

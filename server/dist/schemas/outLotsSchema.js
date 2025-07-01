@@ -55,7 +55,7 @@ exports.csvRecordSchema = zod_1.z.object({
 }).strict();
 exports.querySchema = zod_1.z.object({
     page: zod_1.z.coerce.number().int().min(1).optional().default(1),
-    limit: zod_1.z.coerce.number().int().min(0).max(1000).optional().default(100),
+    limit: zod_1.z.coerce.number().int().min(0).max(10000).optional().default(100), // Changed max from 1000 to 10000
     auction: zod_1.z.string().optional(),
     lotNo: zod_1.z.string().optional(),
     sellingMark: zod_1.z.string().optional(),
