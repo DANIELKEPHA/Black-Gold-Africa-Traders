@@ -46,7 +46,7 @@ const OutLotsDetails: React.FC<OutLotsDetailsProps> = ({ params }) => {
 
     const handleDownload = async () => {
         try {
-            await exportOutLotsCsv({ outLotIds: [parseInt(params.id)] }).unwrap();
+            await exportOutLotsCsv({ outLotIds: parseInt(params.id).toString() }).unwrap();
             toast.success(t("catalog:success.csvDownloaded", { defaultValue: "CSV downloaded successfully" }));
         } catch (err: any) {
             toast.error(t("catalog:errors.csvError", { defaultValue: "Failed to export CSV" }));

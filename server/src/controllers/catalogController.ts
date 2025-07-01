@@ -294,7 +294,7 @@ export const getCatalogFilterOptions = async (req: Request, res: Response): Prom
                 min: aggregates._min.manufactureDate?.toISOString() ?? "2020-01-01T00:00:00Z",
                 max: aggregates._max.manufactureDate?.toISOString() ?? new Date().toISOString(),
             },
-            bags: { min: aggregates._min.bags ?? 0, max: aggregates._max.bags ?? 1000 },
+            bags: { min: aggregates._min.bags ?? 0, max: aggregates._max.bags ?? 10000 },
             totalWeight: { min: Number(aggregates._min.totalWeight) ?? 0, max: Number(aggregates._max.totalWeight) ?? 100000 },
             netWeight: { min: Number(aggregates._min.netWeight) ?? 0, max: Number(aggregates._max.netWeight) ?? 1000 },
         });
@@ -713,7 +713,7 @@ export const exportCatalogsCsv = async (req: Request, res: Response): Promise<vo
             return;
         }
 
-        const { page = 1, limit = 1000, catalogIds, ...filterParams } = params.data;
+        const { page = 1, limit = 10000, catalogIds, ...filterParams } = params.data;
 
         const maxRecords = 10000;
         if (limit > maxRecords) {

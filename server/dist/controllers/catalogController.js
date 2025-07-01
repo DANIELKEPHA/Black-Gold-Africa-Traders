@@ -267,7 +267,7 @@ const getCatalogFilterOptions = (req, res) => __awaiter(void 0, void 0, void 0, 
                 min: (_d = (_c = aggregates._min.manufactureDate) === null || _c === void 0 ? void 0 : _c.toISOString()) !== null && _d !== void 0 ? _d : "2020-01-01T00:00:00Z",
                 max: (_f = (_e = aggregates._max.manufactureDate) === null || _e === void 0 ? void 0 : _e.toISOString()) !== null && _f !== void 0 ? _f : new Date().toISOString(),
             },
-            bags: { min: (_g = aggregates._min.bags) !== null && _g !== void 0 ? _g : 0, max: (_h = aggregates._max.bags) !== null && _h !== void 0 ? _h : 1000 },
+            bags: { min: (_g = aggregates._min.bags) !== null && _g !== void 0 ? _g : 0, max: (_h = aggregates._max.bags) !== null && _h !== void 0 ? _h : 10000 },
             totalWeight: { min: (_j = Number(aggregates._min.totalWeight)) !== null && _j !== void 0 ? _j : 0, max: (_k = Number(aggregates._max.totalWeight)) !== null && _k !== void 0 ? _k : 100000 },
             netWeight: { min: (_l = Number(aggregates._min.netWeight)) !== null && _l !== void 0 ? _l : 0, max: (_m = Number(aggregates._max.netWeight)) !== null && _m !== void 0 ? _m : 1000 },
         });
@@ -646,7 +646,7 @@ const exportCatalogsCsv = (req, res) => __awaiter(void 0, void 0, void 0, functi
             });
             return;
         }
-        const _a = params.data, { page = 1, limit = 1000, catalogIds } = _a, filterParams = __rest(_a, ["page", "limit", "catalogIds"]);
+        const _a = params.data, { page = 1, limit = 10000, catalogIds } = _a, filterParams = __rest(_a, ["page", "limit", "catalogIds"]);
         const maxRecords = 10000;
         if (limit > maxRecords) {
             res.status(400).json({ message: `Export limit cannot exceed ${maxRecords} records` });
