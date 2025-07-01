@@ -177,6 +177,7 @@ const FiltersBar: React.FC<FiltersBarProps> = ({ selectedItems = [] }) => {
 
     const handleDownloadCSV = async () => {
         try {
+            // Use selectedItems if any are selected, otherwise use all outlot IDs
             const ids = selectedItems.length > 0 ? selectedItems : Array.isArray(outLotsData) ? outLotsData.map((item) => item.id) : [];
             if (ids.length === 0) {
                 toast.error(t("outlots:errors.noItems", { defaultValue: "No outlots available to export" }));

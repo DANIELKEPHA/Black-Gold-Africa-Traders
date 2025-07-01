@@ -10,7 +10,14 @@ import {
     GetUserParams,
     GetUserResponse
 } from "@/state/user";
-import { FiltersState, FilterOptions, SellingPriceResponse, OutlotResponse, CatalogResponse } from "@/state/index";
+import {
+    FiltersState,
+    FilterOptions,
+    SellingPriceResponse,
+    OutlotResponse,
+    CatalogResponse,
+    OutLotsResponse
+} from "@/state/index";
 import { CatalogFormData } from "@/lib/schemas";
 import {
     BulkAssignStocksInput,
@@ -733,10 +740,12 @@ export const api = createApi({
         }),
 
         // New OutLots Endpoints
-        getOutlots: builder.query<{ data: OutlotResponse[]; meta: { page: number; limit: number; total: number; totalPages: number } }, Partial<FiltersState> & { page?: number; limit?: number }>({
-            query: (filters) => ({
-                url: "/outlots",
-                params: cleanParams({
+        getOutlots: builder.query<
+            { data: OutLotsResponse[]; meta: { page: number; limit: number; total: number; totalPages: number } },
+            Partial<FiltersState> & { page?: number; limit?: number }
+        >({
+            query: (filters) => {
+                const params = cleanParams({
                     lotNo: filters.lotNo,
                     auction: filters.auction,
                     broker: filters.broker,
@@ -751,8 +760,13 @@ export const api = createApi({
                     search: filters.search,
                     page: filters.page,
                     limit: filters.limit,
-                }),
-            }),
+                });
+                console.log(`[${new Date().toLocaleString("en-US", { timeZone: "Africa/Nairobi" })}] getOutlots: Sending query params:`, params);
+                return {
+                    url: "/outlots",
+                    params,
+                };
+            },
             providesTags: (result) =>
                 result?.data
                     ? [
@@ -763,17 +777,20 @@ export const api = createApi({
             async onQueryStarted(filters, { queryFulfilled }) {
                 try {
                     const { data } = await queryFulfilled;
-                    console.log(`[${new Date().toLocaleString("en-US", { timeZone: "Africa/Nairobi" })}] getOutlots: ${JSON.stringify(data.meta)}`);
+                    console.log(`[${new Date().toLocaleString("en-US", { timeZone: "Africa/Nairobi" })}] getOutlots: Success:`, data.meta);
                 } catch (error: any) {
-                    console.error(`[${new Date().toLocaleString("en-US", { timeZone: "Africa/Nairobi" })}] getOutlots error:`, {
+                    console.error(`[${new Date().toLocaleString("en-US", { timeZone: "Africa/Nairobi" })}] getOutlots: Error:`, {
                         status: error?.error?.status,
                         message: error?.error?.data?.message,
-                        details: error?.error?.data?.details,
+                        details: error?.error?.data?.details || error?.error?.data || "No details provided",
                         params: filters,
+                        response: JSON.stringify(error?.error?.data, null, 2),
+                        fullError: JSON.stringify(error, Object.getOwnPropertyNames(error), 2),
                     });
                 }
             },
         }),
+
         getOutlotById: builder.query<OutlotResponse, number>({
             query: (id) => `/outlots/${id}`,
             providesTags: (result, error, id): TagDescription<"OutLots">[] => [{ type: "OutLots", id }],

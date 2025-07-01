@@ -71,7 +71,7 @@ const CatalogActions: React.FC<CatalogActionsProps> = ({
                         </label>
                     </div>
                     {/*<span className="text-sm text-gray-500 dark:text-gray-400">*/}
-                    {/*    {t("catalog:labels.selectedCount")}*/}
+                    {/*    {t("catalog:labels.select")}*/}
                     {/*</span>*/}
                 </div>
                 <div className="flex items-center space-x-2">

@@ -5,7 +5,7 @@ import { useTranslation } from "react-i18next";
 import { Toaster, toast } from "sonner";
 import { Download, Loader2, UploadIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useExportOutLotsCsvMutation, useGetAuthUserQuery } from "@/state/api";
+import { useExportOutLotsCsvMutation, useGetAuthUserQuery, useGetOutlotsQuery } from "@/state/api";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
 import { OutLotsResponse } from "@/state";
@@ -28,26 +28,50 @@ const OutLotsActions: React.FC<OutLotsActionsProps> = ({
     const { data: authUser } = useGetAuthUserQuery();
     const isAdmin = authUser?.userRole === "admin";
     const [exportOutLotsCsv, { isLoading: isExporting }] = useExportOutLotsCsvMutation();
+    // Fetch all outLots with a large limit
+    const { data: allOutLotsData, isLoading: isAllOutLotsLoading, error: allOutLotsError } = useGetOutlotsQuery(
+        {
+            page: 1,
+            limit: 10000, // Changed from 0 to 10000 to fetch all outlots
+        },
+        { skip: !authUser?.cognitoInfo?.userId }
+    );
 
     if (!isAdmin) return null;
 
     const handleDownload = async () => {
         try {
-            const ids = selectedItems.length > 0 ? selectedItems : outLotsData.map((item) => item.id);
+            if (allOutLotsError) {
+                const errorMessage = (allOutLotsError as any)?.data?.message ||
+                    t("catalog:errors.fetchAllFailed", { defaultValue: "Failed to fetch all outLots" });
+                console.error(`[${new Date().toLocaleString("en-US", { timeZone: "Africa/Nairobi" })}] handleDownload: allOutLotsError:`, allOutLotsError);
+                toast.error(errorMessage);
+                return;
+            }
+
+            const ids = selectedItems.length > 0
+                ? selectedItems
+                : (allOutLotsData?.data || []).map((item) => item.id);
+
             if (ids.length === 0) {
                 toast.error(t("catalog:errors.noItems", { defaultValue: "No outLots available to export" }));
                 return;
             }
-            console.log(`[${new Date().toLocaleString("en-US", { timeZone: "Africa/Nairobi" })}] Exporting outlots with IDs:`, ids);
+
+            console.log(`[${new Date().toLocaleString("en-US", { timeZone: "Africa/Nairobi" })}] handleDownload: Exporting outlots with IDs:`, ids);
             await exportOutLotsCsv({
-                outLotIds: ids,
+                outLotIds: ids, // ✅ fixed here
             }).unwrap();
+
             toast.success(t("catalog:success.csvDownloaded", { defaultValue: "CSV downloaded successfully" }));
         } catch (err: any) {
-            console.error(`[${new Date().toLocaleString("en-US", { timeZone: "Africa/Nairobi" })}] Export error:`, err);
-            toast.error(t("catalog:errors.csvError", { defaultValue: "Failed to export CSV" }));
+            console.error(`[${new Date().toLocaleString("en-US", { timeZone: "Africa/Nairobi" })}] handleDownload: Export error:`, err);
+            const errorMessage = err?.data?.message ||
+                t("catalog:errors.csvError", { defaultValue: "Failed to export CSV" });
+            toast.error(errorMessage);
         }
     };
+
 
     const handleUpload = () => {
         router.push("/admin/outLots/upload");
@@ -84,10 +108,10 @@ const OutLotsActions: React.FC<OutLotsActionsProps> = ({
                     </Button>
                     <Button
                         onClick={handleDownload}
-                        disabled={isExporting}
+                        disabled={isExporting || isAllOutLotsLoading}
                         className="rounded-sm bg-blue-600 hover:bg-blue-700 text-white"
                     >
-                        {isExporting ? (
+                        {isExporting || isAllOutLotsLoading ? (
                             <Loader2 className="w-4 h-4 animate-spin mr-2" />
                         ) : (
                             <Download className="w-4 h-4 mr-2" />

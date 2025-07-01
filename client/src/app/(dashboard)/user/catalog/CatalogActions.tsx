@@ -46,7 +46,7 @@ const CatalogActions: React.FC<CatalogActionsProps> = ({
                 aria-label={t("actions.selectAll")}
             />
             <span className="text-sm text-gray-600 dark:text-gray-300">
-        {t("selectedCount", { count: selectedItems.length })}
+        {t("select", { count: selectedItems.length })}
       </span>
             {isAdmin && (
                 <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>

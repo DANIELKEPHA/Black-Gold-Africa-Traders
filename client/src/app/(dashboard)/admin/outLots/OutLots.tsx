@@ -35,7 +35,7 @@ const OutLots: React.FC = () => {
     const [isBulkDeleting, setIsBulkDeleting] = useState<boolean>(false);
     const [isDeleteBulkOpen, setIsDeleteBulkOpen] = useState(false);
     const [isDeleting, setIsDeleting] = useState<Record<number, boolean>>({});
-    const limit = 20;
+    const limit = 100; // Changed from 20 to 100
 
     const { data: outLotsDataResponse, isLoading, error } = useGetOutlotsQuery(
         {
@@ -81,19 +81,6 @@ const OutLots: React.FC = () => {
         setIsDeleteBulkOpen(true);
     };
 
-    const handleDelete = async (id: number) => {
-        try {
-            setIsDeleting((prev) => ({ ...prev, [id]: true }));
-            await deleteOutLots({ ids: [id] }).unwrap();
-            setSelectedItems((prev) => prev.filter((itemId) => itemId !== id));
-            toast.success(t("catalog:success.outLotDeleted", { defaultValue: "OutLot deleted" }));
-        } catch (error: any) {
-            toast.error(t("catalog:errors.deleteFailed", { defaultValue: "Deletion failed" }));
-        } finally {
-            setIsDeleting((prev) => ({ ...prev, [id]: false }));
-        }
-    };
-
     const confirmBulkDelete = async () => {
         try {
             setIsBulkDeleting(true);
@@ -136,7 +123,7 @@ const OutLots: React.FC = () => {
                     OutLotsData={outLotsData}
                     selectedItems={selectedItems}
                     handleSelectItem={handleSelectItem}
-                    handleDelete={handleDelete}
+                    handleDelete={handleBulkDelete}
                     isDeleting={isDeleting}
                 />
             )}

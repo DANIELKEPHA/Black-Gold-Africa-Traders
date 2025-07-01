@@ -29,7 +29,7 @@ const Catalog: React.FC<CatalogProps> = ({ selectedItems, setSelectedItems }) =>
     const filters = useAppSelector((state) => state.global.filters);
     const [page, setPage] = useState(1);
     const [catalogData, setCatalogData] = useState<CatalogResponse[]>([]);
-    const limit = 20;
+    const limit = 100;
 
     console.log(`[${new Date().toLocaleString('en-US', { timeZone: 'Africa/Nairobi' })}] Filters in Catalog:`, filters);
 

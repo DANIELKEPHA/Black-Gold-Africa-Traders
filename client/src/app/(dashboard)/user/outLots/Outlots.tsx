@@ -17,7 +17,7 @@ interface OutlotsProps { selectedItems: number[]; setSelectedItems: Dispatch<Set
 interface ApiError { data?: { message?: string }; status?: number; }
 
 const Outlots: React.FC<OutlotsProps> = ({ selectedItems, setSelectedItems }) => {
-const { t } = useTranslation("catalog"); const { data: authUser, isLoading: authLoading, error: authError } = useGetAuthUserQuery(); const viewMode = useAppSelector((state) => state.global.viewMode); const filters = useAppSelector((state) => state.global.filters); const [page, setPage] = useState(1); const [outlotData, setOutlotData] = useState<OutlotResponse[]>([]); const limit = 20;
+const { t } = useTranslation("catalog"); const { data: authUser, isLoading: authLoading, error: authError } = useGetAuthUserQuery(); const viewMode = useAppSelector((state) => state.global.viewMode); const filters = useAppSelector((state) => state.global.filters); const [page, setPage] = useState(1); const [outlotData, setOutlotData] = useState<OutlotResponse[]>([]); const limit = 100;
 
     console.log(`[${new Date().toLocaleString('en-US', { timeZone: 'Africa/Nairobi' })}] Filters in Outlots:`, filters);
 
@@ -130,25 +130,23 @@ const { t } = useTranslation("catalog"); const { data: authUser, isLoading: auth
                 />
             )}
             {totalPages > 1 && (
-                <div className="mt-4 flex justify-between items-center">
+                <div className="mt-6 flex justify-between items-center">
                     <Button
-                        disabled={page === 1}
+                        disabled={page === 1 || isLoading}
                         onClick={() => setPage((prev) => prev - 1)}
-                        className="text-sm border-indigo-400 hover:bg-indigo-600 hover:text-white dark:border-indigo-600 dark:hover:bg-indigo-700"
-                        aria-label={t("pagination.previous")}
+                        className="rounded-sm bg-indigo-600 text-white hover:bg-indigo-700"
                     >
-                        {t("pagination.previous")}
+                        {t("general:pagination.previous", { defaultValue: "Previous" })}
                     </Button>
-                    <span className="text-sm text-gray-600 dark:text-gray-300">
-                    {t("pagination.page", { page, totalPages })}
-                </span>
+                    <span className="text-gray-700 dark:text-gray-200">
+                        {t("general:pagination.page", { page, totalPages })}
+                    </span>
                     <Button
-                        disabled={page === totalPages}
+                        disabled={page === totalPages || isLoading}
                         onClick={() => setPage((prev) => prev + 1)}
-                        className="text-sm border-indigo-400 hover:bg-indigo-600 hover:text-white dark:border-indigo-600 dark:hover:bg-indigo-700"
-                        aria-label={t("pagination.next")}
+                        className="rounded-sm bg-indigo-600 text-white hover:bg-indigo-700"
                     >
-                        {t("pagination.next")}
+                        {t("general:pagination.next", { defaultValue: "Next" })}
                     </Button>
                 </div>
             )}

@@ -99,6 +99,7 @@ export interface OutlotResponse {
     } | null;
 }
 
+
 export interface StocksResponse {
     id: number;
     saleCode: string;
@@ -220,6 +221,7 @@ export interface FiltersState {
     total?: number;
     batchNumber?: string;
     lowStockThreshold?: number;
+    selectAll?: boolean;
 
 }
 
@@ -256,6 +258,8 @@ export interface OutLotsResponse {
     baselinePrice: number;
     manufactureDate: string;
     adminCognitoId: string;
+    createdAt: string;
+    updatedAt: string;
     admin: {
         id: number;
         adminCognitoId: string;
@@ -264,6 +268,7 @@ export interface OutLotsResponse {
         phoneNumber: string | null;
     } | null;
 }
+
 
 export interface SellingPriceDetails {
     id: number;

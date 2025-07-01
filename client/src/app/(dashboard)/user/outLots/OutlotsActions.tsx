@@ -61,10 +61,10 @@ const OutlotsActions: React.FC<OutlotsActionsProps> = ({
             <Checkbox
                 checked={outlotData.length === selectedItems.length && outlotData.length > 0}
                 onCheckedChange={handleSelectAll}
-                aria-label={t("actions.selectAll")}
+                aria-label={t("catalog:actions.selectAll")}
             />
             <span className="text-sm text-gray-600 dark:text-gray-300">
-        {t("selectedCount", { count: selectedItems.length })}
+        {t("select", { count: selectedItems.length })}
       </span>
             {isAdmin && (
                 <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>

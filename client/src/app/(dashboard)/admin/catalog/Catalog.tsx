@@ -25,7 +25,7 @@ const Catalog: React.FC = () => {
     const [isBulkDeleting, setIsBulkDeleting] = useState<boolean>(false);
     const [isDeleteBulkOpen, setIsDeleteBulkOpen] = useState(false);
     const [isDeleting, setIsDeleting] = useState<Record<number, boolean>>({});
-    const limit = 20;
+    const limit = 100;
 
     const { data: catalogDataResponse, isLoading, error } = useGetCatalogQuery(
         {
