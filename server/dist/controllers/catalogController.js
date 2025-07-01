@@ -167,7 +167,7 @@ const getCatalogs = (req, res) => __awaiter(void 0, void 0, void 0, function* ()
                 details: params.error.errors,
             });
         }
-        const { ids, lotNo, sellingMark, bags, totalWeight, netWeight, askingPrice, producerCountry, manufactureDate, saleCode, category, grade, broker, invoiceNo, reprint, page = 1, limit = 20, } = params.data;
+        const { ids, lotNo, sellingMark, bags, totalWeight, netWeight, askingPrice, producerCountry, manufactureDate, saleCode, category, grade, broker, invoiceNo, reprint, page = 1, limit = 100, } = params.data;
         const where = buildWhereConditions({
             ids,
             lotNo,

@@ -101,101 +101,112 @@ const buildWhereConditions = (
     return conditions;
 };
 
-export const getOutLots = async (req: Request, res: Response) => {
+export async function getOutLots(req: Request, res: Response): Promise<void> {
     try {
-        let rawIds = req.query.ids;
-        if (typeof rawIds === 'string') {
-            rawIds = rawIds.split(',').map(id => id.trim());
-        } else if (!Array.isArray(rawIds)) {
-            rawIds = rawIds ? [rawIds] : undefined;
-        }
+        console.log(`[${new Date().toLocaleString("en-US", { timeZone: "Africa/Nairobi" })}] getOutLots: Raw query params:`, req.query);
 
-        const params = querySchema.safeParse({
+        // Parse query parameters with coercion
+        const parsedParams = querySchema.safeParse({
             ...req.query,
-            ids: rawIds ? rawIds.map(id => Number(id)) : undefined,
+            page: req.query.page ? parseInt(req.query.page as string, 10) : 1,
+            limit: req.query.limit ? parseInt(req.query.limit as string, 10) : 100,
+            ids: req.query.ids ? (Array.isArray(req.query.ids) ? req.query.ids.map(Number) : [parseInt(req.query.ids as string, 10)]) : undefined,
+            bags: req.query.bags ? parseInt(req.query.bags as string, 10) : undefined,
+            netWeight: req.query.netWeight ? parseFloat(req.query.netWeight as string) : undefined,
+            totalWeight: req.query.totalWeight ? parseFloat(req.query.totalWeight as string) : undefined,
+            baselinePrice: req.query.baselinePrice ? parseFloat(req.query.baselinePrice as string) : undefined,
         });
 
-        if (!params.success) {
-            return res.status(400).json({
-                message: 'Invalid query parameters',
-                details: params.error.errors,
+        if (!parsedParams.success) {
+            const errors = parsedParams.error.errors.map((err) => ({
+                field: err.path.join("."),
+                message: err.message,
+                value: (req.query as any)[err.path[0]] ?? "undefined",
+                schemaCode: err.code,
+            }));
+            console.error(`[${new Date().toLocaleString("en-US", { timeZone: "Africa/Nairobi" })}] getOutLots: Validation errors:`, JSON.stringify(errors, null, 2));
+            res.status(400).json({
+                message: "Invalid query parameters",
+                details: errors,
             });
+            return;
         }
 
-        const {
-            ids,
-            auction,
-            lotNo,
-            sellingMark,
-            grade,
-            broker,
-            invoiceNo,
-            bags,
-            netWeight,
-            totalWeight,
-            baselinePrice,
-            manufactureDate,
-            page = 1,
-            limit = 20,
-        } = params.data;
+        console.log(`[${new Date().toLocaleString("en-US", { timeZone: "Africa/Nairobi" })}] getOutLots: Parsed params:`, parsedParams.data);
 
-        const where: Prisma.OutLotsWhereInput = buildWhereConditions({
-            ids,
-            auction,
-            lotNo,
-            sellingMark,
-            grade,
-            broker,
-            invoiceNo,
-            bags,
-            netWeight,
-            totalWeight,
-            baselinePrice,
-            manufactureDate,
-        });
+        const { page, limit, auction, broker, sellingMark, grade, invoiceNo, bags, netWeight, totalWeight, baselinePrice, manufactureDate, search, ids } = parsedParams.data;
 
-        const skip = (page - 1) * limit;
-        const take = limit;
+        const where: any = {};
+        if (auction) where.auction = { contains: auction, mode: "insensitive" };
+        if (broker && broker !== "any") where.broker = broker;
+        if (sellingMark) where.sellingMark = { contains: sellingMark, mode: "insensitive" };
+        if (grade && grade !== "any") where.grade = grade;
+        if (invoiceNo) where.invoiceNo = { contains: invoiceNo, mode: "insensitive" };
+        if (bags !== undefined) where.bags = bags;
+        if (netWeight !== undefined) where.netWeight = netWeight;
+        if (totalWeight !== undefined) where.totalWeight = totalWeight;
+        if (baselinePrice !== undefined) where.baselinePrice = baselinePrice;
+        if (manufactureDate) where.manufactureDate = { gte: new Date(manufactureDate) };
+        if (search) {
+            where.OR = [
+                { auction: { contains: search, mode: "insensitive" } },
+                { lotNo: { contains: search, mode: "insensitive" } },
+                { sellingMark: { contains: search, mode: "insensitive" } },
+                { invoiceNo: { contains: search, mode: "insensitive" } },
+            ];
+        }
+        if (ids && ids.length > 0) where.id = { in: ids };
+
+        const skip = limit > 0 ? (page - 1) * limit : undefined;
+        const take = limit > 0 ? limit : undefined;
+
+        console.log(`[${new Date().toLocaleString("en-US", { timeZone: "Africa/Nairobi" })}] getOutLots: Querying with where:`, where, `skip: ${skip}, take: ${take}`);
 
         const [outLots, total] = await Promise.all([
             prisma.outLots.findMany({
                 where,
                 skip,
                 take,
-                include: {
-                    admin: {
-                        select: {
-                            id: true,
-                            adminCognitoId: true,
-                            name: true,
-                            email: true,
-                            phoneNumber: true,
-                        },
-                    },
+                orderBy: { id: "asc" },
+                select: {
+                    id: true,
+                    auction: true,
+                    lotNo: true,
+                    broker: true,
+                    sellingMark: true,
+                    grade: true,
+                    invoiceNo: true,
+                    bags: true,
+                    netWeight: true,
+                    totalWeight: true,
+                    baselinePrice: true,
+                    manufactureDate: true,
                 },
             }),
             prisma.outLots.count({ where }),
         ]);
 
-        const totalPages = Math.ceil(total / limit);
+        console.log(`[${new Date().toLocaleString("en-US", { timeZone: "Africa/Nairobi" })}] getOutLots: Found ${outLots.length} records, total: ${total}`);
 
-        // Normalize admin property for serializeOutLot
-        const normalizedOutLots = outLots.map((outLot) => ({
-            ...outLot,
-            admin: outLot.admin ?? undefined,
-        }));
-
-        return res.status(200).json({
-            data: normalizedOutLots.map(serializeOutLot),
-            meta: { page, limit, total, totalPages },
+        res.status(200).json({
+            data: outLots,
+            meta: {
+                total,
+                page,
+                limit: limit || total,
+                totalPages: limit > 0 ? Math.ceil(total / limit) : 1,
+            },
         });
     } catch (error) {
-        return res.status(500).json({
-            message: 'Internal server error',
+        console.error(`[${new Date().toLocaleString("en-US", { timeZone: "Africa/Nairobi" })}] getOutLots: Error:`, error);
+        res.status(500).json({
+            message: "Internal server error",
             details: error instanceof Error ? error.message : String(error),
         });
+    } finally {
+        await prisma.$disconnect();
     }
-};
+}
 
 // Get filter options for OutLots
 export const getOutLotsFilterOptions = async (req: Request, res: Response): Promise<void> => {
@@ -559,38 +570,41 @@ export async function uploadOutLotsCsv(req: Request, res: Response): Promise<voi
             return;
         }
 
-        const result = await prisma.$transaction(async (tx) => {
-            let createdCount = 0;
-            let skippedCount = 0;
-            let replacedCount = 0;
+        // Process in batches to handle large uploads efficiently
+        const BATCH_SIZE = 1000;
+        let createdCount = 0;
+        let skippedCount = 0;
+        let replacedCount = 0;
 
-            for (const { outLot, rowIndex } of validOutLots) {
-                const existing = await tx.outLots.findUnique({
-                    where: { lotNo: outLot.lotNo },
-                });
+        for (let i = 0; i < validOutLots.length; i += BATCH_SIZE) {
+            const batch = validOutLots.slice(i, i + BATCH_SIZE);
+            await prisma.$transaction(async (tx) => {
+                for (const { outLot, rowIndex } of batch) {
+                    const existing = await tx.outLots.findUnique({
+                        where: { lotNo: outLot.lotNo },
+                    });
 
-                if (existing) {
-                    if (duplicateAction === "skip") {
-                        skippedCount++;
-                        continue;
-                    } else if (duplicateAction === "replace") {
-                        await tx.outLots.delete({ where: { id: existing.id } });
-                        replacedCount++;
+                    if (existing) {
+                        if (duplicateAction === "skip") {
+                            skippedCount++;
+                            continue;
+                        } else if (duplicateAction === "replace") {
+                            await tx.outLots.delete({ where: { id: existing.id } });
+                            replacedCount++;
+                        }
                     }
+
+                    await tx.outLots.create({ data: outLot });
+                    createdCount++;
                 }
-
-                await tx.outLots.create({ data: outLot });
-                createdCount++;
-            }
-
-            return { createdCount, skippedCount, replacedCount };
-        });
+            });
+        }
 
         res.status(201).json({
             success: {
-                created: result.createdCount,
-                skipped: result.skippedCount,
-                replaced: result.replacedCount,
+                created: createdCount,
+                skipped: skippedCount,
+                replaced: replacedCount,
             },
             errors,
         });
@@ -607,7 +621,6 @@ export async function uploadOutLotsCsv(req: Request, res: Response): Promise<voi
         await prisma.$disconnect();
     }
 }
-
 // Export OutLots as CSV
 export const exportOutLotsCsv = async (req: Request, res: Response): Promise<void> => {
     try {
@@ -619,7 +632,7 @@ export const exportOutLotsCsv = async (req: Request, res: Response): Promise<voi
             return;
         }
 
-        const { page = 1, limit = 1000, outLotIds, ...filterParams } = params.data;
+        const { page = 1, limit = 100, outLotIds, ...filterParams } = params.data;
         const maxRecords = 10000;
         if (limit > maxRecords) {
             res.status(400).json({ message: `Export limit cannot exceed ${maxRecords} records` });

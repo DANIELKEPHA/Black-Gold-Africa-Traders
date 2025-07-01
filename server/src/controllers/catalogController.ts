@@ -187,7 +187,7 @@ export const getCatalogs = async (req: Request, res: Response) => {
             invoiceNo,
             reprint,
             page = 1,
-            limit = 20,
+            limit = 100,
         } = params.data;
 
         const where: Prisma.CatalogWhereInput = buildWhereConditions({
