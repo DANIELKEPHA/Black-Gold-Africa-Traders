@@ -1,7 +1,9 @@
+"use client";
+
 import { toast } from "sonner";
 import { useGetAuthUserQuery, useUploadOutlotsCsvMutation, useExportOutLotsCsvMutation } from "@/state/api";
 import { OutLotsResponse } from "@/state";
-import {OutlotFormData} from "@/lib/schemas";
+import { OutlotFormData } from "@/lib/schemas";
 
 export const useOutLotsActions = () => {
     const [uploadOutlotsCsv] = useUploadOutlotsCsvMutation();
@@ -69,7 +71,7 @@ export const useOutLotsActions = () => {
             }
             console.log("Exporting outLots:", outLots.length);
             const response = await exportOutLotsCsv({
-                outLotIds: outLots.map((outLot) => outLot.id),
+                outLotIds: outLots.map((outLot) => outLot.id).join(","),
             }).unwrap();
             console.log("CSV export successful:", response);
             toast.success("OutLots exported successfully");
