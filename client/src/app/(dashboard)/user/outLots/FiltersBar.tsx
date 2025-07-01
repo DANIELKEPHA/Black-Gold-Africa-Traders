@@ -184,7 +184,7 @@ const FiltersBar: React.FC<FiltersBarProps> = ({ selectedItems = [] }) => {
                 return;
             }
             console.log(`[${new Date().toLocaleString('en-US', { timeZone: 'Africa/Nairobi' })}] Exporting outlots with IDs:`, ids);
-            await triggerExport({ outLotIds: ids }).unwrap();
+            await triggerExport({ outLotIds: ids.join(",") }).unwrap();
             toast.success(
                 t("outlots:success.csvDownloaded", { defaultValue: "CSV downloaded successfully" }),
                 {
