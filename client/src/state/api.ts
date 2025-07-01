@@ -869,7 +869,7 @@ export const api = createApi({
 
         exportOutLotsCsv: builder.mutation<
             { success: boolean },
-            { outLotIds?: number[] } & Partial<FiltersState>
+            { outLotIds?: string } & Partial<FiltersState> // Changed from number[] to string
         >({
             query: ({ outLotIds, ...filters }) => {
                 const params = cleanParams({
@@ -885,7 +885,7 @@ export const api = createApi({
                     baselinePrice: filters.baselinePrice,
                     manufactureDate: filters.manufactureDate,
                     adminCognitoId: filters.adminCognitoId,
-                    outLotIds: outLotIds?.join(","),
+                    outLotIds: outLotIds, // Already a string, no need for join
                 });
 
                 console.log(
@@ -935,7 +935,7 @@ export const api = createApi({
                         baselinePrice: arg.baselinePrice,
                         manufactureDate: arg.manufactureDate,
                         adminCognitoId: arg.adminCognitoId,
-                        outLotIds: arg.outLotIds?.join(","),
+                        outLotIds: arg.outLotIds, // Already a string
                     });
 
                     const response = await fetch(

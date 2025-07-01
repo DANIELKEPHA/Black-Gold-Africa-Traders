@@ -31,11 +31,12 @@ const OutLots: React.FC = () => {
     const filters = useAppSelector((state) => state.global.filters);
     const viewMode = useAppSelector((state) => state.global.viewMode);
     const [selectedItems, setSelectedItems] = useState<number[]>([]);
+    const [selectAllAcrossPages, setSelectAllAcrossPages] = useState<boolean>(false);
     const [page, setPage] = useState(1);
     const [isBulkDeleting, setIsBulkDeleting] = useState<boolean>(false);
     const [isDeleteBulkOpen, setIsDeleteBulkOpen] = useState(false);
     const [isDeleting, setIsDeleting] = useState<Record<number, boolean>>({});
-    const limit = 100; // Changed from 20 to 100
+    const limit = 100;
 
     const { data: outLotsDataResponse, isLoading, error } = useGetOutlotsQuery(
         {
@@ -46,31 +47,45 @@ const OutLots: React.FC = () => {
         { skip: !authUser?.cognitoInfo?.userId }
     );
 
+    // Fetch all outlot IDs for bulk delete when selectAllAcrossPages is true
+    const { data: allOutLotsData, isLoading: isAllOutLotsLoading } = useGetOutlotsQuery(
+        {
+            ...filters,
+            page: 1,
+            limit: 10000, // Fetch all outlots
+        },
+        { skip: !authUser?.cognitoInfo?.userId || !selectAllAcrossPages }
+    );
+
     const [deleteOutLots] = useDeleteOutlotsMutation();
 
     const outLotsData = outLotsDataResponse?.data || [];
-    const { totalPages = 1 } = outLotsDataResponse?.meta || {};
+    const { totalPages = 1, total = 0 } = outLotsDataResponse?.meta || {};
 
     const handleSelectItem = useCallback((itemId: number) => {
         setSelectedItems((prev) =>
             prev.includes(itemId) ? prev.filter((id) => id !== itemId) : [...prev, itemId]
         );
+        setSelectAllAcrossPages(false); // Reset select all across pages when individual items are toggled
     }, []);
 
     const handleSelectAll = useCallback(() => {
         if (!outLotsData || outLotsData.length === 0) {
             setSelectedItems([]);
+            setSelectAllAcrossPages(false);
             return;
         }
-        if (selectedItems.length === outLotsData.length) {
+        if (selectedItems.length === outLotsData.length && !selectAllAcrossPages) {
             setSelectedItems([]);
+            setSelectAllAcrossPages(false);
         } else {
             setSelectedItems(outLotsData.map((item) => item.id));
+            setSelectAllAcrossPages(true); // Indicate all items across pages are selected
         }
-    }, [outLotsData, selectedItems.length]);
+    }, [outLotsData, selectedItems.length, selectAllAcrossPages]);
 
     const handleBulkDelete = async () => {
-        if (selectedItems.length === 0) {
+        if (selectedItems.length === 0 && !selectAllAcrossPages) {
             toast.error(t("catalog:errors.noItemsSelected", { defaultValue: "No items selected" }));
             return;
         }
@@ -84,8 +99,19 @@ const OutLots: React.FC = () => {
     const confirmBulkDelete = async () => {
         try {
             setIsBulkDeleting(true);
-            await deleteOutLots({ ids: selectedItems }).unwrap();
+            // Use all outlot IDs if selectAllAcrossPages is true, otherwise use selectedItems
+            const idsToDelete = selectAllAcrossPages
+                ? (allOutLotsData?.data || []).map((item) => item.id)
+                : selectedItems;
+
+            if (idsToDelete.length === 0) {
+                toast.error(t("catalog:errors.noItemsSelected", { defaultValue: "No items available to delete" }));
+                return;
+            }
+
+            await deleteOutLots({ ids: idsToDelete }).unwrap();
             setSelectedItems([]);
+            setSelectAllAcrossPages(false);
             toast.success(t("catalog:success.outLotsDeleted", { defaultValue: "OutLots deleted" }));
         } catch (error: any) {
             toast.error(t("catalog:errors.bulkDeleteFailed", { defaultValue: "Bulk deletion failed" }));
@@ -159,7 +185,7 @@ const OutLots: React.FC = () => {
                         <p>
                             {t("catalog:confirm.bulkDeleteOutLotsCount", {
                                 defaultValue: "You are about to delete {{count}} outLots",
-                                count: selectedItems.length,
+                                count: selectAllAcrossPages ? total : selectedItems.length,
                             })}
                         </p>
                         <p className="mt-2 font-semibold">
@@ -176,7 +202,7 @@ const OutLots: React.FC = () => {
                         </Button>
                         <Button
                             onClick={confirmBulkDelete}
-                            disabled={isBulkDeleting}
+                            disabled={isBulkDeleting || isAllOutLotsLoading}
                             className="rounded-sm px-6 bg-red-600 hover:bg-red-700 text-white"
                         >
                             {isBulkDeleting ? (

@@ -13,6 +13,7 @@ import { OutLotsResponse } from "@/state";
 interface OutLotsActionsProps {
     outLotsData: OutLotsResponse[];
     selectedItems: number[];
+    selectAllAcrossPages: boolean;
     handleSelectAll: () => void;
     handleBulkDelete: () => void;
 }
@@ -20,6 +21,7 @@ interface OutLotsActionsProps {
 const OutLotsActions: React.FC<OutLotsActionsProps> = ({
                                                            outLotsData,
                                                            selectedItems,
+                                                           selectAllAcrossPages,
                                                            handleSelectAll,
                                                            handleBulkDelete,
                                                        }) => {
@@ -28,11 +30,10 @@ const OutLotsActions: React.FC<OutLotsActionsProps> = ({
     const { data: authUser } = useGetAuthUserQuery();
     const isAdmin = authUser?.userRole === "admin";
     const [exportOutLotsCsv, { isLoading: isExporting }] = useExportOutLotsCsvMutation();
-    // Fetch all outLots with a large limit
     const { data: allOutLotsData, isLoading: isAllOutLotsLoading, error: allOutLotsError } = useGetOutlotsQuery(
         {
             page: 1,
-            limit: 10000, // Changed from 0 to 10000 to fetch all outlots
+            limit: 10000,
         },
         { skip: !authUser?.cognitoInfo?.userId }
     );
@@ -60,9 +61,8 @@ const OutLotsActions: React.FC<OutLotsActionsProps> = ({
 
             console.log(`[${new Date().toLocaleString("en-US", { timeZone: "Africa/Nairobi" })}] handleDownload: Exporting outlots with IDs:`, ids);
             await exportOutLotsCsv({
-                outLotIds: ids, // ✅ fixed here
+                outLotIds: ids.join(","),
             }).unwrap();
-
             toast.success(t("catalog:success.csvDownloaded", { defaultValue: "CSV downloaded successfully" }));
         } catch (err: any) {
             console.error(`[${new Date().toLocaleString("en-US", { timeZone: "Africa/Nairobi" })}] handleDownload: Export error:`, err);
@@ -71,7 +71,6 @@ const OutLotsActions: React.FC<OutLotsActionsProps> = ({
             toast.error(errorMessage);
         }
     };
-
 
     const handleUpload = () => {
         router.push("/admin/outLots/upload");
@@ -84,7 +83,7 @@ const OutLotsActions: React.FC<OutLotsActionsProps> = ({
                     <div className="flex items-center">
                         <Checkbox
                             id="select-all"
-                            checked={outLotsData.length > 0 && selectedItems.length === outLotsData.length}
+                            checked={outLotsData.length > 0 && (selectedItems.length === outLotsData.length || selectAllAcrossPages)}
                             onCheckedChange={handleSelectAll}
                             aria-label={t("catalog:actions.selectAll", { defaultValue: "Select All" })}
                             className="border-gray-300 dark:border-gray-600"
@@ -101,7 +100,7 @@ const OutLotsActions: React.FC<OutLotsActionsProps> = ({
                     <Button
                         variant="destructive"
                         onClick={handleBulkDelete}
-                        disabled={selectedItems.length === 0}
+                        disabled={selectedItems.length === 0 && !selectAllAcrossPages}
                         className="rounded-sm bg-red-600 hover:bg-red-700 text-white"
                     >
                         {t("catalog:actions.deleteSelected", { defaultValue: "Delete Selected" })}
