@@ -337,6 +337,9 @@ const createCatalog = (req, res) => __awaiter(void 0, void 0, void 0, function* 
             details: error instanceof Error ? error.message : String(error),
         });
     }
+    finally {
+        yield prisma.$disconnect();
+    }
 });
 exports.createCatalog = createCatalog;
 const getCatalogById = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
@@ -521,12 +524,7 @@ function uploadCatalogsCsv(req, res) {
                     rowIndex++;
                     try {
                         // Normalize and parse the record
-                        const parsedRecord = Object.assign(Object.assign({}, record), { bags: record.bags ? Number(record.bags) : undefined, totalWeight: record.totalWeight ? Number(record.totalWeight) : undefined, netWeight: record.netWeight ? Number(record.netWeight) : undefined, askingPrice: record.askingPrice ? Number(record.askingPrice) : undefined, reprint: record.reprint ? Number(record.reprint) : 0, saleCode: record.saleCode, manufactureDate: record.manufactureDate
-                                ? record.manufactureDate
-                                    .split("/")
-                                    .map((part, index) => (index === 0 ? part : part.padStart(2, "0")))
-                                    .join("/")
-                                : undefined });
+                        const parsedRecord = Object.assign(Object.assign({}, record), { bags: record.bags ? Number(record.bags) : undefined, totalWeight: record.totalWeight ? Number(record.totalWeight) : undefined, netWeight: record.netWeight ? Number(record.netWeight) : undefined, askingPrice: record.askingPrice ? Number(record.askingPrice) : undefined, reprint: record.reprint !== undefined ? (record.reprint === 'true' ? 1 : record.reprint === 'false' ? 0 : Number(record.reprint)) : 0, saleCode: record.saleCode, manufactureDate: record.manufactureDate });
                         // Validate numeric fields to prevent NaN
                         if (parsedRecord.bags && isNaN(parsedRecord.bags)) {
                             throw new Error("Invalid number format for bags");
@@ -561,7 +559,7 @@ function uploadCatalogsCsv(req, res) {
                                 saleCode: data.saleCode,
                                 askingPrice: data.askingPrice,
                                 producerCountry: data.producerCountry,
-                                manufactureDate: new Date(data.manufactureDate.replace(/\//g, "-")), // Convert YYYY/MM/DD to YYYY-MM-DD
+                                manufactureDate: new Date(data.manufactureDate),
                                 category: data.category,
                                 grade: data.grade,
                             },
@@ -647,11 +645,6 @@ const exportCatalogsCsv = (req, res) => __awaiter(void 0, void 0, void 0, functi
             return;
         }
         const _a = params.data, { page = 1, limit = 10000, catalogIds } = _a, filterParams = __rest(_a, ["page", "limit", "catalogIds"]);
-        const maxRecords = 10000;
-        if (limit > maxRecords) {
-            res.status(400).json({ message: `Export limit cannot exceed ${maxRecords} records` });
-            return;
-        }
         let where = {};
         if (catalogIds) {
             const ids = [...new Set(catalogIds.split(",").map((id) => parseInt(id.trim())))].filter((id) => !isNaN(id));
@@ -700,16 +693,16 @@ const exportCatalogsCsv = (req, res) => __awaiter(void 0, void 0, void 0, functi
                 { id: "producerCountry", title: "Producer Country" },
                 { id: "askingPrice", title: "Asking Price" },
                 { id: "invoiceNo", title: "Invoice Number" },
-                { id: "manufactureDate", title: "Manufacture Date" },
+                { id: "manufactureDate", title: "Manufacture day/month/year" },
                 { id: "reprint", title: "Reprint" },
             ],
         });
         const csvContent = csvStringifier.getHeaderString() +
             csvStringifier.stringifyRecords(catalogs.map((catalog) => (Object.assign(Object.assign({}, catalog), { manufactureDate: new Date(catalog.manufactureDate).toLocaleDateString("en-US", {
-                    month: "numeric",
-                    day: "numeric",
+                    day: "2-digit",
+                    month: "2-digit",
                     year: "numeric",
-                }), totalWeight: Number(catalog.totalWeight), netWeight: Number(catalog.netWeight), askingPrice: Number(catalog.askingPrice) }))));
+                }).split("/").join("/"), totalWeight: Number(catalog.totalWeight), netWeight: Number(catalog.netWeight), askingPrice: Number(catalog.askingPrice) }))));
         res.setHeader("Content-Type", "text/csv; charset=utf-8");
         res.setHeader("Content-Disposition", `attachment; filename="tea_catalog_${new Date().toISOString().split("T")[0]}.csv"`);
         res.status(200).send(csvContent);

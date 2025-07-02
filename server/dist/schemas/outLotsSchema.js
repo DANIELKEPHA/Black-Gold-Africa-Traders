@@ -5,23 +5,30 @@ const zod_1 = require("zod");
 const client_1 = require("@prisma/client");
 const teaGradeValues = Object.values(client_1.TeaGrade);
 const brokerValues = Object.values(client_1.Broker);
-// Custom validator for YYYY/MM/DD format (accepts single-digit month/day)
+// Custom validator for date formats (DD/MM/YYYY or YYYY/MM/DD)
 const dateFormat = zod_1.z
     .string()
-    .regex(/^\d{4}\/(0?[1-9]|1[0-2])\/(0?[1-9]|[12]\d|3[01])$/, "Invalid date format (YYYY/MM/DD)")
+    .regex(/^(?:\d{4}\/(0?[1-9]|1[0-2])\/(0?[1-9]|[12]\d|3[01])|(0?[1-9]|[12]\d|3[01])\/(0?[1-9]|1[0-2])\/\d{4})$/, 'Invalid date format (expected YYYY/MM/DD or DD/MM/YYYY)')
     .transform((val) => {
-    // Split the date and ensure leading zeros for month and day
-    const [year, month, day] = val.split("/").map(Number);
-    const formattedDate = `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+    let year, month, day;
+    if (val.match(/^\d{4}\/\d{2}\/\d{2}$/)) {
+        // YYYY/MM/DD
+        [year, month, day] = val.split('/').map(Number);
+    }
+    else {
+        // DD/MM/YYYY
+        [day, month, year] = val.split('/').map(Number);
+    }
+    const formattedDate = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
     console.log(`[Schema] Transforming date: ${val} to ${formattedDate}`);
     // Validate the date is valid
     const date = new Date(formattedDate);
     if (isNaN(date.getTime())) {
         console.error(`[Schema] Invalid date: ${formattedDate}`);
-        throw new Error("Invalid date");
+        throw new Error('Invalid date');
     }
-    // Return in YYYY/MM/DD format for consistency
-    return `${year}/${String(month).padStart(2, "0")}/${String(day).padStart(2, "0")}`;
+    // Return in YYYY-MM-DD format for consistency
+    return formattedDate;
 });
 exports.createOutLotSchema = zod_1.z.object({
     auction: zod_1.z.string().min(1, "Auction is required"),

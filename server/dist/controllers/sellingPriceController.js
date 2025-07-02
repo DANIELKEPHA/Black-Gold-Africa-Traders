@@ -495,7 +495,7 @@ function uploadSellingPricesCsv(req, res) {
                                 normalizedRecord[mappedKey] = value;
                             }
                         }
-                        const parsed = sellingPricesSchema_1.csvRecordSchema.safeParse(Object.assign(Object.assign({}, normalizedRecord), { bags: normalizedRecord.bags ? parseInt(normalizedRecord.bags, 10) : undefined, totalWeight: normalizedRecord.totalWeight ? parseFloat(normalizedRecord.totalWeight) : undefined, netWeight: normalizedRecord.netWeight ? parseFloat(normalizedRecord.netWeight) : undefined, askingPrice: normalizedRecord.askingPrice ? parseFloat(normalizedRecord.askingPrice) : undefined, purchasePrice: normalizedRecord.purchasePrice ? parseFloat(normalizedRecord.purchasePrice) : undefined, reprint: normalizedRecord.reprint ? parseInt(normalizedRecord.reprint, 10) : 0, saleCode: normalizedRecord.saleCode, adminCognitoId: authenticatedUser.userId }));
+                        const parsed = sellingPricesSchema_1.csvRecordSchema.safeParse(Object.assign(Object.assign({}, normalizedRecord), { bags: normalizedRecord.bags ? parseInt(normalizedRecord.bags, 10) : undefined, totalWeight: normalizedRecord.totalWeight ? parseFloat(normalizedRecord.totalWeight) : undefined, netWeight: normalizedRecord.netWeight ? parseFloat(normalizedRecord.netWeight) : undefined, askingPrice: normalizedRecord.askingPrice ? parseFloat(normalizedRecord.askingPrice) : undefined, purchasePrice: normalizedRecord.purchasePrice ? parseFloat(normalizedRecord.purchasePrice) : undefined, reprint: normalizedRecord.reprint ? (normalizedRecord.reprint.toLowerCase() === 'true' ? 1 : normalizedRecord.reprint.toLowerCase() === 'false' ? 0 : parseInt(normalizedRecord.reprint, 10)) : 0, saleCode: normalizedRecord.saleCode, adminCognitoId: authenticatedUser.userId }));
                         if (!parsed.success) {
                             throw new Error(parsed.error.errors.map((err) => err.message).join(', '));
                         }
@@ -608,12 +608,7 @@ const exportSellingPricesCsv = (req, res) => __awaiter(void 0, void 0, void 0, f
             });
             return;
         }
-        const _a = params.data, { page = 1, limit = 1000, sellingPriceIds } = _a, filterParams = __rest(_a, ["page", "limit", "sellingPriceIds"]);
-        const maxRecords = 10000;
-        if (limit > maxRecords) {
-            res.status(400).json({ message: `Export limit cannot exceed ${maxRecords} records` });
-            return;
-        }
+        const _a = params.data, { page = 1, limit = Number.MAX_SAFE_INTEGER, sellingPriceIds } = _a, filterParams = __rest(_a, ["page", "limit", "sellingPriceIds"]);
         let where = {};
         if (sellingPriceIds) {
             const ids = [...new Set(sellingPriceIds.split(',').map(id => parseInt(id.trim())))]
@@ -627,7 +622,9 @@ const exportSellingPricesCsv = (req, res) => __awaiter(void 0, void 0, void 0, f
         else if (Object.keys(filterParams).length > 0) {
             where = buildWhereConditions(filterParams);
         }
-        const sellingPrices = yield prisma.sellingPrice.findMany(Object.assign({ where, select: {
+        const sellingPrices = yield prisma.sellingPrice.findMany({
+            where,
+            select: {
                 saleCode: true,
                 lotNo: true,
                 category: true,
@@ -643,7 +640,8 @@ const exportSellingPricesCsv = (req, res) => __awaiter(void 0, void 0, void 0, f
                 invoiceNo: true,
                 manufactureDate: true,
                 reprint: true,
-            } }, (sellingPriceIds ? {} : { skip: (page - 1) * limit, take: limit })));
+            },
+        });
         if (!sellingPrices.length) {
             res.status(404).json({
                 message: 'No selling prices found for the provided filters or IDs',
@@ -670,11 +668,11 @@ const exportSellingPricesCsv = (req, res) => __awaiter(void 0, void 0, void 0, f
             ],
         });
         const csvContent = csvStringifier.getHeaderString() +
-            csvStringifier.stringifyRecords(sellingPrices.map(s => (Object.assign(Object.assign({}, s), { manufactureDate: new Date(s.manufactureDate).toLocaleDateString('en-US', {
+            csvStringifier.stringifyRecords(sellingPrices.map(s => (Object.assign(Object.assign({}, s), { manufactureDate: new Date(s.manufactureDate).toLocaleDateString('en-GB', {
                     year: 'numeric',
-                    month: 'numeric',
-                    day: 'numeric',
-                }), totalWeight: Number(s.totalWeight), netWeight: Number(s.netWeight), askingPrice: Number(s.askingPrice), purchasePrice: Number(s.purchasePrice) }))));
+                    month: '2-digit',
+                    day: '2-digit',
+                }).split('/').join('/'), totalWeight: Number(s.totalWeight), netWeight: Number(s.netWeight), askingPrice: Number(s.askingPrice), purchasePrice: Number(s.purchasePrice) }))));
         res.setHeader('Content-Type', 'text/csv; charset=utf-8');
         res.setHeader('Content-Disposition', `attachment; filename="selling_prices_${new Date().toISOString().split('T')[0]}.csv"`);
         res.status(200).send(csvContent);

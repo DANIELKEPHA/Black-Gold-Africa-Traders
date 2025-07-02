@@ -63,7 +63,7 @@ const serializeOutLot = (outLot) => {
     });
 };
 exports.serializeOutLot = serializeOutLot;
-// Build Where Conditions for OutLots
+// Build Where Conditions for SellingPrice
 const buildWhereConditions = (params) => {
     const conditions = {};
     const filterMap = {
@@ -218,7 +218,7 @@ function getOutLots(req, res) {
         }
     });
 }
-// Get filter options for OutLots
+// Get filter options for SellingPrice
 const getOutLotsFilterOptions = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m;
     try {
@@ -379,7 +379,7 @@ const getOutLotById = (req, res) => __awaiter(void 0, void 0, void 0, function* 
     }
 });
 exports.getOutLotById = getOutLotById;
-// Delete multiple OutLots
+// Delete multiple SellingPrice
 const deleteOutLots = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const authenticatedUser = (0, controllerUtils_1.authenticateUser)(req, res);
@@ -590,7 +590,7 @@ function uploadOutLotsCsv(req, res) {
         }
     });
 }
-// Export OutLots as CSV
+// Export SellingPrice as CSV
 const exportOutLotsCsv = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         // Handle parameters from either query (GET) or body (POST)
