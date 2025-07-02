@@ -4,7 +4,6 @@ import {
     useUploadSellingPricesCsvMutation,
     useCreateSellingPriceMutation,
     useDeleteSellingPricesMutation,
-    useUpdateSellingPriceMutation, // Assuming this mutation exists or needs to be added
 } from "@/state/api";
 import { SellingPriceFormData} from "@/lib/schemas";
 import { SellingPriceResponse } from "@/state";
@@ -12,7 +11,6 @@ import { SellingPriceResponse } from "@/state";
 export const useSellingPriceActions = () => {
     const [uploadSellingPricesCsv] = useUploadSellingPricesCsvMutation();
     const [createSellingPrice] = useCreateSellingPriceMutation();
-    const [updateSellingPrice] = useUpdateSellingPriceMutation(); // Add this mutation
     const [deleteSellingPrices] = useDeleteSellingPricesMutation();
     const { data: authUser } = useGetAuthUserQuery();
 
@@ -70,29 +68,6 @@ export const useSellingPriceActions = () => {
             const errorMessage = error?.data?.message || "Failed to upload CSV";
             toast.error(errorMessage);
             return error;
-        }
-    };
-
-    const handleUpdateSellingPrice = async (id: number, data: Partial<SellingPriceFormData>) => {
-        if (!isAdmin) {
-            toast.error("Unauthorized", {
-                description: "Only admins can update selling prices.",
-            });
-            return false;
-        }
-
-        try {
-            console.log(`Updating selling price ID ${id}:`, data);
-            const response = await updateSellingPrice({ id, ...data }).unwrap();
-            console.log("Selling price updated:", response);
-            toast.success("Selling price updated successfully");
-            return true;
-        } catch (error: any) {
-            console.error("Failed to update selling price:", error);
-            console.error("Error details:", JSON.stringify(error, null, 2));
-            const errorMessage = error?.data?.message || "Failed to update selling price";
-            toast.error(errorMessage);
-            return false;
         }
     };
 
@@ -217,7 +192,6 @@ export const useSellingPriceActions = () => {
     return {
         handleCreateSellingPrice,
         handleUploadSellingPriceFromCsv,
-        handleUpdateSellingPrice,
         handleDeleteSellingPrice,
         handleBulkDelete,
         handleExportCsv,
