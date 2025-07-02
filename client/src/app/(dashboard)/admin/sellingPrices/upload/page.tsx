@@ -189,6 +189,7 @@ const SellingPricesUpload: React.FC = () => {
             );
             console.log(`[${time}] First valid data row parsed:`, rowData);
 
+            // Validate required fields
             if (!rowData["Broker"]) {
                 newErrors.push(
                     t("catalog:errors.missingBroker", {
@@ -263,6 +264,7 @@ const SellingPricesUpload: React.FC = () => {
                 );
             }
 
+            // Validate numeric fields
             const numericFields = [
                 { key: "RP", label: "RP" },
                 { key: "Bags", label: "Bags" },
@@ -281,13 +283,41 @@ const SellingPricesUpload: React.FC = () => {
                 }
             }
 
-            if (!/^\d{4}\/\d{2}\/\d{2}$/.test(rowData["Manufactured Date"])) {
+            // Validate date format (YYYY/MM/DD or DD/MM/YYYY) and ensure it's a valid date
+            const dateRegex = /^(?:\d{4}\/(0?[1-9]|1[0-2])\/(0?[1-9]|[12]\d|3[01])|(0?[1-9]|[12]\d|3[01])\/(0?[1-9]|1[0-2])\/\d{4})$/;
+            if (!rowData["Manufactured Date"]) {
+                newErrors.push(
+                    t("catalog:errors.missingDate", {
+                        defaultValue: "Manufactured Date is required in first row",
+                    })
+                );
+            } else if (!dateRegex.test(rowData["Manufactured Date"])) {
                 newErrors.push(
                     t("catalog:errors.invalidDate", {
                         defaultValue:
-                            "Invalid Manufactured Date format in first row (expected YYYY/MM/DD)",
+                            "Invalid Manufactured Date format in first row (expected YYYY/MM/DD or DD/MM/YYYY)",
                     })
                 );
+            } else {
+                // Validate that the date is actually valid
+                let year: number, month: number, day: number;
+                const dateStr = rowData["Manufactured Date"];
+                if (dateStr.match(/^\d{4}\/\d{2}\/\d{2}$/)) {
+                    // YYYY/MM/DD
+                    [year, month, day] = dateStr.split('/').map(Number);
+                } else {
+                    // DD/MM/YYYY
+                    [day, month, year] = dateStr.split('/').map(Number);
+                }
+                const formattedDate = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                const date = new Date(formattedDate);
+                if (isNaN(date.getTime()) || date.getFullYear() !== year || date.getMonth() + 1 !== month || date.getDate() !== day) {
+                    newErrors.push(
+                        t("catalog:errors.invalidDateValue", {
+                            defaultValue: "Manufactured Date in first row is not a valid date",
+                        })
+                    );
+                }
             }
 
             if (newErrors.length > 0) {

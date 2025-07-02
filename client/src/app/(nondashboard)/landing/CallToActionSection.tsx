@@ -40,13 +40,11 @@ const CallToActionSection = () => {
                 >
                   Browse Teas
                 </Link>
-                <Link
-                    href="/contact"
+                <div
                     className="inline-block text-white bg-secondary-500 rounded-lg px-6 py-3 font-semibold hover:bg-secondary-600"
-                    scroll={false}
                 >
                   Get in Touch
-                </Link>
+                </div>
               </div>
             </div>
           </div>
