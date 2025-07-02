@@ -169,7 +169,7 @@ const SellingPricesGrid: React.FC<SellingPricesGridProps> = ({
                 ))
             ) : (
                 <div className="col-span-full text-center py-4 text-gray-500 dark:text-gray-400">
-                    {t("catalog:noCatalogs", { defaultValue: "No selling prices found" })}
+                    {t("catalog:noSellingPrices", { defaultValue: "No selling prices found" })}
                 </div>
             )}
         </div>

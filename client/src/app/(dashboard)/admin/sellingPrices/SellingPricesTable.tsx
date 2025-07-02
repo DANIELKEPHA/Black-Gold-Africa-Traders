@@ -18,7 +18,7 @@ const SellingPricesTable: React.FC<SellingPricesTableProps> = ({
                                                                    selectedItems,
                                                                    handleSelectItem,
                                                                }) => {
-    const { t } = useTranslation(["catalog", "general"]);
+    const { t } = useTranslation(["catalog", "general", "sellingPrices"]);
     const { data: authUser } = useGetAuthUserQuery();
 
     const handleSelectAll = () => {
@@ -122,7 +122,7 @@ const SellingPricesTable: React.FC<SellingPricesTableProps> = ({
                 ) : (
                     <TableRow>
                         <TableCell colSpan={16} className="text-center py-4 text-gray-500 dark:text-gray-400">
-                            {t("catalog:noCatalogs", { defaultValue: "No selling prices found" })}
+                            {t("catalog:noSellingPrices", { defaultValue: "No selling prices found" })}
                         </TableCell>
                     </TableRow>
                 )}

@@ -122,6 +122,7 @@ const SellingPricesUpload: React.FC = () => {
                 newErrors.push(
                     t("catalog:errors.missingHeaders", {
                         defaultValue: `Missing required CSV headers: ${missingHeaders.join(", ")}`,
+                        headers: missingHeaders.join(", "),
                     })
                 );
                 console.error(`[${time}] CSV validation failed: Missing headers`, {
@@ -131,200 +132,196 @@ const SellingPricesUpload: React.FC = () => {
                 return false;
             }
 
-            let firstRow: string[] | undefined;
-            let rowIndex = 1;
-            console.log(`[${time}] Searching for first valid data row`);
-            while (rowIndex < lines.length && !firstRow) {
+            const dateRegex = /^(?:\d{4}\/(0?[1-9]|1[0-2])\/(0?[1-9]|[12]\d|3[01])|(0?[1-9]|[12]\d|3[01])\/(0?[1-9]|1[0-2])\/\d{4}|([1-9]|1[0-2])\/([1-9]|[12]\d|3[01])\/\d{4})$/;
+
+            for (let rowIndex = 1; rowIndex < lines.length; rowIndex++) {
                 const row = lines[rowIndex].split(",").map((v) => v.trim());
-                console.log(`[${time}] Row ${rowIndex}:`, { rawRow: row });
+                if (row.length < headers.length || !row.some((v) => v)) {
+                    console.log(`[${time}] Skipping row ${rowIndex}: Insufficient or empty values`);
+                    continue; // Skip empty or incomplete rows
+                }
 
-                if (row.length >= headers.length && row.some((v) => v)) {
-                    firstRow = row;
-                    console.log(
-                        `[${time}] Found first valid data row at index ${rowIndex}:`,
-                        firstRow
+                const rowData: Record<string, string> = headers.reduce(
+                    (acc, h, i) => ({ ...acc, [h]: row[i] || "" }),
+                    {}
+                );
+                console.log(`[${time}] Row ${rowIndex} data:`, rowData);
+
+                // Validate required fields
+                if (!rowData["Broker"]) {
+                    newErrors.push(
+                        t("catalog:errors.missingBroker", {
+                            defaultValue: `Row ${rowIndex + 1}: Broker is required`,
+                            row: rowIndex + 1,
+                        })
                     );
-                } else {
-                    console.log(
-                        `[${time}] Skipping row ${rowIndex}: Insufficient or empty values`
+                } else if (!validBrokers.includes(rowData["Broker"])) {
+                    newErrors.push(
+                        t("catalog:errors.invalidBroker", {
+                            defaultValue: `Row ${rowIndex + 1}: Invalid Broker: must be one of ${validBrokers.join(", ")}`,
+                            row: rowIndex + 1,
+                            validBrokers: validBrokers.join(", "),
+                        })
                     );
                 }
-                rowIndex++;
-            }
+                if (!rowData["Lot No"]) {
+                    newErrors.push(
+                        t("catalog:errors.missingLotNo", {
+                            defaultValue: `Row ${rowIndex + 1}: Lot No is required`,
+                            row: rowIndex + 1,
+                        })
+                    );
+                }
+                if (!rowData["Selling Mark"]) {
+                    newErrors.push(
+                        t("catalog:errors.missingSellingMark", {
+                            defaultValue: `Row ${rowIndex + 1}: Selling Mark is required`,
+                            row: rowIndex + 1,
+                        })
+                    );
+                }
+                if (!rowData["Grade"]) {
+                    newErrors.push(
+                        t("catalog:errors.missingGrade", {
+                            defaultValue: `Row ${rowIndex + 1}: Grade is required`,
+                            row: rowIndex + 1,
+                        })
+                    );
+                } else if (!validGrades.includes(rowData["Grade"])) {
+                    newErrors.push(
+                        t("catalog:errors.invalidGrade", {
+                            defaultValue: `Row ${rowIndex + 1}: Invalid Grade: must be one of ${validGrades.join(", ")}`,
+                            row: rowIndex + 1,
+                            validGrades: validGrades.join(", "),
+                        })
+                    );
+                }
+                if (!rowData["Invoice No"]) {
+                    newErrors.push(
+                        t("catalog:errors.missingInvoiceNo", {
+                            defaultValue: `Row ${rowIndex + 1}: Invoice No is required`,
+                            row: rowIndex + 1,
+                        })
+                    );
+                }
+                if (!rowData["Sale Code"]) {
+                    newErrors.push(
+                        t("catalog:errors.missingSaleCode", {
+                            defaultValue: `Row ${rowIndex + 1}: Sale Code is required`,
+                            row: rowIndex + 1,
+                        })
+                    );
+                }
+                if (!rowData["Category"]) {
+                    newErrors.push(
+                        t("catalog:errors.missingCategory", {
+                            defaultValue: `Row ${rowIndex + 1}: Category is required`,
+                            row: rowIndex + 1,
+                        })
+                    );
+                } else if (!validCategories.includes(rowData["Category"])) {
+                    newErrors.push(
+                        t("catalog:errors.invalidCategory", {
+                            defaultValue: `Row ${rowIndex + 1}: Invalid Category: must be one of ${validCategories.join(", ")}`,
+                            row: rowIndex + 1,
+                            validCategories: validCategories.join(", "),
+                        })
+                    );
+                }
 
-            if (!firstRow) {
-                newErrors.push(
-                    t("catalog:errors.noValidData", {
-                        defaultValue: "No valid data rows found in CSV",
-                    })
-                );
-                console.error(`[${time}] CSV validation failed: No valid data rows found`, {
-                    lines,
-                });
-                setErrors(newErrors);
-                return false;
-            }
-
-            if (firstRow.length < headers.length) {
-                newErrors.push(
-                    t("catalog:errors.invalidRow", {
-                        defaultValue: "First data row does not match header count",
-                    })
-                );
-                console.error(
-                    `[${time}] CSV validation failed: First data row length mismatch`,
-                    {
-                        rowLength: firstRow.length,
-                        headerLength: headers.length,
-                        firstRow,
+                // Validate numeric fields
+                const numericFields = [
+                    { key: "RP", label: "RP" },
+                    { key: "Bags", label: "Bags" },
+                    { key: "Net Weight", label: "Net Weight" },
+                    { key: "Total Weight", label: "Total Weight" },
+                    { key: "Asking Price", label: "Asking Price" },
+                    { key: "Purchase Price", label: "Purchase Price" },
+                ];
+                for (const { key, label } of numericFields) {
+                    if (!rowData[key] || isNaN(Number(rowData[key])) || Number(rowData[key]) <= 0) {
+                        newErrors.push(
+                            t("catalog:errors.invalidNumber", {
+                                defaultValue: `Row ${rowIndex + 1}: Invalid or negative ${label}`,
+                                row: rowIndex + 1,
+                                label,
+                            })
+                        );
                     }
-                );
-                setErrors(newErrors);
-                return false;
-            }
-
-            const rowData: Record<string, string> = headers.reduce(
-                (acc, h, i) => ({ ...acc, [h]: firstRow![i] || "" }),
-                {}
-            );
-            console.log(`[${time}] First valid data row parsed:`, rowData);
-
-            // Validate required fields
-            if (!rowData["Broker"]) {
-                newErrors.push(
-                    t("catalog:errors.missingBroker", {
-                        defaultValue: "Broker is required in first row",
-                    })
-                );
-            } else if (!validBrokers.includes(rowData["Broker"])) {
-                newErrors.push(
-                    t("catalog:errors.invalidBroker", {
-                        defaultValue: `Invalid Broker in first row: must be one of ${validBrokers.join(
-                            ", "
-                        )}`,
-                    })
-                );
-            }
-            if (!rowData["Lot No"]) {
-                newErrors.push(
-                    t("catalog:errors.missingLotNo", {
-                        defaultValue: "Lot No is required in first row",
-                    })
-                );
-            }
-            if (!rowData["Selling Mark"]) {
-                newErrors.push(
-                    t("catalog:errors.missingSellingMark", {
-                        defaultValue: "Selling Mark is required in first row",
-                    })
-                );
-            }
-            if (!rowData["Grade"]) {
-                newErrors.push(
-                    t("catalog:errors.missingGrade", {
-                        defaultValue: "Grade is required in first row",
-                    })
-                );
-            } else if (!validGrades.includes(rowData["Grade"])) {
-                newErrors.push(
-                    t("catalog:errors.invalidGrade", {
-                        defaultValue: `Invalid Grade in first row: must be one of ${validGrades.join(
-                            ", "
-                        )}`,
-                    })
-                );
-            }
-            if (!rowData["Invoice No"]) {
-                newErrors.push(
-                    t("catalog:errors.missingInvoiceNo", {
-                        defaultValue: "Invoice No is required in first row",
-                    })
-                );
-            }
-            if (!rowData["Sale Code"]) {
-                newErrors.push(
-                    t("catalog:errors.missingSaleCode", {
-                        defaultValue: "Sale Code is required in first row",
-                    })
-                );
-            }
-            if (!rowData["Category"]) {
-                newErrors.push(
-                    t("catalog:errors.missingCategory", {
-                        defaultValue: "Category is required in first row",
-                    })
-                );
-            } else if (!validCategories.includes(rowData["Category"])) {
-                newErrors.push(
-                    t("catalog:errors.invalidCategory", {
-                        defaultValue: `Invalid Category in first row: must be one of ${validCategories.join(
-                            ", "
-                        )}`,
-                    })
-                );
-            }
-
-            // Validate numeric fields
-            const numericFields = [
-                { key: "RP", label: "RP" },
-                { key: "Bags", label: "Bags" },
-                { key: "Net Weight", label: "Net Weight" },
-                { key: "Total Weight", label: "Total Weight" },
-                { key: "Asking Price", label: "Asking Price" },
-                { key: "Purchase Price", label: "Purchase Price" },
-            ];
-            for (const { key, label } of numericFields) {
-                if (!rowData[key] || isNaN(Number(rowData[key])) || Number(rowData[key]) <= 0) {
-                    newErrors.push(
-                        t("catalog:errors.invalidNumber", {
-                            defaultValue: `Invalid or negative ${label} in first row`,
-                        })
-                    );
                 }
-            }
 
-            // Validate date format (YYYY/MM/DD or DD/MM/YYYY) and ensure it's a valid date
-            const dateRegex = /^(?:\d{4}\/(0?[1-9]|1[0-2])\/(0?[1-9]|[12]\d|3[01])|(0?[1-9]|[12]\d|3[01])\/(0?[1-9]|1[0-2])\/\d{4})$/;
-            if (!rowData["Manufactured Date"]) {
-                newErrors.push(
-                    t("catalog:errors.missingDate", {
-                        defaultValue: "Manufactured Date is required in first row",
-                    })
-                );
-            } else if (!dateRegex.test(rowData["Manufactured Date"])) {
-                newErrors.push(
-                    t("catalog:errors.invalidDate", {
-                        defaultValue:
-                            "Invalid Manufactured Date format in first row (expected YYYY/MM/DD or DD/MM/YYYY)",
-                    })
-                );
-            } else {
-                // Validate that the date is actually valid
-                let year: number, month: number, day: number;
+                // Validate date format
                 const dateStr = rowData["Manufactured Date"];
-                if (dateStr.match(/^\d{4}\/\d{2}\/\d{2}$/)) {
-                    // YYYY/MM/DD
-                    [year, month, day] = dateStr.split('/').map(Number);
-                } else {
-                    // DD/MM/YYYY
-                    [day, month, year] = dateStr.split('/').map(Number);
-                }
-                const formattedDate = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-                const date = new Date(formattedDate);
-                if (isNaN(date.getTime()) || date.getFullYear() !== year || date.getMonth() + 1 !== month || date.getDate() !== day) {
+                if (!dateStr) {
                     newErrors.push(
-                        t("catalog:errors.invalidDateValue", {
-                            defaultValue: "Manufactured Date in first row is not a valid date",
+                        t("catalog:errors.missingDate", {
+                            defaultValue: `Row ${rowIndex + 1}: Manufactured Date is required`,
+                            row: rowIndex + 1,
                         })
                     );
+                    console.error(`[${time}] CSV validation failed: Missing Manufactured Date`, {
+                        rowData,
+                        rowIndex,
+                    });
+                } else if (!dateRegex.test(dateStr)) {
+                    newErrors.push(
+                        t("catalog:errors.invalidDate", {
+                            defaultValue: `Row ${rowIndex + 1}: Invalid Manufactured Date format (expected YYYY/MM/DD, DD/MM/YYYY, or M/D/YYYY, got '${dateStr}')`,
+                            row: rowIndex + 1,
+                            value: dateStr,
+                        })
+                    );
+                    console.error(`[${time}] CSV validation failed: Invalid date format`, {
+                        manufacturedDate: dateStr,
+                        rowData,
+                        rowIndex,
+                    });
+                } else {
+                    // Validate that the date is actually valid
+                    let year: number, month: number, day: number;
+                    if (dateStr.match(/^\d{4}\/\d{2}\/\d{2}$/)) {
+                        // YYYY/MM/DD
+                        [year, month, day] = dateStr.split('/').map(Number);
+                    } else if (dateStr.match(/^([1-9]|[12]\d|3[01])\/([1-9]|1[0-2])\/\d{4}$/)) {
+                        // DD/MM/YYYY
+                        [day, month, year] = dateStr.split('/').map(Number);
+                    } else {
+                        // M/D/YYYY
+                        [month, day, year] = dateStr.split('/').map(Number);
+                    }
+                    const formattedDate = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                    const date = new Date(formattedDate);
+                    if (isNaN(date.getTime()) || date.getFullYear() !== year || date.getMonth() + 1 !== month || date.getDate() !== day) {
+                        newErrors.push(
+                            t("catalog:errors.invalidDateValue", {
+                                defaultValue: `Row ${rowIndex + 1}: Manufactured Date is not a valid date (got '${dateStr}')`,
+                                row: rowIndex + 1,
+                                value: dateStr,
+                            })
+                        );
+                        console.error(`[${time}] CSV validation failed: Invalid date value`, {
+                            manufacturedDate: dateStr,
+                            formattedDate,
+                            rowData,
+                            rowIndex,
+                        });
+                    }
+                }
+
+                // Stop after collecting a reasonable number of errors
+                if (newErrors.length >= 10) {
+                    newErrors.push(
+                        t("catalog:errors.tooManyErrors", {
+                            defaultValue: "Too many errors detected, please fix the CSV and try again",
+                        })
+                    );
+                    break;
                 }
             }
 
             if (newErrors.length > 0) {
                 console.error(`[${time}] CSV validation failed:`, {
                     errors: newErrors,
-                    rowData,
-                    rowIndex: rowIndex - 1,
                 });
                 setErrors(newErrors);
                 return false;
@@ -443,6 +440,11 @@ const SellingPricesUpload: React.FC = () => {
                             className="mt-1 bg-gray-100 dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-100 rounded-sm"
                             disabled={isUploading || !isAdmin}
                         />
+                        <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                            {t("catalog:dateFormatNote", {
+                                defaultValue: "Manufactured Date must be in YYYY/MM/DD, DD/MM/YYYY, or M/D/YYYY format.",
+                            })}
+                        </p>
                         <a
                             href="/sample_selling_prices.csv"
                             download

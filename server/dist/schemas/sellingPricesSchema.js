@@ -7,19 +7,22 @@ const shipmentSchemas_1 = require("./shipmentSchemas");
 const teaCategoryValues = Object.values(client_1.TeaCategory);
 const teaGradeValues = Object.values(client_1.TeaGrade);
 const brokerValues = Object.values(client_1.Broker);
-// Custom validator for date formats (DD/MM/YYYY or YYYY/MM/DD)
 const dateFormat = zod_1.z
     .string()
-    .regex(/^(?:\d{4}\/(0?[1-9]|1[0-2])\/(0?[1-9]|[12]\d|3[01])|(0?[1-9]|[12]\d|3[01])\/(0?[1-9]|1[0-2])\/\d{4})$/, 'Invalid date format (expected YYYY/MM/DD or DD/MM/YYYY)')
+    .regex(/^(?:\d{4}\/(0?[1-9]|1[0-2])\/(0?[1-9]|[12]\d|3[01])|(0?[1-9]|[12]\d|3[01])\/(0?[1-9]|1[0-2])\/\d{4}|([1-9]|1[0-2])\/([1-9]|[12]\d|3[01])\/\d{4})$/, 'Invalid date format (expected YYYY/MM/DD, DD/MM/YYYY, or M/D/YYYY)')
     .transform((val) => {
     let year, month, day;
     if (val.match(/^\d{4}\/\d{2}\/\d{2}$/)) {
         // YYYY/MM/DD
         [year, month, day] = val.split('/').map(Number);
     }
-    else {
+    else if (val.match(/^([1-9]|[12]\d|3[01])\/([1-9]|1[0-2])\/\d{4}$/)) {
         // DD/MM/YYYY
         [day, month, year] = val.split('/').map(Number);
+    }
+    else {
+        // M/D/YYYY
+        [month, day, year] = val.split('/').map(Number);
     }
     const formattedDate = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
     console.log(`[Schema] Transforming date: ${val} to ${formattedDate}`);
