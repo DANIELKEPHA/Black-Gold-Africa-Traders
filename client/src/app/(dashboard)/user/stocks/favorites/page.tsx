@@ -24,7 +24,7 @@ const FavoritePage: React.FC = () => {
     const userCognitoId: string | undefined = authData?.cognitoInfo?.userId;
     const [selectedItems, setSelectedItems] = useState<number[]>([]);
     const [page, setPage] = useState(1);
-    const limit = 20;
+    const limit = 100;
     const { handleExportCsv } = useStockActions();
     const [toggleFavorite, { isLoading: isTogglingFavorite }] = useToggleFavoriteMutation();
 
@@ -43,34 +43,37 @@ const FavoritePage: React.FC = () => {
     );
 
     // Map stocks to StockData format for compatibility with Stocks components
-    const favoriteStocks: StockData[] =
-        stockResponse?.data.map((stock: Stock) => ({
-            id: stock.id,
-            saleCode: stock.saleCode,
-            broker: stock.broker as Broker,
-            lotNo: stock.lotNo,
-            mark: stock.mark,
-            grade: stock.grade,
-            invoiceNo: stock.invoiceNo,
-            bags: stock.bags,
-            weight: stock.assignedWeight ?? stock.weight,
-            purchaseValue: stock.purchaseValue,
-            totalPurchaseValue: stock.totalPurchaseValue,
-            agingDays: stock.agingDays,
-            penalty: stock.penalty,
-            bgtCommission: stock.bgtCommission,
-            maerskFee: stock.maerskFee,
-            commission: stock.commission,
-            netPrice: stock.netPrice,
-            total: stock.total,
-            batchNumber: stock.batchNumber || null,
-            lowStockThreshold: stock.lowStockThreshold,
-            isLowStock: stock.lowStockThreshold != null && (stock.assignedWeight ?? stock.weight) < stock.lowStockThreshold,
-            adminCognitoId: stock.adminCognitoId || '',
-            createdAt: stock.createdAt,
-            updatedAt: stock.updatedAt,
-            isFavorited: true, // All stocks here are favorited due to onlyFavorites: true
-        })) || [];
+    const favoriteStocks: StockData[] = React.useMemo(
+        () =>
+            stockResponse?.data.map((stock: Stock) => ({
+                id: stock.id,
+                saleCode: stock.saleCode,
+                broker: stock.broker as Broker,
+                lotNo: stock.lotNo,
+                mark: stock.mark,
+                grade: stock.grade,
+                invoiceNo: stock.invoiceNo,
+                bags: stock.bags,
+                weight: stock.assignedWeight ?? stock.weight,
+                purchaseValue: stock.purchaseValue,
+                totalPurchaseValue: stock.totalPurchaseValue,
+                agingDays: stock.agingDays,
+                penalty: stock.penalty,
+                bgtCommission: stock.bgtCommission,
+                maerskFee: stock.maerskFee,
+                commission: stock.commission,
+                netPrice: stock.netPrice,
+                total: stock.total,
+                batchNumber: stock.batchNumber || null,
+                lowStockThreshold: stock.lowStockThreshold,
+                isLowStock: stock.lowStockThreshold != null && (stock.assignedWeight ?? stock.weight) < stock.lowStockThreshold,
+                adminCognitoId: stock.adminCognitoId || '',
+                createdAt: stock.createdAt,
+                updatedAt: stock.updatedAt,
+                isFavorited: true, // All stocks here are favorited due to onlyFavorites: true
+            })) || [],
+        [stockResponse?.data]
+    );
 
     const totalPages = stockResponse?.meta.totalPages || 1;
 
@@ -94,18 +97,6 @@ const FavoritePage: React.FC = () => {
             setSelectedItems(favoriteStocks.map((item) => item.id));
         }
     }, [favoriteStocks, selectedItems.length]);
-
-    const handleUploadCsv = async (file: File, duplicateAction: 'skip' | 'replace') => {
-        toast.error(t('stocks:errors.uploadNotImplemented', { defaultValue: 'CSV upload not implemented' }));
-    };
-
-    const handleAdjustStock = async (stockId: number, weight: number, reason: string) => {
-        toast.error(t('stocks:errors.adjustNotImplemented', { defaultValue: 'Stock adjustment not implemented' }));
-    };
-
-    const handleAssignStock = async (stockId: number, userCognitoId: string, assignedWeight: number) => {
-        toast.error(t('stocks:errors.assignNotImplemented', { defaultValue: 'Stock assignment not implemented' }));
-    };
 
     const handleFavoriteToggle = async (stockId: number, isFavorited: boolean) => {
         if (!userCognitoId) {

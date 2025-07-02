@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslation } from "react-i18next";
 import { Toaster, toast } from "sonner";
@@ -59,7 +59,9 @@ const OutLots: React.FC = () => {
 
     const [deleteOutLots] = useDeleteOutlotsMutation();
 
-    const outLotsData = outLotsDataResponse?.data || [];
+    // Memoize outLotsData to ensure stable reference
+    const outLotsData = useMemo(() => outLotsDataResponse?.data || [], [outLotsDataResponse]);
+
     const { totalPages = 1, total = 0 } = outLotsDataResponse?.meta || {};
 
     const handleSelectItem = useCallback((itemId: number) => {

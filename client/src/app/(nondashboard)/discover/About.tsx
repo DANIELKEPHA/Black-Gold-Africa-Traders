@@ -8,7 +8,7 @@ const AboutPage = () => {
             <section className="relative min-h-[400px] flex items-center justify-center overflow-hidden">
                 <div className="absolute inset-0 z-0">
                     <Image
-                        src="/tea-field.jpg"
+                        src="/landing-splash.webp"
                         alt="Tea Field"
                         fill
                         className="object-cover"

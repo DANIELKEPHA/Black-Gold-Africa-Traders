@@ -2,11 +2,10 @@
 
 import Loading from "@/components/Loading";
 import { useGetAuthUserQuery, useGetSellingPricesQuery } from "@/state/api";
-import React, { Dispatch, SetStateAction, useEffect, useState } from "react";
+import React, {Dispatch, SetStateAction, useMemo, useState} from "react"; // Replace useEffect with useMemo
 import { toast, Toaster } from "sonner";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
-import { SellingPriceResponse } from "@/state";
 import { useAppSelector } from "@/state/redux";
 import SellingPricesActions from "@/app/(dashboard)/user/sellingPrices/SellingPricesActions";
 import SellingPricesTable from "@/app/(dashboard)/user/sellingPrices/SellingPricesTable";
@@ -28,7 +27,6 @@ const SellingPrices: React.FC<SellingPricesProps> = ({ selectedItems, setSelecte
     const viewMode = useAppSelector((state) => state.global.viewMode);
     const filters = useAppSelector((state) => state.global.filters);
     const [page, setPage] = useState(1);
-    const [sellingPricesData, setSellingPricesData] = useState<SellingPriceResponse[]>([]);
     const limit = 20;
 
     console.log(`[${new Date().toLocaleString("en-US", { timeZone: "Africa/Nairobi" })}] Filters in SellingPrices:`, filters);
@@ -49,16 +47,10 @@ const SellingPrices: React.FC<SellingPricesProps> = ({ selectedItems, setSelecte
         { skip: !authUser?.cognitoInfo?.userId, refetchOnMountOrArgChange: true }
     );
 
-    useEffect(() => {
-        console.log(`[${new Date().toLocaleString("en-US", { timeZone: "Africa/Nairobi" })}] Query params:`, {
-            ...filters,
-            page,
-            limit,
-            userCognitoId: authUser?.cognitoInfo?.userId,
-        });
-        console.log(`[${new Date().toLocaleString("en-US", { timeZone: "Africa/Nairobi" })}] SellingPrices API response:`, sellingPricesDataResponse);
-        if (sellingPricesDataResponse?.data) {
-            const mappedData: SellingPriceResponse[] = sellingPricesDataResponse.data.map((item) => ({
+    // Memoize sellingPricesData to avoid useEffect
+    const sellingPricesData = useMemo(
+        () =>
+            sellingPricesDataResponse?.data.map((item) => ({
                 ...item,
                 saleCode: item.saleCode || "",
                 netWeight: item.netWeight || 0,
@@ -78,10 +70,9 @@ const SellingPrices: React.FC<SellingPricesProps> = ({ selectedItems, setSelecte
                 sellingMark: item.sellingMark || "",
                 adminCognitoId: item.adminCognitoId || "",
                 manufactureDate: item.manufactureDate || "",
-            }));
-            setSellingPricesData(mappedData);
-        }
-    }, [sellingPricesDataResponse, authUser]);
+            })) || [],
+        [sellingPricesDataResponse]
+    );
 
     const { totalPages = 1 } = sellingPricesDataResponse?.meta || {};
 
@@ -152,8 +143,8 @@ const SellingPrices: React.FC<SellingPricesProps> = ({ selectedItems, setSelecte
                         {t("pagination.previous")}
                     </Button>
                     <span className="text-sm text-gray-600 dark:text-gray-300">
-            {t("pagination.page", { page, totalPages })}
-          </span>
+                        {t("pagination.page", { page, totalPages })}
+                    </span>
                     <Button
                         disabled={page === totalPages}
                         onClick={() => setPage((prev) => prev + 1)}

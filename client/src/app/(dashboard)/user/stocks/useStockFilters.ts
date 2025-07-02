@@ -55,23 +55,26 @@ export const useStockFilters = () => {
     const isFilterOptionsLoading = false;
 
     const updateURL = useCallback(
-        debounce((newFilters: FiltersState) => {
-            const cleanFilters = cleanParams({
-                ...newFilters,
-                saleCode: newFilters.saleCode === 'any' ? undefined : newFilters.saleCode,
-                grade: newFilters.grade === 'any' ? undefined : newFilters.grade,
-                broker: newFilters.broker === 'any' ? undefined : newFilters.broker,
-                manufactureDate: newFilters.manufactureDate === '' ? undefined : newFilters.manufactureDate,
-            });
-            const updatedSearchParams = new URLSearchParams();
-            Object.entries(cleanFilters).forEach(([key, value]) => {
-                if (value !== undefined) {
-                    updatedSearchParams.set(key, value.toString());
-                }
-            });
-            router.push(`${pathname}?${updatedSearchParams.toString()}`);
-        }, 300),
-        [pathname, router],
+        (newFilters: FiltersState) => {
+            const debouncedUpdate = debounce((filters: FiltersState) => {
+                const cleanFilters = cleanParams({
+                    ...filters,
+                    saleCode: filters.saleCode === 'any' ? undefined : filters.saleCode,
+                    grade: filters.grade === 'any' ? undefined : filters.grade,
+                    broker: filters.broker === 'any' ? undefined : filters.broker,
+                    manufactureDate: filters.manufactureDate === '' ? undefined : filters.manufactureDate,
+                });
+                const updatedSearchParams = new URLSearchParams();
+                Object.entries(cleanFilters).forEach(([key, value]) => {
+                    if (value !== undefined) {
+                        updatedSearchParams.set(key, value.toString());
+                    }
+                });
+                router.push(`${pathname}?${updatedSearchParams.toString()}`);
+            }, 300);
+            debouncedUpdate(newFilters);
+        },
+        [pathname, router]
     );
 
     const validateFilter = (key: keyof FiltersState, value: any): string | undefined => {

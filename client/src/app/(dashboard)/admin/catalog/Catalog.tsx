@@ -1,6 +1,4 @@
-"use client";
-
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useMemo } from "react"; // Add useMemo import
 import { useRouter } from "next/navigation";
 import { useTranslation } from "react-i18next";
 import { Toaster, toast } from "sonner";
@@ -39,7 +37,9 @@ const Catalog: React.FC = () => {
 
     const [deleteCatalogs] = useDeleteCatalogsMutation();
 
-    const catalogData = catalogDataResponse?.data || [];
+    // Memoize catalogData to ensure stable reference
+    const catalogData = useMemo(() => catalogDataResponse?.data || [], [catalogDataResponse]);
+
     const { totalPages = 1, total = 0 } = catalogDataResponse?.meta || {};
 
     const handleSelectItem = useCallback((itemId: number) => {
@@ -174,7 +174,7 @@ const Catalog: React.FC = () => {
                         {t("general:pagination.page", { page, totalPages })}
                     </span>
                     <Button
-                        disabled={page === totalPages || isLoading}
+                        disabled={ page === totalPages || isLoading }
                         onClick={() => setPage((prev) => prev + 1)}
                         className="rounded-lg bg-indigo-600 text-white hover:bg-indigo-700"
                     >

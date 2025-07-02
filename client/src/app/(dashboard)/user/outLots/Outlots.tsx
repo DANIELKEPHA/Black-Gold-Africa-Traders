@@ -17,7 +17,13 @@ interface OutlotsProps { selectedItems: number[]; setSelectedItems: Dispatch<Set
 interface ApiError { data?: { message?: string }; status?: number; }
 
 const Outlots: React.FC<OutlotsProps> = ({ selectedItems, setSelectedItems }) => {
-const { t } = useTranslation("catalog"); const { data: authUser, isLoading: authLoading, error: authError } = useGetAuthUserQuery(); const viewMode = useAppSelector((state) => state.global.viewMode); const filters = useAppSelector((state) => state.global.filters); const [page, setPage] = useState(1); const [outlotData, setOutlotData] = useState<OutlotResponse[]>([]); const limit = 100;
+    const { t } = useTranslation("catalog");
+    const { data: authUser, isLoading: authLoading, error: authError } = useGetAuthUserQuery();
+    const viewMode = useAppSelector((state) => state.global.viewMode);
+    const filters = useAppSelector((state) => state.global.filters);
+    const [page, setPage] = useState(1);
+    const [outlotData, setOutlotData] = useState<OutlotResponse[]>([]);
+    const limit = 100;
 
     console.log(`[${new Date().toLocaleString('en-US', { timeZone: 'Africa/Nairobi' })}] Filters in Outlots:`, filters);
 
@@ -66,7 +72,7 @@ const { t } = useTranslation("catalog"); const { data: authUser, isLoading: auth
             }));
             setOutlotData(mappedData);
         }
-    }, [outlotDataResponse, authUser]);
+    }, [outlotDataResponse, authUser, filters, page]);
 
     const { totalPages = 1 } = outlotDataResponse?.meta || {};
 
@@ -110,7 +116,6 @@ const { t } = useTranslation("catalog"); const { data: authUser, isLoading: auth
     return (
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4">
             <Toaster richColors position="top-right" />
-
             <OutlotsActions
                 outlotData={outlotData}
                 selectedItems={selectedItems}
@@ -139,8 +144,8 @@ const { t } = useTranslation("catalog"); const { data: authUser, isLoading: auth
                         {t("general:pagination.previous", { defaultValue: "Previous" })}
                     </Button>
                     <span className="text-gray-700 dark:text-gray-200">
-                        {t("general:pagination.page", { page, totalPages })}
-                    </span>
+            {t("general:pagination.page", { page, totalPages })}
+          </span>
                     <Button
                         disabled={page === totalPages || isLoading}
                         onClick={() => setPage((prev) => prev + 1)}
@@ -152,7 +157,9 @@ const { t } = useTranslation("catalog"); const { data: authUser, isLoading: auth
             )}
         </div>
     );
-
 };
 
 export default Outlots;
+
+
+

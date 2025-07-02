@@ -38,24 +38,27 @@ export const useCatalogFilters = () => {
     const isFilterOptionsLoading = false;
 
     const updateURL = useCallback(
-        debounce((newFilters: FiltersState) => {
-            const cleanFilters = cleanParams({
-                ...newFilters,
-                saleCode: newFilters.saleCode === "any" ? undefined : newFilters.saleCode,
-                category: newFilters.category === "any" ? undefined : newFilters.category,
-                grade: newFilters.grade === "any" ? undefined : newFilters.grade,
-                broker: newFilters.broker === "any" ? undefined : newFilters.broker,
-                producerCountry: newFilters.producerCountry === "any" ? undefined : newFilters.producerCountry,
-                manufactureDate: newFilters.manufactureDate === "" ? undefined : newFilters.manufactureDate,
-            });
-            const updatedSearchParams = new URLSearchParams();
-            Object.entries(cleanFilters).forEach(([key, value]) => {
-                if (value !== undefined) {
-                    updatedSearchParams.set(key, value.toString());
-                }
-            });
-            router.push(`${pathname}?${updatedSearchParams.toString()}`);
-        }, 300),
+        (newFilters: FiltersState) => {
+            const debouncedUpdate = debounce((filters: FiltersState) => {
+                const cleanFilters = cleanParams({
+                    ...filters,
+                    saleCode: filters.saleCode === "any" ? undefined : filters.saleCode,
+                    category: filters.category === "any" ? undefined : filters.category,
+                    grade: filters.grade === "any" ? undefined : filters.grade,
+                    broker: filters.broker === "any" ? undefined : filters.broker,
+                    producerCountry: filters.producerCountry === "any" ? undefined : filters.producerCountry,
+                    manufactureDate: filters.manufactureDate === "" ? undefined : filters.manufactureDate,
+                });
+                const updatedSearchParams = new URLSearchParams();
+                Object.entries(cleanFilters).forEach(([key, value]) => {
+                    if (value !== undefined) {
+                        updatedSearchParams.set(key, value.toString());
+                    }
+                });
+                router.push(`${pathname}?${updatedSearchParams.toString()}`);
+            }, 300);
+            debouncedUpdate(newFilters);
+        },
         [pathname, router]
     );
 

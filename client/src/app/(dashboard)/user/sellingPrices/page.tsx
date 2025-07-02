@@ -74,7 +74,7 @@ const UserSellingPricesPage = () => {
         );
 
         dispatch(setFilters(cleanParams(initialFilters as Partial<FiltersState>)));
-    }, [searchParams, dispatch]);
+    }, [searchParams, dispatch, isNumberKey, isStringKey]); // Add isNumberKey and isStringKey to dependencies
 
     const toggleViewMode = () => {
         dispatch(setViewMode(viewMode === "list" ? "grid" : "list"));

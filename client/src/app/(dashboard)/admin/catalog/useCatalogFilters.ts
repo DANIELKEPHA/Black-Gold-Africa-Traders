@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useMemo } from "react"; // Add useMemo import
 import { useDispatch, useSelector } from "react-redux";
 import { useRouter, usePathname } from "next/navigation";
 import { debounce } from "lodash";
@@ -37,26 +37,35 @@ export const useCatalogFilters = () => {
     };
     const isFilterOptionsLoading = false;
 
+    // Memoize the debounced function to ensure it's created only once
+    const debouncedUpdateURL = useMemo(
+        () =>
+            debounce((newFilters: FiltersState, currentPathname: string, router: ReturnType<typeof useRouter>) => {
+                const cleanFilters = cleanParams({
+                    ...newFilters,
+                    saleCode: newFilters.saleCode === "any" ? undefined : newFilters.saleCode,
+                    category: newFilters.category === "any" ? undefined : newFilters.category,
+                    grade: newFilters.grade === "any" ? undefined : newFilters.grade,
+                    broker: newFilters.broker === "any" ? undefined : newFilters.broker,
+                    producerCountry: newFilters.producerCountry === "any" ? undefined : newFilters.producerCountry,
+                    manufactureDate: newFilters.manufactureDate === "" ? undefined : newFilters.manufactureDate,
+                });
+                const updatedSearchParams = new URLSearchParams();
+                Object.entries(cleanFilters).forEach(([key, value]) => {
+                    if (value !== undefined) {
+                        updatedSearchParams.set(key, value.toString());
+                    }
+                });
+                router.push(`${currentPathname}?${updatedSearchParams.toString()}`);
+            }, 300),
+        [] // Empty dependency array since cleanParams is a pure utility function
+    );
+
     const updateURL = useCallback(
-        debounce((newFilters: FiltersState) => {
-            const cleanFilters = cleanParams({
-                ...newFilters,
-                saleCode: newFilters.saleCode === "any" ? undefined : newFilters.saleCode,
-                category: newFilters.category === "any" ? undefined : newFilters.category,
-                grade: newFilters.grade === "any" ? undefined : newFilters.grade,
-                broker: newFilters.broker === "any" ? undefined : newFilters.broker,
-                producerCountry: newFilters.producerCountry === "any" ? undefined : newFilters.producerCountry,
-                manufactureDate: newFilters.manufactureDate === "" ? undefined : newFilters.manufactureDate,
-            });
-            const updatedSearchParams = new URLSearchParams();
-            Object.entries(cleanFilters).forEach(([key, value]) => {
-                if (value !== undefined) {
-                    updatedSearchParams.set(key, value.toString());
-                }
-            });
-            router.push(`${pathname}?${updatedSearchParams.toString()}`);
-        }, 300),
-        [pathname, router]
+        (newFilters: FiltersState) => {
+            debouncedUpdateURL(newFilters, pathname, router);
+        },
+        [debouncedUpdateURL, pathname, router]
     );
 
     const validateFilter = (key: keyof FiltersState, value: any): string | undefined => {

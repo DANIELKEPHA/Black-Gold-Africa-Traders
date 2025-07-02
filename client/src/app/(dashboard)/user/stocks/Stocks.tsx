@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useMemo } from 'react'; // Add useMemo import
 import { useTranslation } from 'react-i18next';
 import { toast, Toaster } from 'sonner';
 import { useGetAuthUserQuery, useGetStocksQuery } from '@/state/api';
@@ -18,11 +18,11 @@ const Stocks: React.FC = () => {
     const viewMode = useAppSelector((state) => state.global.viewMode);
     const { data: authData, isError: authError, isLoading: isAuthLoading } = useGetAuthUserQuery();
     const userCognitoId: string | undefined = authData?.cognitoInfo?.userId;
-    const [selectedItems, setSelectedItems ] = useState<number[]>([]);
-    const [page, setPage ] = useState(1);
-    const [isCreatingFavorite, setIsCreatingFavorite ] = useState(false);
-    const [isDeletingFavorite, setIsDeletingFavorite ] = useState(false);
-    const limit = 20;
+    const [selectedItems, setSelectedItems] = useState<number[]>([]);
+    const [page, setPage] = useState(1);
+    const [isCreatingFavorite, setIsCreatingFavorite] = useState(false);
+    const [isDeletingFavorite, setIsDeletingFavorite] = useState(false);
+    const limit = 100;
 
     const { data: stockResponse, isLoading, error } = useGetStocksQuery(
         {
@@ -37,41 +37,45 @@ const Stocks: React.FC = () => {
         { skip: !userCognitoId },
     );
 
-    const stocksData: StockData[] =
-        stockResponse?.data.map((stock: Stock) => ({
-            id: stock.id,
-            saleCode: stock.saleCode,
-            broker: stock.broker,
-            lotNo: stock.lotNo,
-            mark: stock.mark,
-            grade: stock.grade,
-            invoiceNo: stock.invoiceNo,
-            bags: stock.bags,
-            weight: stock.assignedWeight ?? stock.weight,
-            purchaseValue: stock.purchaseValue,
-            totalPurchaseValue: stock.totalPurchaseValue,
-            agingDays: stock.agingDays,
-            penalty: stock.penalty,
-            bgtCommission: stock.bgtCommission,
-            maerskFee: stock.maerskFee,
-            commission: stock.commission,
-            netPrice: stock.netPrice,
-            total: stock.total,
-            batchNumber: stock.batchNumber || null,
-            lowStockThreshold: stock.lowStockThreshold,
-            isLowStock: stock.lowStockThreshold != null && (stock.assignedWeight ?? stock.weight) < stock.lowStockThreshold,
-            adminCognitoId: stock.adminCognitoId || '',
-            createdAt: stock.createdAt,
-            updatedAt: stock.updatedAt,
-            isFavorited: false, // Default value
-        })) || [];
+    // Memoize stocksData to ensure stable reference
+    const stocksData: StockData[] = useMemo(
+        () =>
+            stockResponse?.data.map((stock: Stock) => ({
+                id: stock.id,
+                saleCode: stock.saleCode,
+                broker: stock.broker,
+                lotNo: stock.lotNo,
+                mark: stock.mark,
+                grade: stock.grade,
+                invoiceNo: stock.invoiceNo,
+                bags: stock.bags,
+                weight: stock.assignedWeight ?? stock.weight,
+                purchaseValue: stock.purchaseValue,
+                totalPurchaseValue: stock.totalPurchaseValue,
+                agingDays: stock.agingDays,
+                penalty: stock.penalty,
+                bgtCommission: stock.bgtCommission,
+                maerskFee: stock.maerskFee,
+                commission: stock.commission,
+                netPrice: stock.netPrice,
+                total: stock.total,
+                batchNumber: stock.batchNumber || null,
+                lowStockThreshold: stock.lowStockThreshold,
+                isLowStock: stock.lowStockThreshold != null && (stock.assignedWeight ?? stock.weight) < stock.lowStockThreshold,
+                adminCognitoId: stock.adminCognitoId || '',
+                createdAt: stock.createdAt,
+                updatedAt: stock.updatedAt,
+                isFavorited: false, // Default value
+            })) || [],
+        [stockResponse]
+    );
 
     const totalPages = stockResponse?.meta.totalPages || 1;
 
     const handleSelectItem = useCallback(
         (itemId: number) => {
             setSelectedItems((prev) =>
-                prev.includes(itemId) ? prev.filter((id) => id !== id) : [...prev, itemId],
+                prev.includes(itemId) ? prev.filter((id) => id !== itemId) : [...prev, itemId],
             );
         },
         [],
@@ -190,8 +194,8 @@ const Stocks: React.FC = () => {
                         {t('general:pagination:previous', { defaultValue: 'Previous' })}
                     </Button>
                     <span className="text-gray-700 dark:text-gray-200">
-            {t('general:pagination:page', { defaultValue: 'Page {page} of {totalPages}', page, totalPages })}
-          </span>
+                        {t('general:pagination:page', { defaultValue: 'Page {page} of {totalPages}', page, totalPages })}
+                    </span>
                     <Button
                         disabled={page >= totalPages || isLoading}
                         onClick={() => setPage((prev) => prev + 1)}

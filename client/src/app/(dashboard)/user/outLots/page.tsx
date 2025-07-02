@@ -1,12 +1,40 @@
 "use client";
 
-import { NAVBAR_HEIGHT } from "@/lib/constants"; import {useRouter, useSearchParams} from "next/navigation"; import React, { useEffect, useState } from "react"; import { cleanParams } from "@/lib/utils"; import { FiltersState, setFilters, setViewMode, toggleFiltersFullOpen } from "@/state"; import Outlots from "@/app/(dashboard)/user/outLots/Outlots";
-import {toast} from "sonner";
-import {useTranslation} from "react-i18next";
-import {useAppDispatch, useAppSelector} from "@/state/redux";
-import {useGetAuthUserQuery} from "@/state/api";
+import { NAVBAR_HEIGHT } from "@/lib/constants";
+import { useRouter, useSearchParams } from "next/navigation";
+import React, { useEffect, useState } from "react";
+import { cleanParams } from "@/lib/utils";
+import { FiltersState, setFilters, setViewMode } from "@/state";
+import Outlots from "@/app/(dashboard)/user/outLots/Outlots";
+import { toast } from "sonner";
+import { useTranslation } from "react-i18next";
+import { useAppDispatch, useAppSelector } from "@/state/redux";
+import { useGetAuthUserQuery } from "@/state/api";
 import Loading from "@/components/Loading";
 import FiltersBar from "@/app/(dashboard)/user/outLots/FiltersBar";
+
+// Define filter keys and type guards outside the component for stability
+const numberKeys = ["bags", "netWeight", "totalWeight", "askingPrice", "reprint", "baselinePrice"] as const;
+const stringKeys = [
+    "lotNo",
+    "sellingMark",
+    "country",
+    "producerCountry",
+    "manufactureDate",
+    "invoiceNo",
+    "saleCode",
+    "search",
+    "category",
+    "grade",
+    "broker",
+    "auction",
+] as const;
+
+type NumberKey = typeof numberKeys[number];
+type StringKey = typeof stringKeys[number];
+
+const isNumberKey = (key: string): key is NumberKey => numberKeys.includes(key as NumberKey);
+const isStringKey = (key: string): key is StringKey => stringKeys.includes(key as StringKey);
 
 const UserOutlotsPage = () => {
     const { t } = useTranslation("catalog");
@@ -28,28 +56,6 @@ const UserOutlotsPage = () => {
             router.replace("/login");
         }
     }, [authUser, authLoading, authError, router, t]);
-
-    const numberKeys = ["bags", "netWeight", "totalWeight", "askingPrice", "reprint", "baselinePrice"] as const;
-    const stringKeys = [
-        "lotNo",
-        "sellingMark",
-        "country",
-        "producerCountry",
-        "manufactureDate",
-        "invoiceNo",
-        "saleCode",
-        "search",
-        "category",
-        "grade",
-        "broker",
-        "auction",
-    ] as const;
-
-    type NumberKey = typeof numberKeys[number];
-    type StringKey = typeof stringKeys[number];
-
-    const isNumberKey = (key: string): key is NumberKey => numberKeys.includes(key as NumberKey);
-    const isStringKey = (key: string): key is StringKey => stringKeys.includes(key as StringKey);
 
     useEffect(() => {
         const initialFilters = Array.from(searchParams.entries()).reduce(
@@ -85,17 +91,11 @@ const UserOutlotsPage = () => {
             <div className="w-full bg-white dark:bg-gray-800 rounded-lg shadow-sm z-10 mb-4">
                 <FiltersBar />
             </div>
-            {/*{isFiltersFullOpen && (*/}
-            {/*    <div className="w-full bg-white dark:bg-gray-800 rounded-lg shadow-sm z-10 mb-4">*/}
-            {/*        <FiltersFull />*/}
-            {/*    </div>*/}
-            {/*)}*/}
             <div className="flex-1 overflow-x-auto">
                 <Outlots selectedItems={selectedItems} setSelectedItems={setSelectedItems} />
             </div>
         </div>
     );
-
 };
 
 export default UserOutlotsPage;

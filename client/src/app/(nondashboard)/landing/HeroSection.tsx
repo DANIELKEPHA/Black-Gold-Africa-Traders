@@ -15,7 +15,7 @@ const HeroSection = () => {
   return (
     <div className="relative h-screen">
       <Image
-        src="/landing-splash.jpg"
+        src="/landing-splash.webp"
         alt="BlackGold Hero Section"
         fill
         className="object-cover object-center"

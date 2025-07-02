@@ -50,7 +50,7 @@ const Products = () => {
             {/* Hero Section */}
             <section className="relative min-h-[400px] flex items-center justify-center overflow-hidden">
                 <Image
-                    src="/tea-field.jpg"
+                    src="/landing-splash.webp"
                     alt="Tea Field"
                     fill
                     className="absolute inset-0 w-full h-full object-cover z-0"
