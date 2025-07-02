@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslation } from "react-i18next";
 import { Toaster, toast } from "sonner";
@@ -48,39 +48,33 @@ const SellingPrice: React.FC = () => {
 
     const [deleteSellingPrices] = useDeleteSellingPricesMutation();
 
-    const sellingPricesData = sellingPricesDataResponse?.data || [];
+    // Memoize sellingPricesData to stabilize its reference
+    const sellingPricesData = useMemo(
+        () => sellingPricesDataResponse?.data || [],
+        [sellingPricesDataResponse?.data]
+    );
     const { totalPages = 1, total = 0 } = sellingPricesDataResponse?.meta || {};
 
-    const handleSelectItem = useCallback((itemId: number) => {
-        setSelectedItems((prev) =>
-            prev.includes(itemId) ? prev.filter((id) => id !== itemId) : [...prev, itemId]
-        );
-    }, []);
+    const handleSelectItem = useCallback(
+        (itemId: number) => {
+            setSelectedItems((prev) =>
+                prev.includes(itemId) ? prev.filter((id) => id !== itemId) : [...prev, itemId]
+            );
+        },
+        []
+    );
 
-    const handleSelectAll = useCallback(async () => {
+    const handleSelectAll = useCallback(() => {
         if (!sellingPricesData || sellingPricesData.length === 0) {
             setSelectedItems([]);
             return;
         }
-        if (selectedItems.length === total) {
+        if (selectedItems.length === sellingPricesData.length) {
             setSelectedItems([]);
         } else {
-            // Fetch all item IDs
-            const allItems = [];
-            let currentPage = 1;
-            while (allItems.length < total) {
-                const { data: pageData } = await useGetSellingPricesQuery({
-                    ...filters,
-                    page: currentPage,
-                    limit: 1000, // Use a large limit to fetch more items per request
-                }).unwrap();
-                allItems.push(...pageData.data.map(item => item.id));
-                currentPage++;
-                if (!pageData.meta || pageData.meta.page >= pageData.meta.totalPages) break;
-            }
-            setSelectedItems(allItems);
+            setSelectedItems(sellingPricesData.map((item) => item.id));
         }
-    }, [sellingPricesData, selectedItems.length, total, filters]);
+    }, [sellingPricesData, selectedItems.length]);
 
     const handleBulkDelete = async () => {
         if (selectedItems.length === 0) {
@@ -163,8 +157,8 @@ const SellingPrice: React.FC = () => {
                         {t("general:pagination.previous", { defaultValue: "Previous" })}
                     </Button>
                     <span className="text-gray-700 dark:text-gray-200">
-                        {t("general:pagination.page", { page, totalPages })}
-                    </span>
+            {t("general:pagination.page", { page, totalPages })}
+          </span>
                     <Button
                         disabled={page === totalPages || isLoading}
                         onClick={() => setPage((prev) => prev + 1)}
