@@ -372,7 +372,7 @@ const OutLotsUpload: React.FC = () => {
             <div className="max-w-md mx-auto bg-white dark:bg-gray-800 rounded-sm shadow-xl p-8">
                 <h2 className="text-2xl font-bold text-blue-700 dark:text-blue-200 mb-6">
                     {t("catalog:uploadOutLots", {
-                        defaultValue: "Upload OutLots CSV",
+                        defaultValue: "Upload SellingPrice CSV",
                     })}
                 </h2>
                 <div className="space-y-4">

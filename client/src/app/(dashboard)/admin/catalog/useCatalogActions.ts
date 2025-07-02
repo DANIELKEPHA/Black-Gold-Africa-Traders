@@ -15,7 +15,7 @@ export const useCatalogActions = () => {
 
     const handleCreateCatalog = async (data: CatalogFormData) => {
         toast.error("Feature disabled", {
-            description: "OutLots creation functionality is currently disabled.",
+            description: "SellingPrice creation functionality is currently disabled.",
         });
         return null;
     };
@@ -42,14 +42,14 @@ export const useCatalogActions = () => {
 
     const handleUpdateCatalog = async (id: number, data: CatalogFormData) => {
         toast.error("Feature disabled", {
-            description: "OutLots update functionality is currently disabled.",
+            description: "SellingPrice update functionality is currently disabled.",
         });
         return false;
     };
 
     const handleDeleteCatalog = async (id: number) => {
         toast.error("Feature disabled", {
-            description: "OutLots deletion functionality is currently disabled.",
+            description: "SellingPrice deletion functionality is currently disabled.",
         });
         return null;
     };

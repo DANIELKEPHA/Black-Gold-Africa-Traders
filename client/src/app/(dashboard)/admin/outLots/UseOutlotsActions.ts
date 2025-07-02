@@ -13,7 +13,7 @@ export const useOutLotsActions = () => {
     const role = authUser?.userInfo?.data?.data?.role;
     const isAdmin = authUser?.userRole === "admin" || role === "admin";
 
-    // Disabled: OutLots creation is not implemented in this hook
+    // Disabled: SellingPrice creation is not implemented in this hook
     const handleCreateOutLot = async (data: OutlotFormData) => {
         toast.error("Feature disabled", {
             description: "OutLot creation functionality is currently disabled.",
@@ -40,7 +40,7 @@ export const useOutLotsActions = () => {
         }
     };
 
-    // Disabled: OutLots update is not implemented in this hook
+    // Disabled: SellingPrice update is not implemented in this hook
     const handleUpdateOutLot = async (id: number, data: OutlotFormData) => {
         toast.error("Feature disabled", {
             description: "OutLot update functionality is currently disabled.",
@@ -48,7 +48,7 @@ export const useOutLotsActions = () => {
         return false;
     };
 
-    // Disabled: OutLots deletion is not implemented in this hook
+    // Disabled: SellingPrice deletion is not implemented in this hook
     const handleDeleteOutLot = async (id: number) => {
         toast.error("Feature disabled", {
             description: "OutLot deletion functionality is currently disabled.",
@@ -56,7 +56,7 @@ export const useOutLotsActions = () => {
         return null;
     };
 
-    // Disabled: OutLots bulk deletion is not implemented in this hook
+    // Disabled: SellingPrice bulk deletion is not implemented in this hook
     const handleBulkDelete = async (ids: number[]) => {
         toast.error("Feature disabled", {
             description: "Bulk deletion functionality is currently disabled.",
@@ -74,7 +74,7 @@ export const useOutLotsActions = () => {
                 outLotIds: outLots.map((outLot) => outLot.id).join(","),
             }).unwrap();
             console.log("CSV export successful:", response);
-            toast.success("OutLots exported successfully");
+            toast.success("SellingPrice exported successfully");
             return true;
         } catch (error: any) {
             console.error("Failed to export CSV:", error);

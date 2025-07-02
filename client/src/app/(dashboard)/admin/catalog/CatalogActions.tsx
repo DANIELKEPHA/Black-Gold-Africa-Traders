@@ -16,6 +16,7 @@ interface CatalogActionsProps {
     selectedItems: number[];
     handleSelectAll: () => void;
     handleBulkDelete: () => void;
+    isSelectAll: boolean;
 }
 
 const CatalogActions: React.FC<CatalogActionsProps> = ({
@@ -23,6 +24,7 @@ const CatalogActions: React.FC<CatalogActionsProps> = ({
                                                            selectedItems,
                                                            handleSelectAll,
                                                            handleBulkDelete,
+                                                           isSelectAll,
                                                        }) => {
     const { t } = useTranslation(["catalog", "general"]);
     const router = useRouter();
@@ -34,12 +36,12 @@ const CatalogActions: React.FC<CatalogActionsProps> = ({
 
     const handleDownload = async () => {
         try {
-            const ids = selectedItems.length > 0 ? selectedItems : catalogData.map(item => item.id);
-            if (ids.length === 0) {
+            const ids = isSelectAll ? undefined : (selectedItems.length > 0 ? selectedItems : catalogData.map(item => item.id));
+            if (!isSelectAll && ids?.length === 0) {
                 toast.error(t("catalog:errors.noItems", { defaultValue: "No catalogs available to export" }));
                 return;
             }
-            console.log(`[${new Date().toLocaleString('en-US', { timeZone: 'Africa/Nairobi' })}] Exporting catalogs with IDs:`, ids);
+            console.log(`[${new Date().toLocaleString('en-US', { timeZone: 'Africa/Nairobi' })}] Exporting catalogs${isSelectAll ? ' (all)' : ''}:`, ids || 'all');
             await exportCatalogsCsv({
                 catalogIds: ids,
             }).unwrap();
@@ -61,7 +63,7 @@ const CatalogActions: React.FC<CatalogActionsProps> = ({
                     <div className="flex items-center">
                         <Checkbox
                             id="select-all"
-                            checked={catalogData?.length > 0 && selectedItems.length === catalogData.length}
+                            checked={isSelectAll || (catalogData?.length > 0 && selectedItems.length === catalogData.length)}
                             onCheckedChange={handleSelectAll}
                             aria-label={t("catalog:actions.selectAll", { defaultValue: "Select All" })}
                             className="border-gray-300 dark:border-gray-600"
@@ -70,15 +72,12 @@ const CatalogActions: React.FC<CatalogActionsProps> = ({
                             {t("catalog:actions.selectAll")}
                         </label>
                     </div>
-                    {/*<span className="text-sm text-gray-500 dark:text-gray-400">*/}
-                    {/*    {t("catalog:labels.select")}*/}
-                    {/*</span>*/}
                 </div>
                 <div className="flex items-center space-x-2">
                     <Button
                         variant="destructive"
                         onClick={handleBulkDelete}
-                        disabled={selectedItems.length === 0}
+                        disabled={selectedItems.length === 0 && !isSelectAll}
                         className="rounded-sm bg-red-600 hover:bg-red-700 text-white"
                     >
                         {t("catalog:actions.deleteSelected", { defaultValue: "Delete Selected" })}

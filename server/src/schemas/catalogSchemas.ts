@@ -6,16 +6,22 @@ const teaCategoryValues = Object.values(TeaCategory) as [string, ...string[]];
 const teaGradeValues = Object.values(TeaGrade) as [string, ...string[]];
 const brokerValues = Object.values(Broker) as [string, ...string[]];
 
-// Custom validator for YYYY/MM/DD format (accepts single-digit month/day)
+// Custom validator for date formats (DD/MM/YYYY or YYYY/MM/DD)
 const dateFormat = z
     .string()
     .regex(
-        /^\d{4}\/(0?[1-9]|1[0-2])\/(0?[1-9]|[12]\d|3[01])$/,
-        'Invalid date format (YYYY/MM/DD)'
+        /^(?:\d{4}\/(0?[1-9]|1[0-2])\/(0?[1-9]|[12]\d|3[01])|(0?[1-9]|[12]\d|3[01])\/(0?[1-9]|1[0-2])\/\d{4})$/,
+        'Invalid date format (expected YYYY/MM/DD or DD/MM/YYYY)'
     )
     .transform((val) => {
-        // Split the date and ensure leading zeros for month and day
-        const [year, month, day] = val.split('/').map(Number);
+        let year: number, month: number, day: number;
+        if (val.match(/^\d{4}\/\d{2}\/\d{2}$/)) {
+            // YYYY/MM/DD
+            [year, month, day] = val.split('/').map(Number);
+        } else {
+            // DD/MM/YYYY
+            [day, month, year] = val.split('/').map(Number);
+        }
         const formattedDate = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
         console.log(`[Schema] Transforming date: ${val} to ${formattedDate}`);
 
@@ -26,8 +32,8 @@ const dateFormat = z
             throw new Error('Invalid date');
         }
 
-        // Return in YYYY/MM/DD format for consistency
-        return `${year}/${String(month).padStart(2, '0')}/${String(day).padStart(2, '0')}`;
+        // Return in YYYY-MM-DD format for consistency
+        return formattedDate;
     });
 
 export const querySchema = z
@@ -47,7 +53,10 @@ export const querySchema = z
         grade: z.enum([...teaGradeValues, 'any'] as const).optional(),
         broker: z.enum([...brokerValues, 'any'] as const).optional(),
         invoiceNo: z.string().min(1, 'Invoice number must not be empty').optional(),
-        reprint: z.coerce.number().int().nonnegative('Reprint must be non-negative').optional(),
+        reprint: z.union([
+            z.coerce.number().int().nonnegative('Reprint must be non-negative'),
+            z.coerce.boolean().transform(val => (val ? 1 : 0))
+        ]).optional(),
         search: z.string().min(1, 'Search term must not be empty').optional(),
         ids: z.array(z.number().int().positive('IDs must be positive integers')).optional(),
         userCognitoId: cognitoIdSchema.optional(),
@@ -59,7 +68,10 @@ export const createCatalogSchema = z.object({
     broker: z.enum(brokerValues, { message: 'Invalid broker value' }),
     sellingMark: z.string().min(1, 'Selling mark is required'),
     lotNo: z.string().min(1, 'Lot number is required'),
-    reprint: z.number().int().nonnegative('Reprint must be non-negative').default(0),
+    reprint: z.union([
+        z.number().int().nonnegative('Reprint must be non-negative').default(0),
+        z.coerce.boolean().transform(val => (val ? 1 : 0))
+    ]),
     bags: z.number().int().positive('Bags must be a positive integer'),
     netWeight: z.number().positive('Net weight must be positive'),
     totalWeight: z.number().positive('Total weight must be positive'),
@@ -77,15 +89,16 @@ export const csvRecordSchema = z.object({
     broker: z.enum(brokerValues, { message: 'Invalid broker value' }),
     sellingMark: z.string().min(1, 'Selling mark is required'),
     lotNo: z.string().min(1, 'Lot number is required'),
-    reprint: z.number().int().nonnegative('Reprint must be non-negative').default(0),
+    reprint: z.union([
+        z.coerce.number().int().nonnegative('Reprint must be non-negative').default(0),
+        z.coerce.boolean().transform(val => (val ? 1 : 0))
+    ]),
     bags: z.number().int().positive('Bags must be a positive integer'),
     netWeight: z.number().positive('Net weight must be positive'),
     totalWeight: z.number().positive('Total weight must be positive'),
     invoiceNo: z.string().min(1, 'Invoice number is required'),
     saleCode: z.string().min(1, 'Sale code is required'),
     askingPrice: z.number().positive('Asking price must be positive'),
-    // adminCognitoId: z.string().uuid('Admin Cognito ID must be a valid UUID'),
-    // userCognitoId: cognitoIdSchema.optional(),
     producerCountry: z.string().min(1, 'Producer country must not be empty').optional(),
     manufactureDate: dateFormat,
     category: z.enum(teaCategoryValues, { message: 'Invalid tea category' }),
@@ -95,7 +108,10 @@ export const csvRecordSchema = z.object({
 export const updateSchema = z.object({
     broker: z.enum(brokerValues, { message: 'Invalid broker value' }).optional(),
     sellingMark: z.string().min(1, 'Selling mark must not be empty').optional(),
-    reprint: z.number().int().nonnegative('Reprint must be non-negative').optional(),
+    reprint: z.union([
+        z.number().int().nonnegative('Reprint must be non-negative'),
+        z.coerce.boolean().transform(val => (val ? 1 : 0))
+    ]).optional(),
     bags: z.number().int().positive('Bags must be a positive integer').optional(),
     totalWeight: z.number().positive('Total weight must be positive').optional(),
     netWeight: z.number().positive('Net weight must be positive').optional(),
@@ -122,6 +138,9 @@ export const filtersStateSchema = z.object({
     bags: z.number().int().positive('Bags').optional(),
     totalWeight: z.number().positive('').optional(),
     netWeight: z.number().positive('').optional(),
-    reprint: z.number().int().nonnegative('').optional(),
+    reprint: z.union([
+        z.number().int().nonnegative(''),
+        z.coerce.boolean().transform(val => (val ? 1 : 0))
+    ]).optional(),
     search: z.string().optional(),
 }).strict();

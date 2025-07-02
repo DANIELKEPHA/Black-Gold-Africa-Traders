@@ -11,18 +11,20 @@ export interface CatalogTableProps {
     catalogData: CatalogResponse[];
     selectedItems: number[];
     handleSelectItem: (id: number) => void;
+    isSelectAll: boolean;
 }
 
 const CatalogTable: React.FC<CatalogTableProps> = ({
                                                        catalogData,
                                                        selectedItems,
                                                        handleSelectItem,
+                                                       isSelectAll,
                                                    }) => {
     const { t } = useTranslation(["catalog", "general"]);
     const { data: authUser } = useGetAuthUserQuery();
 
     const handleSelectAll = () => {
-        if (selectedItems.length === catalogData.length && catalogData.length > 0) {
+        if (isSelectAll || (selectedItems.length === catalogData.length && catalogData.length > 0)) {
             handleSelectItem(0); // Deselect all
         } else {
             catalogData.forEach((catalog) => {
@@ -39,7 +41,7 @@ const CatalogTable: React.FC<CatalogTableProps> = ({
                 <TableRow className="bg-gray-50 dark:bg-gray-800">
                     <TableHead className="w-[50px]">
                         <Checkbox
-                            checked={selectedItems.length === catalogData.length && catalogData.length > 0}
+                            checked={isSelectAll || (selectedItems.length === catalogData.length && catalogData.length > 0)}
                             onChange={handleSelectAll}
                             aria-label={t("catalog:actions.selectAll", { defaultValue: "Select all" })}
                             className="border-gray-300 dark:border-gray-600"
@@ -67,14 +69,14 @@ const CatalogTable: React.FC<CatalogTableProps> = ({
                         <TableRow
                             key={catalog.id}
                             className={`${
-                                selectedItems.includes(catalog.id)
+                                selectedItems.includes(catalog.id) || isSelectAll
                                     ? "bg-indigo-50 dark:bg-indigo-900/30"
                                     : "bg-white dark:bg-gray-900"
                             } hover:bg-gray-100 dark:hover:bg-gray-800`}
                         >
                             <TableCell onClick={(e) => e.stopPropagation()}>
                                 <Checkbox
-                                    checked={selectedItems.includes(catalog.id)}
+                                    checked={selectedItems.includes(catalog.id) || isSelectAll}
                                     onChange={() => handleSelectItem(catalog.id)}
                                     aria-label={t("catalog:actions.selectItem", {
                                         defaultValue: "Select item {{lotNo}}",
@@ -105,7 +107,11 @@ const CatalogTable: React.FC<CatalogTableProps> = ({
                             <TableCell className="text-gray-800 dark:text-gray-200">{catalog.invoiceNo ?? "N/A"}</TableCell>
                             <TableCell className="text-gray-800 dark:text-gray-200">
                                 {catalog.manufactureDate
-                                    ? new Date(catalog.manufactureDate).toISOString().slice(0, 10)
+                                    ? new Date(catalog.manufactureDate).toLocaleDateString("en-US", {
+                                        day: "2-digit",
+                                        month: "2-digit",
+                                        year: "numeric",
+                                    })
                                     : "N/A"}
                             </TableCell>
                             <TableCell className="text-gray-800 dark:text-gray-200">{catalog.reprint}</TableCell>

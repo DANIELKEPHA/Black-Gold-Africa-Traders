@@ -58,7 +58,7 @@ export const serializeOutLot = (
     admin: outLot.admin ?? null,
 });
 
-// Build Where Conditions for OutLots
+// Build Where Conditions for SellingPrice
 const buildWhereConditions = (
     params: Omit<z.infer<typeof querySchema>, 'page' | 'limit'> & { shipmentId?: number }
 ): Prisma.OutLotsWhereInput => {
@@ -208,7 +208,7 @@ export async function getOutLots(req: Request, res: Response): Promise<void> {
     }
 }
 
-// Get filter options for OutLots
+// Get filter options for SellingPrice
 export const getOutLotsFilterOptions = async (req: Request, res: Response): Promise<void> => {
     try {
         const where: Prisma.OutLotsWhereInput = {
@@ -387,7 +387,7 @@ export const getOutLotById = async (req: Request, res: Response): Promise<void> 
     }
 };
 
-// Delete multiple OutLots
+// Delete multiple SellingPrice
 export const deleteOutLots = async (req: Request, res: Response): Promise<void> => {
     try {
         const authenticatedUser = authenticateUser(req, res);
@@ -621,7 +621,7 @@ export async function uploadOutLotsCsv(req: Request, res: Response): Promise<voi
         await prisma.$disconnect();
     }
 }
-// Export OutLots as CSV
+// Export SellingPrice as CSV
 export const exportOutLotsCsv = async (req: Request, res: Response): Promise<void> => {
     try {
         // Handle parameters from either query (GET) or body (POST)

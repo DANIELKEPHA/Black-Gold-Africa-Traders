@@ -21,6 +21,7 @@ const Catalog: React.FC = () => {
     const filters = useAppSelector((state) => state.global.filters);
     const viewMode = useAppSelector((state) => state.global.viewMode);
     const [selectedItems, setSelectedItems] = useState<number[]>([]);
+    const [isSelectAll, setIsSelectAll] = useState<boolean>(false);
     const [page, setPage] = useState(1);
     const [isBulkDeleting, setIsBulkDeleting] = useState<boolean>(false);
     const [isDeleteBulkOpen, setIsDeleteBulkOpen] = useState(false);
@@ -39,31 +40,30 @@ const Catalog: React.FC = () => {
     const [deleteCatalogs] = useDeleteCatalogsMutation();
 
     const catalogData = catalogDataResponse?.data || [];
-    const { totalPages = 1 } = catalogDataResponse?.meta || {};
+    const { totalPages = 1, total = 0 } = catalogDataResponse?.meta || {};
 
     const handleSelectItem = useCallback((itemId: number) => {
         setSelectedItems((prev) =>
             prev.includes(itemId) ? prev.filter((id) => id !== itemId) : [...prev, itemId]
         );
+        setIsSelectAll(false); // Reset select all when manually selecting/deselecting
     }, []);
 
     const handleSelectAll = useCallback(() => {
-        if (!catalogData || catalogData.length === 0) {
+        if (isSelectAll || (catalogData.length > 0 && selectedItems.length === catalogData.length)) {
             setSelectedItems([]);
-            return;
-        }
-        if (selectedItems.length === catalogData.length) {
-            setSelectedItems([]);
+            setIsSelectAll(false);
         } else {
             const validIds = catalogData
                 .filter((item) => Number.isInteger(item.id) && item.id > 0)
                 .map((item) => item.id);
             setSelectedItems(validIds);
+            setIsSelectAll(true);
         }
-    }, [catalogData, selectedItems.length]);
+    }, [catalogData, isSelectAll, selectedItems.length]);
 
     const handleBulkDelete = async () => {
-        if (selectedItems.length === 0) {
+        if (selectedItems.length === 0 && !isSelectAll) {
             console.log("[Catalog] Bulk delete attempted with no items selected");
             toast.error(t("catalog:errors.noItemsSelected", { defaultValue: "No items selected" }));
             return;
@@ -73,7 +73,7 @@ const Catalog: React.FC = () => {
             toast.error(t("catalog:errors.authError", { defaultValue: "Authentication error" }));
             return;
         }
-        console.log("[Catalog] Opening bulk delete confirmation", { selectedItems });
+        console.log("[Catalog] Opening bulk delete confirmation", { selectedItems, isSelectAll });
         setIsDeleteBulkOpen(true);
     };
 
@@ -88,7 +88,7 @@ const Catalog: React.FC = () => {
             console.log("[Catalog] Deleting single catalog", { id });
             await deleteCatalogs({ ids: [id] }).unwrap();
             setSelectedItems((prev) => prev.filter((itemId) => itemId !== id));
-            toast.success(t("catalog:success.catalogDeleted", { defaultValue: "OutLots deleted" }));
+            toast.success(t("catalog:success.catalogDeleted", { defaultValue: "SellingPrice deleted" }));
         } catch (error: any) {
             console.error("[Catalog] Single delete failed", { id, error: error?.data || error });
             toast.error(
@@ -101,7 +101,7 @@ const Catalog: React.FC = () => {
     };
 
     const confirmBulkDelete = async () => {
-        if (selectedItems.length === 0) {
+        if (selectedItems.length === 0 && !isSelectAll) {
             console.log("[Catalog] Bulk delete confirmed with no items selected");
             toast.error(t("catalog:errors.noItemsSelected", { defaultValue: "No items selected" }));
             setIsDeleteBulkOpen(false);
@@ -109,12 +109,16 @@ const Catalog: React.FC = () => {
         }
         try {
             setIsBulkDeleting(true);
-            console.log("[Catalog] Executing bulk delete", { ids: selectedItems });
-            await deleteCatalogs({ ids: selectedItems }).unwrap();
+            console.log("[Catalog] Executing bulk delete", { ids: isSelectAll ? 'all' : selectedItems });
+            await deleteCatalogs({
+                ids: isSelectAll ? [] : selectedItems,
+                ...filters
+            }).unwrap();
             setSelectedItems([]);
+            setIsSelectAll(false);
             toast.success(t("catalog:success.catalogsDeleted", { defaultValue: "Catalogs deleted" }));
         } catch (error: any) {
-            console.error("[Catalog] Bulk delete failed", { ids: selectedItems, error: error?.data || error });
+            console.error("[Catalog] Bulk delete failed", { ids: isSelectAll ? 'all' : selectedItems, error: error?.data || error });
             toast.error(
                 error?.data?.message ||
                 t("catalog:errors.bulkDeleteFailed", { defaultValue: "Bulk deletion failed" })
@@ -139,12 +143,14 @@ const Catalog: React.FC = () => {
                 selectedItems={selectedItems}
                 handleSelectAll={handleSelectAll}
                 handleBulkDelete={handleBulkDelete}
+                isSelectAll={isSelectAll}
             />
             {viewMode === "list" ? (
                 <CatalogTable
                     catalogData={catalogData}
                     selectedItems={selectedItems}
                     handleSelectItem={handleSelectItem}
+                    isSelectAll={selectedItems.length === catalogData.length && catalogData.length > 0}
                 />
             ) : (
                 <CatalogGrid
@@ -186,8 +192,8 @@ const Catalog: React.FC = () => {
                     <div className="p-6 max-h-96 overflow-y-auto">
                         <p>
                             {t("catalog:confirm.bulkDelete", {
-                                count: selectedItems.length,
-                                defaultValue: `Delete ${selectedItems.length} catalog(s)?`,
+                                count: isSelectAll ? total : selectedItems.length,
+                                defaultValue: `Delete ${isSelectAll ? total : selectedItems.length} catalog(s)?`,
                             })}
                         </p>
                         <p className="mt-2 font-semibold">

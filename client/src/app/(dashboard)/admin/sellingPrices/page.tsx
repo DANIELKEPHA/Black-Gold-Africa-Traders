@@ -8,7 +8,7 @@ import { FiltersState, setFilters } from "@/state";
 import { useAppDispatch, useAppSelector } from "@/state/redux";
 import {Broker, TeaCategory, TeaGrade} from "@/state/enums";
 import FiltersBar from "@/app/(dashboard)/admin/sellingPrices/FiltersBar";
-import OutLots from "@/app/(dashboard)/admin/sellingPrices/OutLots";
+import SellingPrice from "@/app/(dashboard)/admin/sellingPrices/SellingPrice";
 
 const AdminSellingPricesPage = () => {
     const searchParams = useSearchParams();
@@ -74,7 +74,7 @@ const AdminSellingPricesPage = () => {
             </div>
             <div className="flex flex-1 gap-4 mt-4">
                 <div className="flex-1 overflow-x-auto">
-                    <OutLots />
+                    <SellingPrice />
                 </div>
             </div>
         </div>

@@ -34,7 +34,7 @@ export type Catalog = $Result.DefaultSelection<Prisma.$CatalogPayload>
  */
 export type SellingPrice = $Result.DefaultSelection<Prisma.$SellingPricePayload>
 /**
- * Model OutLots
+ * Model SellingPrice
  * 
  */
 export type OutLots = $Result.DefaultSelection<Prisma.$OutLotsPayload>
@@ -363,10 +363,10 @@ export class PrismaClient<
   get sellingPrice(): Prisma.SellingPriceDelegate<ExtArgs, ClientOptions>;
 
   /**
-   * `prisma.outLots`: Exposes CRUD operations for the **OutLots** model.
+   * `prisma.outLots`: Exposes CRUD operations for the **SellingPrice** model.
     * Example usage:
     * ```ts
-    * // Fetch zero or more OutLots
+    * // Fetch zero or more SellingPrice
     * const outLots = await prisma.outLots.findMany()
     * ```
     */
@@ -3607,11 +3607,11 @@ export namespace Prisma {
    */
   export type Admin$outLotsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     /**
-     * Select specific fields to fetch from the OutLots
+     * Select specific fields to fetch from the SellingPrice
      */
     select?: OutLotsSelect<ExtArgs> | null
     /**
-     * Omit specific fields from the OutLots
+     * Omit specific fields from the SellingPrice
      */
     omit?: OutLotsOmit<ExtArgs> | null
     /**
@@ -7668,7 +7668,7 @@ export namespace Prisma {
 
 
   /**
-   * Model OutLots
+   * Model SellingPrice
    */
 
   export type AggregateOutLots = {
@@ -7830,13 +7830,13 @@ export namespace Prisma {
 
   export type OutLotsAggregateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     /**
-     * Filter which OutLots to aggregate.
+     * Filter which SellingPrice to aggregate.
      */
     where?: OutLotsWhereInput
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
      * 
-     * Determine the order of OutLots to fetch.
+     * Determine the order of SellingPrice to fetch.
      */
     orderBy?: OutLotsOrderByWithRelationInput | OutLotsOrderByWithRelationInput[]
     /**
@@ -7848,19 +7848,19 @@ export namespace Prisma {
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
      * 
-     * Take `±n` OutLots from the position of the cursor.
+     * Take `±n` SellingPrice from the position of the cursor.
      */
     take?: number
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
      * 
-     * Skip the first `n` OutLots.
+     * Skip the first `n` SellingPrice.
      */
     skip?: number
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
      * 
-     * Count returned OutLots
+     * Count returned SellingPrice
     **/
     _count?: true | OutLotsCountAggregateInputType
     /**
@@ -8078,10 +8078,10 @@ export namespace Prisma {
   export interface OutLotsDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> {
     [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['OutLots'], meta: { name: 'OutLots' } }
     /**
-     * Find zero or one OutLots that matches the filter.
-     * @param {OutLotsFindUniqueArgs} args - Arguments to find a OutLots
+     * Find zero or one SellingPrice that matches the filter.
+     * @param {OutLotsFindUniqueArgs} args - Arguments to find a SellingPrice
      * @example
-     * // Get one OutLots
+     * // Get one SellingPrice
      * const outLots = await prisma.outLots.findUnique({
      *   where: {
      *     // ... provide filter here
@@ -8091,11 +8091,11 @@ export namespace Prisma {
     findUnique<T extends OutLotsFindUniqueArgs>(args: SelectSubset<T, OutLotsFindUniqueArgs<ExtArgs>>): Prisma__OutLotsClient<$Result.GetResult<Prisma.$OutLotsPayload<ExtArgs>, T, "findUnique", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
 
     /**
-     * Find one OutLots that matches the filter or throw an error with `error.code='P2025'`
+     * Find one SellingPrice that matches the filter or throw an error with `error.code='P2025'`
      * if no matches were found.
-     * @param {OutLotsFindUniqueOrThrowArgs} args - Arguments to find a OutLots
+     * @param {OutLotsFindUniqueOrThrowArgs} args - Arguments to find a SellingPrice
      * @example
-     * // Get one OutLots
+     * // Get one SellingPrice
      * const outLots = await prisma.outLots.findUniqueOrThrow({
      *   where: {
      *     // ... provide filter here
@@ -8105,12 +8105,12 @@ export namespace Prisma {
     findUniqueOrThrow<T extends OutLotsFindUniqueOrThrowArgs>(args: SelectSubset<T, OutLotsFindUniqueOrThrowArgs<ExtArgs>>): Prisma__OutLotsClient<$Result.GetResult<Prisma.$OutLotsPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
 
     /**
-     * Find the first OutLots that matches the filter.
+     * Find the first SellingPrice that matches the filter.
      * Note, that providing `undefined` is treated as the value not being there.
      * Read more here: https://pris.ly/d/null-undefined
-     * @param {OutLotsFindFirstArgs} args - Arguments to find a OutLots
+     * @param {OutLotsFindFirstArgs} args - Arguments to find a SellingPrice
      * @example
-     * // Get one OutLots
+     * // Get one SellingPrice
      * const outLots = await prisma.outLots.findFirst({
      *   where: {
      *     // ... provide filter here
@@ -8120,13 +8120,13 @@ export namespace Prisma {
     findFirst<T extends OutLotsFindFirstArgs>(args?: SelectSubset<T, OutLotsFindFirstArgs<ExtArgs>>): Prisma__OutLotsClient<$Result.GetResult<Prisma.$OutLotsPayload<ExtArgs>, T, "findFirst", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
 
     /**
-     * Find the first OutLots that matches the filter or
+     * Find the first SellingPrice that matches the filter or
      * throw `PrismaKnownClientError` with `P2025` code if no matches were found.
      * Note, that providing `undefined` is treated as the value not being there.
      * Read more here: https://pris.ly/d/null-undefined
-     * @param {OutLotsFindFirstOrThrowArgs} args - Arguments to find a OutLots
+     * @param {OutLotsFindFirstOrThrowArgs} args - Arguments to find a SellingPrice
      * @example
-     * // Get one OutLots
+     * // Get one SellingPrice
      * const outLots = await prisma.outLots.findFirstOrThrow({
      *   where: {
      *     // ... provide filter here
@@ -8136,15 +8136,15 @@ export namespace Prisma {
     findFirstOrThrow<T extends OutLotsFindFirstOrThrowArgs>(args?: SelectSubset<T, OutLotsFindFirstOrThrowArgs<ExtArgs>>): Prisma__OutLotsClient<$Result.GetResult<Prisma.$OutLotsPayload<ExtArgs>, T, "findFirstOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
 
     /**
-     * Find zero or more OutLots that matches the filter.
+     * Find zero or more SellingPrice that matches the filter.
      * Note, that providing `undefined` is treated as the value not being there.
      * Read more here: https://pris.ly/d/null-undefined
      * @param {OutLotsFindManyArgs} args - Arguments to filter and select certain fields only.
      * @example
-     * // Get all OutLots
+     * // Get all SellingPrice
      * const outLots = await prisma.outLots.findMany()
      * 
-     * // Get first 10 OutLots
+     * // Get first 10 SellingPrice
      * const outLots = await prisma.outLots.findMany({ take: 10 })
      * 
      * // Only select the `id`
@@ -8154,13 +8154,13 @@ export namespace Prisma {
     findMany<T extends OutLotsFindManyArgs>(args?: SelectSubset<T, OutLotsFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$OutLotsPayload<ExtArgs>, T, "findMany", GlobalOmitOptions>>
 
     /**
-     * Create a OutLots.
-     * @param {OutLotsCreateArgs} args - Arguments to create a OutLots.
+     * Create a SellingPrice.
+     * @param {OutLotsCreateArgs} args - Arguments to create a SellingPrice.
      * @example
-     * // Create one OutLots
-     * const OutLots = await prisma.outLots.create({
+     * // Create one SellingPrice
+     * const SellingPrice = await prisma.outLots.create({
      *   data: {
-     *     // ... data to create a OutLots
+     *     // ... data to create a SellingPrice
      *   }
      * })
      * 
@@ -8168,10 +8168,10 @@ export namespace Prisma {
     create<T extends OutLotsCreateArgs>(args: SelectSubset<T, OutLotsCreateArgs<ExtArgs>>): Prisma__OutLotsClient<$Result.GetResult<Prisma.$OutLotsPayload<ExtArgs>, T, "create", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
 
     /**
-     * Create many OutLots.
-     * @param {OutLotsCreateManyArgs} args - Arguments to create many OutLots.
+     * Create many SellingPrice.
+     * @param {OutLotsCreateManyArgs} args - Arguments to create many SellingPrice.
      * @example
-     * // Create many OutLots
+     * // Create many SellingPrice
      * const outLots = await prisma.outLots.createMany({
      *   data: [
      *     // ... provide data here
@@ -8182,17 +8182,17 @@ export namespace Prisma {
     createMany<T extends OutLotsCreateManyArgs>(args?: SelectSubset<T, OutLotsCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
 
     /**
-     * Create many OutLots and returns the data saved in the database.
-     * @param {OutLotsCreateManyAndReturnArgs} args - Arguments to create many OutLots.
+     * Create many SellingPrice and returns the data saved in the database.
+     * @param {OutLotsCreateManyAndReturnArgs} args - Arguments to create many SellingPrice.
      * @example
-     * // Create many OutLots
+     * // Create many SellingPrice
      * const outLots = await prisma.outLots.createManyAndReturn({
      *   data: [
      *     // ... provide data here
      *   ]
      * })
      * 
-     * // Create many OutLots and only return the `id`
+     * // Create many SellingPrice and only return the `id`
      * const outLotsWithIdOnly = await prisma.outLots.createManyAndReturn({
      *   select: { id: true },
      *   data: [
@@ -8206,13 +8206,13 @@ export namespace Prisma {
     createManyAndReturn<T extends OutLotsCreateManyAndReturnArgs>(args?: SelectSubset<T, OutLotsCreateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$OutLotsPayload<ExtArgs>, T, "createManyAndReturn", GlobalOmitOptions>>
 
     /**
-     * Delete a OutLots.
-     * @param {OutLotsDeleteArgs} args - Arguments to delete one OutLots.
+     * Delete a SellingPrice.
+     * @param {OutLotsDeleteArgs} args - Arguments to delete one SellingPrice.
      * @example
-     * // Delete one OutLots
-     * const OutLots = await prisma.outLots.delete({
+     * // Delete one SellingPrice
+     * const SellingPrice = await prisma.outLots.delete({
      *   where: {
-     *     // ... filter to delete one OutLots
+     *     // ... filter to delete one SellingPrice
      *   }
      * })
      * 
@@ -8220,10 +8220,10 @@ export namespace Prisma {
     delete<T extends OutLotsDeleteArgs>(args: SelectSubset<T, OutLotsDeleteArgs<ExtArgs>>): Prisma__OutLotsClient<$Result.GetResult<Prisma.$OutLotsPayload<ExtArgs>, T, "delete", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
 
     /**
-     * Update one OutLots.
-     * @param {OutLotsUpdateArgs} args - Arguments to update one OutLots.
+     * Update one SellingPrice.
+     * @param {OutLotsUpdateArgs} args - Arguments to update one SellingPrice.
      * @example
-     * // Update one OutLots
+     * // Update one SellingPrice
      * const outLots = await prisma.outLots.update({
      *   where: {
      *     // ... provide filter here
@@ -8237,10 +8237,10 @@ export namespace Prisma {
     update<T extends OutLotsUpdateArgs>(args: SelectSubset<T, OutLotsUpdateArgs<ExtArgs>>): Prisma__OutLotsClient<$Result.GetResult<Prisma.$OutLotsPayload<ExtArgs>, T, "update", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
 
     /**
-     * Delete zero or more OutLots.
-     * @param {OutLotsDeleteManyArgs} args - Arguments to filter OutLots to delete.
+     * Delete zero or more SellingPrice.
+     * @param {OutLotsDeleteManyArgs} args - Arguments to filter SellingPrice to delete.
      * @example
-     * // Delete a few OutLots
+     * // Delete a few SellingPrice
      * const { count } = await prisma.outLots.deleteMany({
      *   where: {
      *     // ... provide filter here
@@ -8251,12 +8251,12 @@ export namespace Prisma {
     deleteMany<T extends OutLotsDeleteManyArgs>(args?: SelectSubset<T, OutLotsDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
 
     /**
-     * Update zero or more OutLots.
+     * Update zero or more SellingPrice.
      * Note, that providing `undefined` is treated as the value not being there.
      * Read more here: https://pris.ly/d/null-undefined
      * @param {OutLotsUpdateManyArgs} args - Arguments to update one or more rows.
      * @example
-     * // Update many OutLots
+     * // Update many SellingPrice
      * const outLots = await prisma.outLots.updateMany({
      *   where: {
      *     // ... provide filter here
@@ -8270,10 +8270,10 @@ export namespace Prisma {
     updateMany<T extends OutLotsUpdateManyArgs>(args: SelectSubset<T, OutLotsUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
 
     /**
-     * Update zero or more OutLots and returns the data updated in the database.
-     * @param {OutLotsUpdateManyAndReturnArgs} args - Arguments to update many OutLots.
+     * Update zero or more SellingPrice and returns the data updated in the database.
+     * @param {OutLotsUpdateManyAndReturnArgs} args - Arguments to update many SellingPrice.
      * @example
-     * // Update many OutLots
+     * // Update many SellingPrice
      * const outLots = await prisma.outLots.updateManyAndReturn({
      *   where: {
      *     // ... provide filter here
@@ -8283,7 +8283,7 @@ export namespace Prisma {
      *   ]
      * })
      * 
-     * // Update zero or more OutLots and only return the `id`
+     * // Update zero or more SellingPrice and only return the `id`
      * const outLotsWithIdOnly = await prisma.outLots.updateManyAndReturn({
      *   select: { id: true },
      *   where: {
@@ -8300,19 +8300,19 @@ export namespace Prisma {
     updateManyAndReturn<T extends OutLotsUpdateManyAndReturnArgs>(args: SelectSubset<T, OutLotsUpdateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$OutLotsPayload<ExtArgs>, T, "updateManyAndReturn", GlobalOmitOptions>>
 
     /**
-     * Create or update one OutLots.
-     * @param {OutLotsUpsertArgs} args - Arguments to update or create a OutLots.
+     * Create or update one SellingPrice.
+     * @param {OutLotsUpsertArgs} args - Arguments to update or create a SellingPrice.
      * @example
-     * // Update or create a OutLots
+     * // Update or create a SellingPrice
      * const outLots = await prisma.outLots.upsert({
      *   create: {
-     *     // ... data to create a OutLots
+     *     // ... data to create a SellingPrice
      *   },
      *   update: {
      *     // ... in case it already exists, update
      *   },
      *   where: {
-     *     // ... the filter for the OutLots we want to update
+     *     // ... the filter for the SellingPrice we want to update
      *   }
      * })
      */
@@ -8320,15 +8320,15 @@ export namespace Prisma {
 
 
     /**
-     * Count the number of OutLots.
+     * Count the number of SellingPrice.
      * Note, that providing `undefined` is treated as the value not being there.
      * Read more here: https://pris.ly/d/null-undefined
-     * @param {OutLotsCountArgs} args - Arguments to filter OutLots to count.
+     * @param {OutLotsCountArgs} args - Arguments to filter SellingPrice to count.
      * @example
-     * // Count the number of OutLots
+     * // Count the number of SellingPrice
      * const count = await prisma.outLots.count({
      *   where: {
-     *     // ... the filter for the OutLots we want to count
+     *     // ... the filter for the SellingPrice we want to count
      *   }
      * })
     **/
@@ -8343,7 +8343,7 @@ export namespace Prisma {
     >
 
     /**
-     * Allows you to perform aggregations operations on a OutLots.
+     * Allows you to perform aggregations operations on a SellingPrice.
      * Note, that providing `undefined` is treated as the value not being there.
      * Read more here: https://pris.ly/d/null-undefined
      * @param {OutLotsAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
@@ -8369,7 +8369,7 @@ export namespace Prisma {
     aggregate<T extends OutLotsAggregateArgs>(args: Subset<T, OutLotsAggregateArgs>): Prisma.PrismaPromise<GetOutLotsAggregateType<T>>
 
     /**
-     * Group by OutLots.
+     * Group by SellingPrice.
      * Note, that providing `undefined` is treated as the value not being there.
      * Read more here: https://pris.ly/d/null-undefined
      * @param {OutLotsGroupByArgs} args - Group by arguments.
@@ -8445,13 +8445,13 @@ export namespace Prisma {
         }[OrderFields]
     >(args: SubsetIntersection<T, OutLotsGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetOutLotsGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
   /**
-   * Fields of the OutLots model
+   * Fields of the SellingPrice model
    */
   readonly fields: OutLotsFieldRefs;
   }
 
   /**
-   * The delegate class that acts as a "Promise-like" for OutLots.
+   * The delegate class that acts as a "Promise-like" for SellingPrice.
    * Why is this prefixed with `Prisma__`?
    * Because we want to prevent naming conflicts as mentioned in
    * https://github.com/prisma/prisma-client-js/issues/707
@@ -8485,7 +8485,7 @@ export namespace Prisma {
 
 
   /**
-   * Fields of the OutLots model
+   * Fields of the SellingPrice model
    */
   interface OutLotsFieldRefs {
     readonly id: FieldRef<"OutLots", 'Int'>
@@ -8509,15 +8509,15 @@ export namespace Prisma {
 
   // Custom InputTypes
   /**
-   * OutLots findUnique
+   * SellingPrice findUnique
    */
   export type OutLotsFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     /**
-     * Select specific fields to fetch from the OutLots
+     * Select specific fields to fetch from the SellingPrice
      */
     select?: OutLotsSelect<ExtArgs> | null
     /**
-     * Omit specific fields from the OutLots
+     * Omit specific fields from the SellingPrice
      */
     omit?: OutLotsOmit<ExtArgs> | null
     /**
@@ -8525,21 +8525,21 @@ export namespace Prisma {
      */
     include?: OutLotsInclude<ExtArgs> | null
     /**
-     * Filter, which OutLots to fetch.
+     * Filter, which SellingPrice to fetch.
      */
     where: OutLotsWhereUniqueInput
   }
 
   /**
-   * OutLots findUniqueOrThrow
+   * SellingPrice findUniqueOrThrow
    */
   export type OutLotsFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     /**
-     * Select specific fields to fetch from the OutLots
+     * Select specific fields to fetch from the SellingPrice
      */
     select?: OutLotsSelect<ExtArgs> | null
     /**
-     * Omit specific fields from the OutLots
+     * Omit specific fields from the SellingPrice
      */
     omit?: OutLotsOmit<ExtArgs> | null
     /**
@@ -8547,21 +8547,21 @@ export namespace Prisma {
      */
     include?: OutLotsInclude<ExtArgs> | null
     /**
-     * Filter, which OutLots to fetch.
+     * Filter, which SellingPrice to fetch.
      */
     where: OutLotsWhereUniqueInput
   }
 
   /**
-   * OutLots findFirst
+   * SellingPrice findFirst
    */
   export type OutLotsFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     /**
-     * Select specific fields to fetch from the OutLots
+     * Select specific fields to fetch from the SellingPrice
      */
     select?: OutLotsSelect<ExtArgs> | null
     /**
-     * Omit specific fields from the OutLots
+     * Omit specific fields from the SellingPrice
      */
     omit?: OutLotsOmit<ExtArgs> | null
     /**
@@ -8569,51 +8569,51 @@ export namespace Prisma {
      */
     include?: OutLotsInclude<ExtArgs> | null
     /**
-     * Filter, which OutLots to fetch.
+     * Filter, which SellingPrice to fetch.
      */
     where?: OutLotsWhereInput
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
      * 
-     * Determine the order of OutLots to fetch.
+     * Determine the order of SellingPrice to fetch.
      */
     orderBy?: OutLotsOrderByWithRelationInput | OutLotsOrderByWithRelationInput[]
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
      * 
-     * Sets the position for searching for OutLots.
+     * Sets the position for searching for SellingPrice.
      */
     cursor?: OutLotsWhereUniqueInput
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
      * 
-     * Take `±n` OutLots from the position of the cursor.
+     * Take `±n` SellingPrice from the position of the cursor.
      */
     take?: number
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
      * 
-     * Skip the first `n` OutLots.
+     * Skip the first `n` SellingPrice.
      */
     skip?: number
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
      * 
-     * Filter by unique combinations of OutLots.
+     * Filter by unique combinations of SellingPrice.
      */
     distinct?: OutLotsScalarFieldEnum | OutLotsScalarFieldEnum[]
   }
 
   /**
-   * OutLots findFirstOrThrow
+   * SellingPrice findFirstOrThrow
    */
   export type OutLotsFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     /**
-     * Select specific fields to fetch from the OutLots
+     * Select specific fields to fetch from the SellingPrice
      */
     select?: OutLotsSelect<ExtArgs> | null
     /**
-     * Omit specific fields from the OutLots
+     * Omit specific fields from the SellingPrice
      */
     omit?: OutLotsOmit<ExtArgs> | null
     /**
@@ -8621,51 +8621,51 @@ export namespace Prisma {
      */
     include?: OutLotsInclude<ExtArgs> | null
     /**
-     * Filter, which OutLots to fetch.
+     * Filter, which SellingPrice to fetch.
      */
     where?: OutLotsWhereInput
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
      * 
-     * Determine the order of OutLots to fetch.
+     * Determine the order of SellingPrice to fetch.
      */
     orderBy?: OutLotsOrderByWithRelationInput | OutLotsOrderByWithRelationInput[]
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
      * 
-     * Sets the position for searching for OutLots.
+     * Sets the position for searching for SellingPrice.
      */
     cursor?: OutLotsWhereUniqueInput
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
      * 
-     * Take `±n` OutLots from the position of the cursor.
+     * Take `±n` SellingPrice from the position of the cursor.
      */
     take?: number
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
      * 
-     * Skip the first `n` OutLots.
+     * Skip the first `n` SellingPrice.
      */
     skip?: number
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
      * 
-     * Filter by unique combinations of OutLots.
+     * Filter by unique combinations of SellingPrice.
      */
     distinct?: OutLotsScalarFieldEnum | OutLotsScalarFieldEnum[]
   }
 
   /**
-   * OutLots findMany
+   * SellingPrice findMany
    */
   export type OutLotsFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     /**
-     * Select specific fields to fetch from the OutLots
+     * Select specific fields to fetch from the SellingPrice
      */
     select?: OutLotsSelect<ExtArgs> | null
     /**
-     * Omit specific fields from the OutLots
+     * Omit specific fields from the SellingPrice
      */
     omit?: OutLotsOmit<ExtArgs> | null
     /**
@@ -8673,46 +8673,46 @@ export namespace Prisma {
      */
     include?: OutLotsInclude<ExtArgs> | null
     /**
-     * Filter, which OutLots to fetch.
+     * Filter, which SellingPrice to fetch.
      */
     where?: OutLotsWhereInput
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
      * 
-     * Determine the order of OutLots to fetch.
+     * Determine the order of SellingPrice to fetch.
      */
     orderBy?: OutLotsOrderByWithRelationInput | OutLotsOrderByWithRelationInput[]
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
      * 
-     * Sets the position for listing OutLots.
+     * Sets the position for listing SellingPrice.
      */
     cursor?: OutLotsWhereUniqueInput
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
      * 
-     * Take `±n` OutLots from the position of the cursor.
+     * Take `±n` SellingPrice from the position of the cursor.
      */
     take?: number
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
      * 
-     * Skip the first `n` OutLots.
+     * Skip the first `n` SellingPrice.
      */
     skip?: number
     distinct?: OutLotsScalarFieldEnum | OutLotsScalarFieldEnum[]
   }
 
   /**
-   * OutLots create
+   * SellingPrice create
    */
   export type OutLotsCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     /**
-     * Select specific fields to fetch from the OutLots
+     * Select specific fields to fetch from the SellingPrice
      */
     select?: OutLotsSelect<ExtArgs> | null
     /**
-     * Omit specific fields from the OutLots
+     * Omit specific fields from the SellingPrice
      */
     omit?: OutLotsOmit<ExtArgs> | null
     /**
@@ -8720,36 +8720,36 @@ export namespace Prisma {
      */
     include?: OutLotsInclude<ExtArgs> | null
     /**
-     * The data needed to create a OutLots.
+     * The data needed to create a SellingPrice.
      */
     data: XOR<OutLotsCreateInput, OutLotsUncheckedCreateInput>
   }
 
   /**
-   * OutLots createMany
+   * SellingPrice createMany
    */
   export type OutLotsCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     /**
-     * The data used to create many OutLots.
+     * The data used to create many SellingPrice.
      */
     data: OutLotsCreateManyInput | OutLotsCreateManyInput[]
     skipDuplicates?: boolean
   }
 
   /**
-   * OutLots createManyAndReturn
+   * SellingPrice createManyAndReturn
    */
   export type OutLotsCreateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     /**
-     * Select specific fields to fetch from the OutLots
+     * Select specific fields to fetch from the SellingPrice
      */
     select?: OutLotsSelectCreateManyAndReturn<ExtArgs> | null
     /**
-     * Omit specific fields from the OutLots
+     * Omit specific fields from the SellingPrice
      */
     omit?: OutLotsOmit<ExtArgs> | null
     /**
-     * The data used to create many OutLots.
+     * The data used to create many SellingPrice.
      */
     data: OutLotsCreateManyInput | OutLotsCreateManyInput[]
     skipDuplicates?: boolean
@@ -8760,15 +8760,15 @@ export namespace Prisma {
   }
 
   /**
-   * OutLots update
+   * SellingPrice update
    */
   export type OutLotsUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     /**
-     * Select specific fields to fetch from the OutLots
+     * Select specific fields to fetch from the SellingPrice
      */
     select?: OutLotsSelect<ExtArgs> | null
     /**
-     * Omit specific fields from the OutLots
+     * Omit specific fields from the SellingPrice
      */
     omit?: OutLotsOmit<ExtArgs> | null
     /**
@@ -8776,55 +8776,55 @@ export namespace Prisma {
      */
     include?: OutLotsInclude<ExtArgs> | null
     /**
-     * The data needed to update a OutLots.
+     * The data needed to update a SellingPrice.
      */
     data: XOR<OutLotsUpdateInput, OutLotsUncheckedUpdateInput>
     /**
-     * Choose, which OutLots to update.
+     * Choose, which SellingPrice to update.
      */
     where: OutLotsWhereUniqueInput
   }
 
   /**
-   * OutLots updateMany
+   * SellingPrice updateMany
    */
   export type OutLotsUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     /**
-     * The data used to update OutLots.
+     * The data used to update SellingPrice.
      */
     data: XOR<OutLotsUpdateManyMutationInput, OutLotsUncheckedUpdateManyInput>
     /**
-     * Filter which OutLots to update
+     * Filter which SellingPrice to update
      */
     where?: OutLotsWhereInput
     /**
-     * Limit how many OutLots to update.
+     * Limit how many SellingPrice to update.
      */
     limit?: number
   }
 
   /**
-   * OutLots updateManyAndReturn
+   * SellingPrice updateManyAndReturn
    */
   export type OutLotsUpdateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     /**
-     * Select specific fields to fetch from the OutLots
+     * Select specific fields to fetch from the SellingPrice
      */
     select?: OutLotsSelectUpdateManyAndReturn<ExtArgs> | null
     /**
-     * Omit specific fields from the OutLots
+     * Omit specific fields from the SellingPrice
      */
     omit?: OutLotsOmit<ExtArgs> | null
     /**
-     * The data used to update OutLots.
+     * The data used to update SellingPrice.
      */
     data: XOR<OutLotsUpdateManyMutationInput, OutLotsUncheckedUpdateManyInput>
     /**
-     * Filter which OutLots to update
+     * Filter which SellingPrice to update
      */
     where?: OutLotsWhereInput
     /**
-     * Limit how many OutLots to update.
+     * Limit how many SellingPrice to update.
      */
     limit?: number
     /**
@@ -8834,15 +8834,15 @@ export namespace Prisma {
   }
 
   /**
-   * OutLots upsert
+   * SellingPrice upsert
    */
   export type OutLotsUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     /**
-     * Select specific fields to fetch from the OutLots
+     * Select specific fields to fetch from the SellingPrice
      */
     select?: OutLotsSelect<ExtArgs> | null
     /**
-     * Omit specific fields from the OutLots
+     * Omit specific fields from the SellingPrice
      */
     omit?: OutLotsOmit<ExtArgs> | null
     /**
@@ -8850,29 +8850,29 @@ export namespace Prisma {
      */
     include?: OutLotsInclude<ExtArgs> | null
     /**
-     * The filter to search for the OutLots to update in case it exists.
+     * The filter to search for the SellingPrice to update in case it exists.
      */
     where: OutLotsWhereUniqueInput
     /**
-     * In case the OutLots found by the `where` argument doesn't exist, create a new OutLots with this data.
+     * In case the SellingPrice found by the `where` argument doesn't exist, create a new SellingPrice with this data.
      */
     create: XOR<OutLotsCreateInput, OutLotsUncheckedCreateInput>
     /**
-     * In case the OutLots was found with the provided `where` argument, update it with this data.
+     * In case the SellingPrice was found with the provided `where` argument, update it with this data.
      */
     update: XOR<OutLotsUpdateInput, OutLotsUncheckedUpdateInput>
   }
 
   /**
-   * OutLots delete
+   * SellingPrice delete
    */
   export type OutLotsDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     /**
-     * Select specific fields to fetch from the OutLots
+     * Select specific fields to fetch from the SellingPrice
      */
     select?: OutLotsSelect<ExtArgs> | null
     /**
-     * Omit specific fields from the OutLots
+     * Omit specific fields from the SellingPrice
      */
     omit?: OutLotsOmit<ExtArgs> | null
     /**
@@ -8880,27 +8880,27 @@ export namespace Prisma {
      */
     include?: OutLotsInclude<ExtArgs> | null
     /**
-     * Filter which OutLots to delete.
+     * Filter which SellingPrice to delete.
      */
     where: OutLotsWhereUniqueInput
   }
 
   /**
-   * OutLots deleteMany
+   * SellingPrice deleteMany
    */
   export type OutLotsDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     /**
-     * Filter which OutLots to delete
+     * Filter which SellingPrice to delete
      */
     where?: OutLotsWhereInput
     /**
-     * Limit how many OutLots to delete.
+     * Limit how many SellingPrice to delete.
      */
     limit?: number
   }
 
   /**
-   * OutLots.admin
+   * SellingPrice.admin
    */
   export type OutLots$adminArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     /**
@@ -8919,15 +8919,15 @@ export namespace Prisma {
   }
 
   /**
-   * OutLots without action
+   * SellingPrice without action
    */
   export type OutLotsDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     /**
-     * Select specific fields to fetch from the OutLots
+     * Select specific fields to fetch from the SellingPrice
      */
     select?: OutLotsSelect<ExtArgs> | null
     /**
-     * Omit specific fields from the OutLots
+     * Omit specific fields from the SellingPrice
      */
     omit?: OutLotsOmit<ExtArgs> | null
     /**

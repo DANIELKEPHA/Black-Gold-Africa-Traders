@@ -371,6 +371,8 @@ export const createCatalog = async (req: Request, res: Response): Promise<void> 
             message: "Internal server error",
             details: error instanceof Error ? error.message : String(error),
         });
+    } finally {
+        await prisma.$disconnect();
     }
 };
 
@@ -582,14 +584,9 @@ export async function uploadCatalogsCsv(req: Request, res: Response): Promise<vo
                     totalWeight: record.totalWeight ? Number(record.totalWeight) : undefined,
                     netWeight: record.netWeight ? Number(record.netWeight) : undefined,
                     askingPrice: record.askingPrice ? Number(record.askingPrice) : undefined,
-                    reprint: record.reprint ? Number(record.reprint) : 0,
+                    reprint: record.reprint !== undefined ? (record.reprint === 'true' ? 1 : record.reprint === 'false' ? 0 : Number(record.reprint)) : 0,
                     saleCode: record.saleCode,
-                    manufactureDate: record.manufactureDate
-                        ? record.manufactureDate
-                            .split("/")
-                            .map((part: string, index: number) => (index === 0 ? part : part.padStart(2, "0")))
-                            .join("/")
-                        : undefined,
+                    manufactureDate: record.manufactureDate,
                 };
 
                 // Validate numeric fields to prevent NaN
@@ -630,7 +627,7 @@ export async function uploadCatalogsCsv(req: Request, res: Response): Promise<vo
                         saleCode: data.saleCode,
                         askingPrice: data.askingPrice,
                         producerCountry: data.producerCountry,
-                        manufactureDate: new Date(data.manufactureDate.replace(/\//g, "-")), // Convert YYYY/MM/DD to YYYY-MM-DD
+                        manufactureDate: new Date(data.manufactureDate),
                         category: data.category as TeaCategory,
                         grade: data.grade as TeaGrade,
                     },
@@ -715,12 +712,6 @@ export const exportCatalogsCsv = async (req: Request, res: Response): Promise<vo
 
         const { page = 1, limit = 10000, catalogIds, ...filterParams } = params.data;
 
-        const maxRecords = 10000;
-        if (limit > maxRecords) {
-            res.status(400).json({ message: `Export limit cannot exceed ${maxRecords} records` });
-            return;
-        }
-
         let where: Prisma.CatalogWhereInput = {};
 
         if (catalogIds) {
@@ -776,7 +767,7 @@ export const exportCatalogsCsv = async (req: Request, res: Response): Promise<vo
                 { id: "producerCountry", title: "Producer Country" },
                 { id: "askingPrice", title: "Asking Price" },
                 { id: "invoiceNo", title: "Invoice Number" },
-                { id: "manufactureDate", title: "Manufacture Date" },
+                { id: "manufactureDate", title: "Manufacture day/month/year" },
                 { id: "reprint", title: "Reprint" },
             ],
         });
@@ -787,10 +778,10 @@ export const exportCatalogsCsv = async (req: Request, res: Response): Promise<vo
                 catalogs.map((catalog) => ({
                     ...catalog,
                     manufactureDate: new Date(catalog.manufactureDate).toLocaleDateString("en-US", {
-                        month: "numeric",
-                        day: "numeric",
+                        day: "2-digit",
+                        month: "2-digit",
                         year: "numeric",
-                    }),
+                    }).split("/").join("/"),
                     totalWeight: Number(catalog.totalWeight),
                     netWeight: Number(catalog.netWeight),
                     askingPrice: Number(catalog.askingPrice),

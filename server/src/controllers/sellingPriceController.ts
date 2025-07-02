@@ -546,7 +546,7 @@ export async function uploadSellingPricesCsv(req: Request, res: Response): Promi
                     netWeight: normalizedRecord.netWeight ? parseFloat(normalizedRecord.netWeight) : undefined,
                     askingPrice: normalizedRecord.askingPrice ? parseFloat(normalizedRecord.askingPrice) : undefined,
                     purchasePrice: normalizedRecord.purchasePrice ? parseFloat(normalizedRecord.purchasePrice) : undefined,
-                    reprint: normalizedRecord.reprint ? parseInt(normalizedRecord.reprint, 10) : 0,
+                    reprint: normalizedRecord.reprint ? (normalizedRecord.reprint.toLowerCase() === 'true' ? 1 : normalizedRecord.reprint.toLowerCase() === 'false' ? 0 : parseInt(normalizedRecord.reprint, 10)) : 0,
                     saleCode: normalizedRecord.saleCode,
                     adminCognitoId: authenticatedUser.userId,
                 });
@@ -665,13 +665,7 @@ export const exportSellingPricesCsv = async (req: Request, res: Response): Promi
             return;
         }
 
-        const { page = 1, limit = 1000, sellingPriceIds, ...filterParams } = params.data;
-
-        const maxRecords = 10000;
-        if (limit > maxRecords) {
-            res.status(400).json({ message: `Export limit cannot exceed ${maxRecords} records` });
-            return;
-        }
+        const { page = 1, limit = Number.MAX_SAFE_INTEGER, sellingPriceIds, ...filterParams } = params.data;
 
         let where: Prisma.SellingPriceWhereInput = {};
 
@@ -706,7 +700,6 @@ export const exportSellingPricesCsv = async (req: Request, res: Response): Promi
                 manufactureDate: true,
                 reprint: true,
             },
-            ...(sellingPriceIds ? {} : { skip: (page - 1) * limit, take: limit }),
         });
 
         if (!sellingPrices.length) {
@@ -741,11 +734,11 @@ export const exportSellingPricesCsv = async (req: Request, res: Response): Promi
             csvStringifier.stringifyRecords(
                 sellingPrices.map(s => ({
                     ...s,
-                    manufactureDate: new Date(s.manufactureDate).toLocaleDateString('en-US', {
+                    manufactureDate: new Date(s.manufactureDate).toLocaleDateString('en-GB', {
                         year: 'numeric',
-                        month: 'numeric',
-                        day: 'numeric',
-                    }),
+                        month: '2-digit',
+                        day: '2-digit',
+                    }).split('/').join('/'),
                     totalWeight: Number(s.totalWeight),
                     netWeight: Number(s.netWeight),
                     askingPrice: Number(s.askingPrice),

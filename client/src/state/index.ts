@@ -2,7 +2,7 @@ import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 import {Broker, ShipmentStatus, TeaCategory, TeaGrade, } from "@/state/enums";
 import {Shipment} from "@/state/shipment";
 
-// Define OutLots type based on Prisma schema
+// Define SellingPrice type based on Prisma schema
 export type Outlot = {
     id: number;
     auction: string;
@@ -168,7 +168,7 @@ export interface Notification {
 }
 
 export interface FiltersState {
-    // Common fields across OutLots, SellingPrice, OutLots
+    // Common fields across SellingPrice, SellingPrice, SellingPrice
     lotNo?: string;
     sellingMark?: string;
     grade?: TeaGrade | "any";
@@ -185,7 +185,7 @@ export interface FiltersState {
     sortBy: string;
     sortOrder: 'asc' | 'desc';
 
-    // OutLots and SellingPrice specific
+    // SellingPrice and SellingPrice specific
     saleCode?: string;
     category?: TeaCategory | "any";
     reprint?: number;
@@ -195,7 +195,7 @@ export interface FiltersState {
     producerCountry?: string;
     adminCognitoId?: string;
 
-    // OutLots specific
+    // SellingPrice specific
     auction?: string;
     baselinePrice?: number;
 

@@ -31,7 +31,7 @@ const CatalogDetails: React.FC<CatalogDetailsProps> = ({ params }) => {
         }
         try {
             await deleteCatalogs({ ids: [parseInt(params.id)] }).unwrap();
-            toast.success(t("catalog:success.catalogDeleted", { defaultValue: "OutLots deleted" }));
+            toast.success(t("catalog:success.catalogDeleted", { defaultValue: "SellingPrice deleted" }));
             router.push("/admin/catalog");
         } catch (err: any) {
             toast.error(t("catalog:errors.deleteFailed", { defaultValue: "Failed to delete catalog" }));
@@ -56,7 +56,7 @@ const CatalogDetails: React.FC<CatalogDetailsProps> = ({ params }) => {
             <Toaster />
             <div className="max-w-3xl mx-auto bg-white dark:bg-gray-800 rounded-sm shadow-xl p-8">
                 <h2 className="text-2xl font-bold text-blue-700 dark:text-blue-200 mb-6">
-                    {t("catalog:catalogDetails", { defaultValue: "OutLots Details" })}
+                    {t("catalog:catalogDetails", { defaultValue: "SellingPrice Details" })}
                 </h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>

@@ -166,11 +166,11 @@ export const createOutlotSchema = z.object({
 // export const adjustStockSchema = z.object({
 //     catalogId: z
 //         .number({
-//             required_error: "OutLots ID is required",
-//             invalid_type_error: "OutLots ID must be a number",
+//             required_error: "SellingPrice ID is required",
+//             invalid_type_error: "SellingPrice ID must be a number",
 //         })
 //         .int()
-//         .positive("OutLots ID must be a positive integer"),
+//         .positive("SellingPrice ID must be a positive integer"),
 //     totalWeight: z
 //         .number({
 //             required_error: "Weight adjustment is required",

@@ -52,7 +52,7 @@ const OutLots: React.FC = () => {
         {
             ...filters,
             page: 1,
-            limit: 10000, // Now supported by backend
+            limit: 10000,
         },
         { skip: !authUser?.cognitoInfo?.userId || !selectAllAcrossPages }
     );
@@ -112,7 +112,7 @@ const OutLots: React.FC = () => {
             await deleteOutLots({ ids: idsToDelete }).unwrap();
             setSelectedItems([]);
             setSelectAllAcrossPages(false);
-            toast.success(t("catalog:success.outLotsDeleted", { defaultValue: "OutLots deleted" }));
+            toast.success(t("catalog:success.outLotsDeleted", { defaultValue: "SellingPrice deleted" }));
         } catch (error: any) {
             toast.error(t("catalog:errors.bulkDeleteFailed", { defaultValue: "Bulk deletion failed" }));
         } finally {
@@ -179,7 +179,7 @@ const OutLots: React.FC = () => {
                 <DialogContent className="bg-white dark:bg-gray-800 rounded-sm shadow-2xl max-w-lg mx-auto p-0">
                     <DialogHeader className="bg-gradient-to-r from-red-600 to-red-700 p-4">
                         <DialogTitle className="text-2xl font-bold text-white">
-                            {t("catalog:confirm.bulkDeleteOutLots", { defaultValue: "Delete OutLots" })}
+                            {t("catalog:confirm.bulkDeleteOutLots", { defaultValue: "Delete SellingPrice" })}
                         </DialogTitle>
                     </DialogHeader>
                     <div className="p-6 max-h-96 overflow-y-auto">

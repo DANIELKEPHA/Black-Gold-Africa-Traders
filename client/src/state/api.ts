@@ -77,7 +77,7 @@ export const api = createApi({
     tagTypes: [
         "Admin",
         "Users",
-        "OutLots",
+        "SellingPrice",
         "SellingPrices",
         "Favorites",
         "Shipments",
@@ -270,7 +270,7 @@ export const api = createApi({
             },
         }),
 
-        // OutLots Endpoints (Unchanged)
+        // SellingPrice Endpoints (Unchanged)
         getCatalog: builder.query<{ data: CatalogResponse[]; meta: { page: number; limit: number; total: number; totalPages: number } }, Partial<FiltersState> & { page?: number; limit?: number }>({
             query: (filters) => ({
                 url: "/catalogs",
@@ -297,10 +297,10 @@ export const api = createApi({
             providesTags: (result) =>
                 result?.data
                     ? [
-                        ...result.data.map(({ id }) => ({ type: "OutLots" as const, id })),
-                        { type: "OutLots" as const, id: "LIST" },
+                        ...result.data.map(({ id }) => ({ type: "SellingPrice" as const, id })),
+                        { type: "SellingPrice" as const, id: "LIST" },
                     ]
-                    : [{ type: "OutLots" as const, id: "LIST" }],
+                    : [{ type: "SellingPrice" as const, id: "LIST" }],
             async onQueryStarted(filters, { queryFulfilled }) {
                 try {
                     const { data } = await queryFulfilled;
@@ -317,17 +317,17 @@ export const api = createApi({
         }),
         getCatalogById: builder.query<CatalogResponse, number>({
             query: (id) => `/catalogs/${id}`,
-            providesTags: (result, error, id): TagDescription<"OutLots">[] => [{ type: "OutLots", id }],
+            providesTags: (result, error, id): TagDescription<"SellingPrice">[] => [{ type: "SellingPrice", id }],
         }),
         getCatalogByLotNo: builder.query<CatalogResponse, string>({
             query: (lotNo) => `/catalogs/lot/${lotNo}`,
-            providesTags: (result, error, lotNo): TagDescription<"OutLots">[] => [
-                { type: "OutLots", id: result?.id || lotNo },
+            providesTags: (result, error, lotNo): TagDescription<"SellingPrice">[] => [
+                { type: "SellingPrice", id: result?.id || lotNo },
             ],
         }),
         getCatalogFilterOptions: builder.query<FilterOptions, void>({
             query: () => "/catalogs/filters",
-            providesTags: ["OutLots"],
+            providesTags: ["SellingPrice"],
         }),
         createCatalogFromCsv: builder.mutation<{
             count: any;
@@ -344,7 +344,7 @@ export const api = createApi({
                     body: formData,
                 };
             },
-            invalidatesTags: [{ type: "OutLots", id: "LIST" }],
+            invalidatesTags: [{ type: "SellingPrice", id: "LIST" }],
             async onQueryStarted({ file, duplicateAction }, { queryFulfilled }) {
                 try {
                     const { data } = await queryFulfilled;
@@ -363,7 +363,6 @@ export const api = createApi({
                 }
             },
         }),
-
         exportCatalogsCsv: builder.mutation<
             { success: boolean },
             { catalogIds?: number[] } & Partial<FiltersState>
@@ -473,16 +472,16 @@ export const api = createApi({
                 method: "DELETE",
                 body: { ids },
             }),
-            invalidatesTags: [{ type: "OutLots", id: "LIST" }],
+            invalidatesTags: [{ type: "SellingPrice", id: "LIST" }],
             async onQueryStarted(_, { queryFulfilled }) {
                 await withToast(queryFulfilled, {
-                    success: "OutLots items deleted successfully!",
+                    success: "SellingPrice items deleted successfully!",
                     error: "Failed to delete catalog items.",
                 });
             },
         }),
 
-        // New OutLots Endpoints
+        // New SellingPrice Endpoints
         getSellingPrices: builder.query<{ data: SellingPriceResponse[]; meta: { page: number; limit: number; total: number; totalPages: number } }, Partial<FiltersState> & { page?: number; limit?: number }>({
             query: (filters) => ({
                 url: "/sellingPrices",
@@ -510,10 +509,10 @@ export const api = createApi({
             providesTags: (result) =>
                 result?.data
                     ? [
-                        ...result.data.map(({ id }) => ({ type: "OutLots" as const, id })),
-                        { type: "OutLots" as const, id: "LIST" },
+                        ...result.data.map(({ id }) => ({ type: "SellingPrice" as const, id })),
+                        { type: "SellingPrice" as const, id: "LIST" },
                     ]
-                    : [{ type: "OutLots" as const, id: "LIST" }],
+                    : [{ type: "SellingPrice" as const, id: "LIST" }],
             async onQueryStarted(filters, { queryFulfilled }) {
                 try {
                     const { data } = await queryFulfilled;
@@ -530,12 +529,12 @@ export const api = createApi({
         }),
         getSellingPriceById: builder.query<SellingPriceResponse, number>({
             query: (id) => `/sellingPrices/${id}`,
-            providesTags: (result, error, id): TagDescription<"OutLots">[] => [{ type: "OutLots", id }],
+            providesTags: (result, error, id): TagDescription<"SellingPrice">[] => [{ type: "SellingPrice", id }],
         }),
         getSellingPriceByLotNo: builder.query<SellingPriceResponse, string>({
             query: (lotNo) => `/selling-prices/lot/${lotNo}`,
-            providesTags: (result, error, lotNo): TagDescription<"OutLots">[] => [
-                { type: "OutLots", id: result?.id || lotNo },
+            providesTags: (result, error, lotNo): TagDescription<"SellingPrice">[] => [
+                { type: "SellingPrice", id: result?.id || lotNo },
             ],
         }),
         createSellingPrice: builder.mutation<SellingPriceResponse, {
@@ -561,7 +560,7 @@ export const api = createApi({
                 method: "POST",
                 body,
             }),
-            invalidatesTags: [{ type: "OutLots", id: "LIST" }],
+            invalidatesTags: [{ type: "SellingPrice", id: "LIST" }],
             async onQueryStarted(_, { queryFulfilled }) {
                 await withToast(queryFulfilled, {
                     success: "Selling price created successfully!",
@@ -575,7 +574,7 @@ export const api = createApi({
                 method: "DELETE",
                 body: { ids },
             }),
-            invalidatesTags: [{ type: "OutLots", id: "LIST" }],
+            invalidatesTags: [{ type: "SellingPrice", id: "LIST" }],
             async onQueryStarted(_, { queryFulfilled }) {
                 await withToast(queryFulfilled, {
                     success: "Selling prices deleted successfully!",
@@ -599,11 +598,26 @@ export const api = createApi({
                     headers: {}, // Let browser set Content-Type for FormData
                 };
             },
-            invalidatesTags: [{ type: "OutLots", id: "LIST" }],
+            invalidatesTags: [{ type: "SellingPrice", id: "LIST" }],
             async onQueryStarted(_, { queryFulfilled }) {
                 await withToast(queryFulfilled, {
                     success: "Selling prices uploaded successfully!",
                     error: "Failed to upload selling prices.",
+                });
+            },
+        }),
+
+        updateSellingPrice: builder.mutation<SellingPriceResponse, { id: number } & Partial<CatalogFormData>>({
+            query: ({ id, ...body }) => ({
+                url: `/sellingPrices/${id}`,
+                method: "PUT",
+                body,
+            }),
+            invalidatesTags: (result, error, { id }) => [{ type: "SellingPrice", id }, { type: "SellingPrice", id: "LIST" }],
+            async onQueryStarted(_, { queryFulfilled }) {
+                await withToast(queryFulfilled, {
+                    success: "Selling price updated successfully!",
+                    error: "Failed to update selling price.",
                 });
             },
         }),
@@ -739,7 +753,7 @@ export const api = createApi({
             providesTags: ["SellingPrices"],
         }),
 
-        // New OutLots Endpoints
+        // New SellingPrice Endpoints
         getOutlots: builder.query<
             { data: OutLotsResponse[]; meta: { page: number; limit: number; total: number; totalPages: number } },
             Partial<FiltersState> & { page?: number; limit?: number }
@@ -770,10 +784,10 @@ export const api = createApi({
             providesTags: (result) =>
                 result?.data
                     ? [
-                        ...result.data.map(({ id }) => ({ type: "OutLots" as const, id })),
-                        { type: "OutLots" as const, id: "LIST" },
+                        ...result.data.map(({ id }) => ({ type: "SellingPrice" as const, id })),
+                        { type: "SellingPrice" as const, id: "LIST" },
                     ]
-                    : [{ type: "OutLots" as const, id: "LIST" }],
+                    : [{ type: "SellingPrice" as const, id: "LIST" }],
             async onQueryStarted(filters, { queryFulfilled }) {
                 try {
                     const { data } = await queryFulfilled;
@@ -793,12 +807,12 @@ export const api = createApi({
 
         getOutlotById: builder.query<OutlotResponse, number>({
             query: (id) => `/outlots/${id}`,
-            providesTags: (result, error, id): TagDescription<"OutLots">[] => [{ type: "OutLots", id }],
+            providesTags: (result, error, id): TagDescription<"SellingPrice">[] => [{ type: "SellingPrice", id }],
         }),
         getOutlotByLotNo: builder.query<OutlotResponse, string>({
             query: (lotNo) => `/outlots/lot/${lotNo}`,
-            providesTags: (result, error, lotNo): TagDescription<"OutLots">[] => [
-                { type: "OutLots", id: result?.id || lotNo },
+            providesTags: (result, error, lotNo): TagDescription<"SellingPrice">[] => [
+                { type: "SellingPrice", id: result?.id || lotNo },
             ],
         }),
         createOutlot: builder.mutation<OutlotResponse, {
@@ -820,7 +834,7 @@ export const api = createApi({
                 method: "POST",
                 body,
             }),
-            invalidatesTags: [{ type: "OutLots", id: "LIST" }],
+            invalidatesTags: [{ type: "SellingPrice", id: "LIST" }],
             async onQueryStarted(_, { queryFulfilled }) {
                 await withToast(queryFulfilled, {
                     success: "Outlot created successfully!",
@@ -834,10 +848,10 @@ export const api = createApi({
                 method: "DELETE",
                 body: { ids },
             }),
-            invalidatesTags: [{ type: "OutLots", id: "LIST" }],
+            invalidatesTags: [{ type: "SellingPrice", id: "LIST" }],
             async onQueryStarted(_, { queryFulfilled }) {
                 await withToast(queryFulfilled, {
-                    success: "OutLots deleted successfully!",
+                    success: "SellingPrice deleted successfully!",
                     error: "Failed to delete outLots.",
                 });
             },
@@ -858,10 +872,10 @@ export const api = createApi({
                     headers: {}, // Let browser set Content-Type for FormData
                 };
             },
-            invalidatesTags: [{ type: "OutLots", id: "LIST" }],
+            invalidatesTags: [{ type: "SellingPrice", id: "LIST" }],
             async onQueryStarted(_, { queryFulfilled }) {
                 await withToast(queryFulfilled, {
-                    success: "OutLots uploaded successfully!",
+                    success: "SellingPrice uploaded successfully!",
                     error: "Failed to upload outLots.",
                 });
             },
@@ -985,7 +999,7 @@ export const api = createApi({
 
         getOutlotsFilterOptions: builder.query<FilterOptions, void>({
             query: () => "/outLots/filters",
-            providesTags: ["OutLots"],
+            providesTags: ["SellingPrice"],
         }),
 
         // Stocks Endpoints

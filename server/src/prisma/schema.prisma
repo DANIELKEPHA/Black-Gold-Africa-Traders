@@ -89,7 +89,7 @@ model SellingPrice {
   @@index([lotNo, saleCode])
 }
 
-model OutLots {
+model SellingPrice {
   id              Int          @id @default(autoincrement())
   auction         String
   lotNo           String       @unique

@@ -20,12 +20,24 @@ const CatalogUpload: React.FC = () => {
     const [createCatalogFromCsv, { isLoading: isUploading }] = useCreateCatalogFromCsvMutation();
     const [file, setFile] = useState<File | null>(null);
     const [duplicateAction, setDuplicateAction] = useState<"skip" | "replace">("skip");
-    const [errors, setErrors] = useState<string[]>([]); // State for form errors
+    const [errors, setErrors] = useState<string[]>([]);
     const isAdmin = authUser?.userRole === "admin";
 
     const requiredHeaders = [
-        "Broker", "Lot No", "Selling Mark", "Grade", "Invoice No", "Sale Code", "Category",
-        "RP", "Bags", "Net Weight", "Total Weight", "Asking Price", "Producer Country", "Manufactured Date"
+        "Broker",
+        "Lot No",
+        "Selling Mark",
+        "Grade",
+        "Invoice No",
+        "Sale Code",
+        "Category",
+        "RP",
+        "Bags",
+        "Net Weight",
+        "Total Weight",
+        "Asking Price",
+        "Producer Country",
+        "Manufactured Date",
     ];
 
     const validBrokers = ["AMBR", "ANJL", "ATBL", "ATLS", "BICL", "BTBL", "CENT", "COMK", "CTBL", "PRME", "PTBL", "TBEA", "UNTB", "VENS", "TTBL"];
@@ -33,23 +45,25 @@ const CatalogUpload: React.FC = () => {
     const validGrades = ["PD", "PD2", "DUST1", "DUST2", "PF1", "BP1", "FNGS", "FNGS1", "FNGS2", "BMF", "BMF1", "BMFD", "BP", "BP2", "DUST", "PF2", "PF", "BOP", "BOPF"];
 
     const validateCsv = async (file: File): Promise<boolean> => {
-        const time = new Date().toLocaleString('en-US', { timeZone: 'Africa/Nairobi' });
+        const time = new Date().toLocaleString("en-US", { timeZone: "Africa/Nairobi" });
         console.log(`[${time}] Starting validateCsv:`, {
             filename: file.name,
             size: file.size,
             type: file.type,
         });
 
-        setErrors([]); // Clear previous errors
+        setErrors([]);
         const newErrors: string[] = [];
 
         try {
             console.log(`[${time}] Reading CSV file: ${file.name}`);
             const text = await file.text();
-            const lines = text.split("\n").filter(line => line.trim());
+            // Remove BOM if present
+            const cleanText = text.replace(/^\uFEFF/, "");
+            const lines = cleanText.split("\n").filter((line) => line.trim());
             console.log(`[${time}] CSV lines parsed:`, {
                 totalLines: lines.length,
-                firstFewLines: lines.slice(0, 3), // Log first few lines for context
+                firstFewLines: lines.slice(0, 3),
             });
 
             if (lines.length < 2) {
@@ -59,10 +73,10 @@ const CatalogUpload: React.FC = () => {
                 return false;
             }
 
-            const headers = lines[0].split(",").map(h => h.trim());
+            const headers = lines[0].split(",").map((h) => h.trim());
             console.log(`[${time}] CSV headers:`, headers);
 
-            const missingHeaders = requiredHeaders.filter(h => !headers.includes(h));
+            const missingHeaders = requiredHeaders.filter((h) => !headers.includes(h));
             if (missingHeaders.length > 0) {
                 newErrors.push(t("catalog:errors.missingHeaders", { defaultValue: `Missing required CSV headers: ${missingHeaders.join(", ")}` }));
                 console.error(`[${time}] CSV validation failed: Missing headers`, { missingHeaders });
@@ -75,11 +89,10 @@ const CatalogUpload: React.FC = () => {
             let rowIndex = 1;
             console.log(`[${time}] Searching for first valid data row`);
             while (rowIndex < lines.length && !firstRow) {
-                const row = lines[rowIndex].split(",").map(v => v.trim());
+                const row = lines[rowIndex].split(",").map((v) => v.trim());
                 console.log(`[${time}] Row ${rowIndex}:`, { rawRow: row });
 
-                // Check if the row has enough non-empty values
-                if (row.length >= headers.length && row.some(v => v)) {
+                if (row.length >= headers.length && row.some((v) => v)) {
                     firstRow = row;
                     console.log(`[${time}] Found first valid data row at index ${rowIndex}:`, firstRow);
                 } else {
@@ -138,9 +151,8 @@ const CatalogUpload: React.FC = () => {
                 newErrors.push(t("catalog:errors.invalidCategory", { defaultValue: `Invalid Category in first row: must be one of ${validCategories.join(", ")}` }));
             }
 
-            // Validate numeric fields
+            // Validate numeric fields (excluding RP for now)
             const numericFields = [
-                { key: "RP", label: "RP" },
                 { key: "Bags", label: "Bags" },
                 { key: "Net Weight", label: "Net Weight" },
                 { key: "Total Weight", label: "Total Weight" },
@@ -152,9 +164,35 @@ const CatalogUpload: React.FC = () => {
                 }
             }
 
-            // Validate Manufactured Date format (YYYY/MM/DD)
-            if (!/^\d{4}\/\d{2}\/\d{2}$/.test(rowData["Manufactured Date"])) {
-                newErrors.push(t("catalog:errors.invalidDate", { defaultValue: "Invalid Manufactured Date format in first row (expected YYYY/MM/DD)" }));
+            // Validate RP (reprint) - can be boolean or non-negative number
+            const reprintValue = rowData["RP"]?.toLowerCase();
+            if (reprintValue && !["true", "false"].includes(reprintValue) && (isNaN(Number(reprintValue)) || Number(reprintValue) < 0)) {
+                newErrors.push(t("catalog:errors.invalidReprint", { defaultValue: "Invalid Reprint value in first row (must be a non-negative number or boolean)" }));
+            }
+
+            // Validate Manufactured Date format (DD/MM/YYYY or YYYY/MM/DD)
+            if (
+                !/^(?:\d{4}\/(0?[1-9]|1[0-2])\/(0?[1-9]|[12]\d|3[01])|(0?[1-9]|[12]\d|3[01])\/(0?[1-9]|1[0-2])\/\d{4})$/.test(
+                    rowData["Manufactured Date"]
+                )
+            ) {
+                newErrors.push(
+                    t("catalog:errors.invalidDate", {
+                        defaultValue: "Invalid Manufactured Date format in first row (expected YYYY/MM/DD or DD/MM/YYYY)",
+                    })
+                );
+            } else {
+                // Additional validation to ensure the date is valid
+                let year: number, month: number, day: number;
+                if (rowData["Manufactured Date"].match(/^\d{4}\/\d{2}\/\d{2}$/)) {
+                    [year, month, day] = rowData["Manufactured Date"].split("/").map(Number);
+                } else {
+                    [day, month, year] = rowData["Manufactured Date"].split("/").map(Number);
+                }
+                const date = new Date(year, month - 1, day);
+                if (isNaN(date.getTime()) || date.getFullYear() !== year || date.getMonth() + 1 !== month || date.getDate() !== day) {
+                    newErrors.push(t("catalog:errors.invalidDateValue", { defaultValue: "Invalid date value in first row" }));
+                }
             }
 
             if (newErrors.length > 0) {
@@ -181,16 +219,16 @@ const CatalogUpload: React.FC = () => {
     };
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        setErrors([]); // Clear errors on new file selection
+        setErrors([]);
         if (e.target.files && e.target.files[0]) {
             setFile(e.target.files[0]);
         }
     };
 
     const handleUpload = async () => {
-        setErrors([]); // Clear previous errors
+        setErrors([]);
         if (!isAdmin) {
-            setErrors([t("catalog:errors.unauthorized", { defaultValue: "Unauthorized" })]);
+            setErrors([t("catalog:errors enm errors.unauthorized", { defaultValue: "Unauthorized" })]);
             return;
         }
         if (!file) {
@@ -204,7 +242,7 @@ const CatalogUpload: React.FC = () => {
         try {
             const response = await createCatalogFromCsv({ file, duplicateAction }).unwrap();
             if (response.success.created === 0 && response.errors.length > 0) {
-                setErrors(response.errors.map(e => `Row ${e.row}: ${e.message}`));
+                setErrors(response.errors.map((e) => `Row ${e.row}: ${e.message}`));
                 toast.error(t("catalog:errors.csvUploadFailed", { defaultValue: "Failed to upload CSV" }));
                 return;
             }
@@ -235,7 +273,7 @@ const CatalogUpload: React.FC = () => {
             <Toaster />
             <div className="max-w-md mx-auto bg-white dark:bg-gray-800 rounded-sm shadow-xl p-8">
                 <h2 className="text-2xl font-bold text-blue-700 dark:text-blue-200 mb-6">
-                    {t("catalog:uploadCatalog", { defaultValue: "Upload OutLots CSV" })}
+                    {t("catalog:uploadCatalog", { defaultValue: "Upload SellingPrice CSV" })}
                 </h2>
                 <div className="space-y-4">
                     <div>

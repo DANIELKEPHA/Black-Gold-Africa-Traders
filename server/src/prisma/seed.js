@@ -235,7 +235,7 @@ function seedTable(model, modelName, jsonData, fileName, tx) {
                             data: Object.assign(Object.assign({}, sellingPriceData), { manufactureDate: new Date(item.manufactureDate), createdAt: new Date(item.createdAt || Date.now()), updatedAt: new Date(item.updatedAt || Date.now()), admin: { connect: { adminCognitoId: item.adminCognitoId } } }),
                         });
                     }
-                    else if (modelName === 'OutLots') {
+                    else if (modelName === 'SellingPrice') {
                         if (!item.lotNo)
                             throw new Error('Missing lotNo');
                         if (!validTeaGrades.includes(item.grade))

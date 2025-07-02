@@ -24,7 +24,7 @@ import SellingPricesTable from "@/app/(dashboard)/admin/sellingPrices/SellingPri
 import SellingPricesGrid from "@/app/(dashboard)/admin/sellingPrices/SellingPricesGrid";
 import Loading from "@/components/Loading";
 
-const OutLots: React.FC = () => {
+const SellingPrice: React.FC = () => {
     const { t } = useTranslation(["catalog", "general"]);
     const router = useRouter();
     const { data: authUser, isLoading: isAuthLoading } = useGetAuthUserQuery();
@@ -49,7 +49,7 @@ const OutLots: React.FC = () => {
     const [deleteSellingPrices] = useDeleteSellingPricesMutation();
 
     const sellingPricesData = sellingPricesDataResponse?.data || [];
-    const { totalPages = 1 } = sellingPricesDataResponse?.meta || {};
+    const { totalPages = 1, total = 0 } = sellingPricesDataResponse?.meta || {};
 
     const handleSelectItem = useCallback((itemId: number) => {
         setSelectedItems((prev) =>
@@ -57,17 +57,30 @@ const OutLots: React.FC = () => {
         );
     }, []);
 
-    const handleSelectAll = useCallback(() => {
+    const handleSelectAll = useCallback(async () => {
         if (!sellingPricesData || sellingPricesData.length === 0) {
             setSelectedItems([]);
             return;
         }
-        if (selectedItems.length === sellingPricesData.length) {
+        if (selectedItems.length === total) {
             setSelectedItems([]);
         } else {
-            setSelectedItems(sellingPricesData.map((item) => item.id));
+            // Fetch all item IDs
+            const allItems = [];
+            let currentPage = 1;
+            while (allItems.length < total) {
+                const { data: pageData } = await useGetSellingPricesQuery({
+                    ...filters,
+                    page: currentPage,
+                    limit: 1000, // Use a large limit to fetch more items per request
+                }).unwrap();
+                allItems.push(...pageData.data.map(item => item.id));
+                currentPage++;
+                if (!pageData.meta || pageData.meta.page >= pageData.meta.totalPages) break;
+            }
+            setSelectedItems(allItems);
         }
-    }, [sellingPricesData, selectedItems.length]);
+    }, [sellingPricesData, selectedItems.length, total, filters]);
 
     const handleBulkDelete = async () => {
         if (selectedItems.length === 0) {
@@ -205,4 +218,4 @@ const OutLots: React.FC = () => {
     );
 };
 
-export default OutLots;
+export default SellingPrice;
