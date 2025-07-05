@@ -18,7 +18,7 @@ import {
 import { useTranslation } from "react-i18next";
 import { Toaster } from "sonner";
 import { FiltersState, toggleFiltersFullOpen, setViewMode } from "@/state";
-import { useCatalogFilters } from "@/app/(dashboard)/admin/catalog/useCatalogFilters";
+import {useOutLotsFilters} from "@/app/(dashboard)/admin/outLots/UseOutlotsFilters";
 
 // Define an interface for filter field objects
 interface FilterField {
@@ -43,7 +43,7 @@ const FiltersBar: React.FC = () => {
         handleFilterChange,
         handleSubmit,
         handleReset,
-    } = useCatalogFilters();
+    } = useOutLotsFilters();
 
     const compactFilterFields: FilterField[] = [
         { key: "category", placeholder: "categoryPlaceholder", options: filterOptions?.categories },

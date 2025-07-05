@@ -8,7 +8,7 @@ import { Toaster, toast } from "sonner";
 import { useGetAuthUserQuery, useGetCatalogByIdQuery, useDeleteCatalogsMutation } from "@/state/api";
 import { Button } from "@/components/ui/button";
 import { Loader2, Download } from "lucide-react";
-import { useExportCatalogsCsvMutation } from "@/state/api";
+import { useExportCatalogsXlsxMutation } from "@/state/api";
 import Loading from "@/components/Loading";
 
 interface CatalogDetailsProps {
@@ -21,7 +21,7 @@ const CatalogDetails: React.FC<CatalogDetailsProps> = ({ params }) => {
     const { data: authUser, isLoading: isAuthLoading } = useGetAuthUserQuery();
     const { data: catalog, isLoading: isCatalogLoading, error } = useGetCatalogByIdQuery(parseInt(params.id));
     const [deleteCatalogs, { isLoading: isDeleting }] = useDeleteCatalogsMutation();
-    const [exportCatalogsCsv, { isLoading: isExporting }] = useExportCatalogsCsvMutation();
+    const [exportCatalogsCsv, { isLoading: isExporting }] = useExportCatalogsXlsxMutation();
     const isAdmin = authUser?.userRole === "admin";
 
     const handleDelete = async () => {

@@ -1,8 +1,15 @@
-import React, { useState, useCallback, useMemo } from "react"; // Add useMemo import
+"use client";
+
+import React, { useState, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslation } from "react-i18next";
 import { Toaster, toast } from "sonner";
-import { useGetAuthUserQuery, useGetCatalogQuery, useDeleteCatalogsMutation } from "@/state/api";
+import {
+    useGetAuthUserQuery,
+    useGetCatalogQuery,
+    useDeleteCatalogsMutation,
+    useDeleteAllCatalogsMutation,
+} from "@/state/api";
 import { useAppSelector } from "@/state/redux";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
@@ -16,7 +23,7 @@ const Catalog: React.FC = () => {
     const { t } = useTranslation(["catalog", "general"]);
     const router = useRouter();
     const { data: authUser, isLoading: isAuthLoading } = useGetAuthUserQuery();
-    const filters = useAppSelector((state) => state.global.filters);
+    const filters = useAppSelector((state) => state.global.filters) || {};
     const viewMode = useAppSelector((state) => state.global.viewMode);
     const [selectedItems, setSelectedItems] = useState<number[]>([]);
     const [isSelectAll, setIsSelectAll] = useState<boolean>(false);
@@ -36,17 +43,16 @@ const Catalog: React.FC = () => {
     );
 
     const [deleteCatalogs] = useDeleteCatalogsMutation();
+    const [deleteAllCatalogs] = useDeleteAllCatalogsMutation();
 
-    // Memoize catalogData to ensure stable reference
     const catalogData = useMemo(() => catalogDataResponse?.data || [], [catalogDataResponse]);
-
     const { totalPages = 1, total = 0 } = catalogDataResponse?.meta || {};
 
     const handleSelectItem = useCallback((itemId: number) => {
         setSelectedItems((prev) =>
             prev.includes(itemId) ? prev.filter((id) => id !== itemId) : [...prev, itemId]
         );
-        setIsSelectAll(false); // Reset select all when manually selecting/deselecting
+        setIsSelectAll(false);
     }, []);
 
     const handleSelectAll = useCallback(() => {
@@ -88,7 +94,7 @@ const Catalog: React.FC = () => {
             console.log("[Catalog] Deleting single catalog", { id });
             await deleteCatalogs({ ids: [id] }).unwrap();
             setSelectedItems((prev) => prev.filter((itemId) => itemId !== id));
-            toast.success(t("catalog:success.catalogDeleted", { defaultValue: "SellingPrice deleted" }));
+            toast.success(t("catalog:success.catalogDeleted", { defaultValue: "Catalog deleted" }));
         } catch (error: any) {
             console.error("[Catalog] Single delete failed", { id, error: error?.data || error });
             toast.error(
@@ -109,16 +115,18 @@ const Catalog: React.FC = () => {
         }
         try {
             setIsBulkDeleting(true);
-            console.log("[Catalog] Executing bulk delete", { ids: isSelectAll ? 'all' : selectedItems });
-            await deleteCatalogs({
-                ids: isSelectAll ? [] : selectedItems,
-                ...filters
-            }).unwrap();
+            if (isSelectAll) {
+                console.log("[Catalog] Executing delete all catalogs", { filters });
+                await deleteAllCatalogs(filters).unwrap();
+            } else {
+                console.log("[Catalog] Executing bulk delete", { ids: selectedItems });
+                await deleteCatalogs({ ids: selectedItems }).unwrap();
+            }
             setSelectedItems([]);
             setIsSelectAll(false);
             toast.success(t("catalog:success.catalogsDeleted", { defaultValue: "Catalogs deleted" }));
         } catch (error: any) {
-            console.error("[Catalog] Bulk delete failed", { ids: isSelectAll ? 'all' : selectedItems, error: error?.data || error });
+            console.error("[Catalog] Bulk delete failed", { ids: isSelectAll ? "all" : selectedItems, error: error?.data || error });
             toast.error(
                 error?.data?.message ||
                 t("catalog:errors.bulkDeleteFailed", { defaultValue: "Bulk deletion failed" })
@@ -134,6 +142,17 @@ const Catalog: React.FC = () => {
         console.error("[Catalog] Error loading catalog data", { error });
         return <div className="text-red-500 p-4">{t("catalog:errors.error", { defaultValue: "Error" })}</div>;
     }
+
+    // Compute the delete confirmation message
+    const deleteMessage = isSelectAll
+        ? t("catalog:confirm.bulkDelete", {
+            defaultValue: `Delete ${total} catalog(s)?`,
+            count: total,
+        })
+        : t("catalog:confirm.bulkDelete", {
+            defaultValue: `Delete ${selectedItems.length} catalog(s)?`,
+            count: selectedItems.length,
+        });
 
     return (
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
@@ -174,7 +193,7 @@ const Catalog: React.FC = () => {
                         {t("general:pagination.page", { page, totalPages })}
                     </span>
                     <Button
-                        disabled={ page === totalPages || isLoading }
+                        disabled={page === totalPages || isLoading}
                         onClick={() => setPage((prev) => prev + 1)}
                         className="rounded-lg bg-indigo-600 text-white hover:bg-indigo-700"
                     >
@@ -190,12 +209,7 @@ const Catalog: React.FC = () => {
                         </DialogTitle>
                     </DialogHeader>
                     <div className="p-6 max-h-96 overflow-y-auto">
-                        <p>
-                            {t("catalog:confirm.bulkDelete", {
-                                count: isSelectAll ? total : selectedItems.length,
-                                defaultValue: `Delete ${isSelectAll ? total : selectedItems.length} catalog(s)?`,
-                            })}
-                        </p>
+                        <p>{deleteMessage}</p>
                         <p className="mt-2 font-semibold">
                             {t("catalog:confirm.proceed", { defaultValue: "Are you sure you want to proceed?" })}
                         </p>

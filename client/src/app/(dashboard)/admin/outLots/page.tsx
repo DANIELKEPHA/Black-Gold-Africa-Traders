@@ -33,10 +33,8 @@ const AdminOutLotsPage = () => {
                     "adminCognitoId",
                     "search",
                 ];
-
                 if (validKeys.includes(key as keyof FiltersState)) {
                     const typedKey = key as keyof FiltersState;
-
                     if (["bags", "netWeight", "totalWeight", "baselinePrice"].includes(typedKey)) {
                         const numValue = Number(value);
                         if (!isNaN(numValue)) {
@@ -46,7 +44,11 @@ const AdminOutLotsPage = () => {
                         acc.grade = value as TeaGrade | "any";
                     } else if (typedKey === "broker" && (Object.values(Broker).includes(value as Broker) || value === "any")) {
                         acc.broker = value as Broker | "any";
-                    } else if (value !== "") {
+                    } else if (typedKey === "manufactureDate" && value) {
+                        if (value.match(/^(?:\d{4}\/(0?[1-9]|1[0-2])\/(0?[1-9]|[12]\d|3[01])|(0?[1-9]|[12]\d|3[01])\/(0?[1-9]|1[0-2])\/\d{4}|([1-9]|1[0-2])\/([1-9]|[12]\d|3[01])\/\d{4})$/)) {
+                            acc[typedKey] = value;
+                        }
+                    } else if (value !== "" && value !== "undefined") {
                         acc[typedKey] = value as any;
                     }
                 }
@@ -54,7 +56,6 @@ const AdminOutLotsPage = () => {
             },
             {} as Partial<FiltersState>
         );
-
         dispatch(setFilters(cleanParams(initialFilters)));
     }, [searchParams, dispatch]);
 

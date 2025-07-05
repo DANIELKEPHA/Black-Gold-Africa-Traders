@@ -33,7 +33,6 @@ const prisma = new PrismaClient({
     log: ['query', 'info', 'warn', 'error'],
 });
 
-// Get Shipments: Fetch shipments with pagination and filters
 export const getShipments = async (req: Request, res: Response): Promise<void> => {
     const time = new Date().toLocaleString('en-US', { timeZone: 'Africa/Nairobi' });
     try {
@@ -315,7 +314,6 @@ export const createShipment = async (req: Request, res: Response) => {
     }
 };
 
-// Get shipment history
 export const getShipmentHistory = async (req: Request, res: Response): Promise<void> => {
     const time = new Date().toLocaleString('en-US', { timeZone: 'Africa/Nairobi' });
     try {
@@ -411,7 +409,6 @@ export const getShipmentHistory = async (req: Request, res: Response): Promise<v
     }
 };
 
-// Update Shipment: Update an existing shipment
 export const updateShipment = async (req: Request, res: Response): Promise<void> => {
     const time = new Date().toLocaleString('en-US', { timeZone: 'Africa/Nairobi' });
     try {
@@ -620,7 +617,6 @@ export const updateShipment = async (req: Request, res: Response): Promise<void>
     }
 };
 
-// Remove Shipment: Delete a shipment
 export const removeShipment = async (req: Request, res: Response): Promise<void> => {
     const time = new Date().toLocaleString('en-US', { timeZone: 'Africa/Nairobi' });
     try {

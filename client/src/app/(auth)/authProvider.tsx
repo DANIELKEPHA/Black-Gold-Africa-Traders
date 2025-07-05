@@ -30,7 +30,7 @@ const components = {
                 <Heading level={3} className="!text-2xl !font-bold">
                     Black Gold
                     <span className="text-secondary-500 font-light hover:!text-primary-300">
-                        Africa Traders
+                         Africa Traders
                     </span>
                 </Heading>
                 <p className="text-muted-foreground mt-2">
@@ -126,7 +126,7 @@ const formFields = {
             placeholder: "Enter your phone number (e.g., +1234567890)",
             label: "Phone Number",
             isRequired: true,
-            dialCode: "+1", // Default dial code, adjust as needed
+            dialCode: "+254",
         },
         password: {
             order: 4,

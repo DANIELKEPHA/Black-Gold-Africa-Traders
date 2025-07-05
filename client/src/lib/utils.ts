@@ -101,24 +101,30 @@ export function cleanParams(params: Record<string, any>): Record<string, any> {
 
 type MutationMessages = {
     success?: string;
-    error: string;
+    error?: string | ((err: unknown) => string);
 };
+
 
 export const withToast = async <T>(
     mutationFn: Promise<T>,
     messages: Partial<MutationMessages>
-) => {
+): Promise<T> => {
     const { success, error } = messages;
 
     try {
         const result = await mutationFn;
         if (success) toast.success(success);
         return result;
-    } catch (err) {
-        if (error) toast.error(error);
+    } catch (err: unknown) {
+        if (typeof error === "function") {
+            toast.error(error(err));
+        } else if (typeof error === "string") {
+            toast.error(error);
+        }
         throw err;
     }
 };
+
 
 
 // src/lib/utils.ts

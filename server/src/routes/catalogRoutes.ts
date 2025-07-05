@@ -6,7 +6,7 @@ import {
     getCatalogById,
     deleteCatalogs,
     uploadCatalogsCsv,
-    exportCatalogsCsv,
+    exportCatalogsXlsx, deleteAllCatalogs,
 } from "../controllers/catalogController";
 import { authMiddleware } from "../middleware/authMiddleware";
 import multer from "multer";
@@ -30,10 +30,12 @@ router.get("/:id", asyncHandler(getCatalogById));
 // Delete multiple catalogs
 router.delete("/bulk", authMiddleware(["admin"]), asyncHandler(deleteCatalogs));
 
+router.delete("/bulk/delete-all", authMiddleware(["admin"]), asyncHandler(deleteAllCatalogs));
+
 // Upload catalogs via CSV
 router.post("/upload", authMiddleware(["admin"]), upload.single("file"), asyncHandler(uploadCatalogsCsv));
 
 // Export multiple catalogs as CSV
-router.post("/export", authMiddleware(["admin", "user"]), asyncHandler(exportCatalogsCsv));
+router.post("/export/xlsx", authMiddleware(["admin", "user"]), asyncHandler(exportCatalogsXlsx));
 
 export default router;

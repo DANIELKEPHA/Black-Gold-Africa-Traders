@@ -5,7 +5,7 @@ import { useTranslation } from "react-i18next";
 import { Toaster, toast } from "sonner";
 import { Download, Upload, Loader2, UploadIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useExportSellingPricesCsvMutation, useGetAuthUserQuery } from "@/state/api";
+import { useExportSellingPricesXlsxMutation, useGetAuthUserQuery } from "@/state/api"; // Updated import
 import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
 import { SellingPriceResponse } from "@/state";
@@ -27,7 +27,7 @@ const SellingPricesActions: React.FC<SellingPricesActionsProps> = ({
     const router = useRouter();
     const { data: authUser } = useGetAuthUserQuery();
     const isAdmin = authUser?.userRole === "admin";
-    const [exportSellingPricesCsv, { isLoading: isExporting }] = useExportSellingPricesCsvMutation();
+    const [exportSellingPricesXlsx, { isLoading: isExporting }] = useExportSellingPricesXlsxMutation(); // Updated hook
 
     if (!isAdmin) return null;
 
@@ -45,13 +45,13 @@ const SellingPricesActions: React.FC<SellingPricesActionsProps> = ({
             }
 
             console.log(`[${new Date().toLocaleString('en-US', { timeZone: 'Africa/Nairobi' })}] Exporting selling prices with IDs:`, ids);
-            await exportSellingPricesCsv({
+            await exportSellingPricesXlsx({
                 sellingPriceIds: ids,
             }).unwrap();
-            toast.success(t("catalog:success.csvDownloaded", { defaultValue: "CSV downloaded successfully" }));
+            toast.success(t("catalog:success.xlsxDownloaded", { defaultValue: "XLSX downloaded successfully" })); // Updated message
         } catch (err: any) {
             console.error(`[${new Date().toLocaleString('en-US', { timeZone: 'Africa/Nairobi' })}] Export error:`, err);
-            toast.error(t("catalog:errors.csvError", { defaultValue: "Failed to export CSV" }));
+            toast.error(t("catalog:errors.xlsxError", { defaultValue: "Failed to export XLSX" })); // Updated message
         }
     };
 

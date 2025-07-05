@@ -6,7 +6,23 @@ const teaCategoryValues = Object.values(TeaCategory) as [string, ...string[]];
 const teaGradeValues = Object.values(TeaGrade) as [string, ...string[]];
 const brokerValues = Object.values(Broker) as [string, ...string[]];
 
-const dateFormat = z
+// Create a reusable reprint schema that matches your Prisma model (String type)
+export const reprintSchema = z.preprocess((val) => {
+    if (val === "No" || val === null) return "No";
+    if (typeof val === "number") return String(val);
+    if (val === "No") return "No";
+    if (val === "") return undefined;
+    const num = Number(val);
+    if (isNaN(num)) return undefined;
+    return String(num);
+}, z.union([
+    z.string().regex(/^[1-9]\d*$/, {
+        message: "Reprint must be 'No' or a positive integer (got a negative or zero value)",
+    }),
+    z.literal("No"),
+]).optional().describe("Either 'No' or a positive integer string"));
+
+export const dateFormat = z
     .string()
     .regex(
         /^(?:\d{4}\/(0?[1-9]|1[0-2])\/(0?[1-9]|[12]\d|3[01])|(0?[1-9]|[12]\d|3[01])\/(0?[1-9]|1[0-2])\/\d{4}|([1-9]|1[0-2])\/([1-9]|[12]\d|3[01])\/\d{4})$/,
@@ -25,7 +41,6 @@ const dateFormat = z
             [month, day, year] = val.split('/').map(Number);
         }
         const formattedDate = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-        console.log(`[Schema] Transforming date: ${val} to ${formattedDate}`);
 
         // Validate the date is valid
         const date = new Date(formattedDate);
@@ -55,10 +70,7 @@ export const querySchema = z
         grade: z.enum([...teaGradeValues, 'any'] as const).optional(),
         broker: z.enum([...brokerValues, 'any'] as const).optional(),
         invoiceNo: z.string().min(1, 'Invoice number must not be empty').optional(),
-        reprint: z.union([
-            z.coerce.number().int().nonnegative('Reprint must be non-negative'),
-            z.coerce.boolean().transform(val => (val ? 1 : 0))
-        ]).optional(),
+        reprint: reprintSchema,
         search: z.string().min(1, 'Search term must not be empty').optional(),
         ids: z.array(z.number().int().positive('IDs must be positive integers')).optional(),
         userCognitoId: cognitoIdSchema.optional(),
@@ -70,10 +82,7 @@ export const createCatalogSchema = z.object({
     broker: z.enum(brokerValues, { message: 'Invalid broker value' }),
     sellingMark: z.string().min(1, 'Selling mark is required'),
     lotNo: z.string().min(1, 'Lot number is required'),
-    reprint: z.union([
-        z.number().int().nonnegative('Reprint must be non-negative').default(0),
-        z.coerce.boolean().transform(val => (val ? 1 : 0))
-    ]),
+    reprint: reprintSchema,
     bags: z.number().int().positive('Bags must be a positive integer'),
     netWeight: z.number().positive('Net weight must be positive'),
     totalWeight: z.number().positive('Total weight must be positive'),
@@ -91,10 +100,7 @@ export const csvRecordSchema = z.object({
     broker: z.enum(brokerValues, { message: 'Invalid broker value' }),
     sellingMark: z.string().min(1, 'Selling mark is required'),
     lotNo: z.string().min(1, 'Lot number is required'),
-    reprint: z.union([
-        z.coerce.number().int().nonnegative('Reprint must be non-negative').default(0),
-        z.coerce.boolean().transform(val => (val ? 1 : 0))
-    ]),
+    reprint: reprintSchema,
     bags: z.number().int().positive('Bags must be a positive integer'),
     netWeight: z.number().positive('Net weight must be positive'),
     totalWeight: z.number().positive('Total weight must be positive'),
@@ -110,10 +116,7 @@ export const csvRecordSchema = z.object({
 export const updateSchema = z.object({
     broker: z.enum(brokerValues, { message: 'Invalid broker value' }).optional(),
     sellingMark: z.string().min(1, 'Selling mark must not be empty').optional(),
-    reprint: z.union([
-        z.number().int().nonnegative('Reprint must be non-negative'),
-        z.coerce.boolean().transform(val => (val ? 1 : 0))
-    ]).optional(),
+    reprint: reprintSchema,
     bags: z.number().int().positive('Bags must be a positive integer').optional(),
     totalWeight: z.number().positive('Total weight must be positive').optional(),
     netWeight: z.number().positive('Net weight must be positive').optional(),
@@ -140,9 +143,6 @@ export const filtersStateSchema = z.object({
     bags: z.number().int().positive('Bags').optional(),
     totalWeight: z.number().positive('').optional(),
     netWeight: z.number().positive('').optional(),
-    reprint: z.union([
-        z.number().int().nonnegative(''),
-        z.coerce.boolean().transform(val => (val ? 1 : 0))
-    ]).optional(),
+    reprint: reprintSchema,
     search: z.string().optional(),
 }).strict();

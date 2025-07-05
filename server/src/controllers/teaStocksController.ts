@@ -1022,7 +1022,6 @@ export const uploadStocksCsv = async (req: Request, res: Response): Promise<void
             logWithTimestamp(`Row ${rowIndex}: Raw record:`, record);
 
             try {
-                // Normalize and parse the record
                 const parsedRecord = {
                     ...record,
                     bags: record.bags ? Number(record.bags) : undefined,
@@ -1041,43 +1040,18 @@ export const uploadStocksCsv = async (req: Request, res: Response): Promise<void
                     adminCognitoId: authenticatedUser.userId,
                 };
 
-                // Validate numeric fields to prevent NaN
-                if (parsedRecord.bags && isNaN(parsedRecord.bags)) {
-                    throw new Error("Invalid number format for bags");
-                }
-                if (parsedRecord.weight && isNaN(parsedRecord.weight)) {
-                    throw new Error("Invalid number format for weight");
-                }
-                if (parsedRecord.purchaseValue && isNaN(parsedRecord.purchaseValue)) {
-                    throw new Error("Invalid number format for purchaseValue");
-                }
-                if (parsedRecord.totalPurchaseValue && isNaN(parsedRecord.totalPurchaseValue)) {
-                    throw new Error("Invalid number format for totalPurchaseValue");
-                }
-                if (parsedRecord.agingDays && isNaN(parsedRecord.agingDays)) {
-                    throw new Error("Invalid number format for agingDays");
-                }
-                if (parsedRecord.penalty && isNaN(parsedRecord.penalty)) {
-                    throw new Error("Invalid number format for penalty");
-                }
-                if (parsedRecord.bgtCommission && isNaN(parsedRecord.bgtCommission)) {
-                    throw new Error("Invalid number format for bgtCommission");
-                }
-                if (parsedRecord.maerskFee && isNaN(parsedRecord.maerskFee)) {
-                    throw new Error("Invalid number format for maerskFee");
-                }
-                if (parsedRecord.commission && isNaN(parsedRecord.commission)) {
-                    throw new Error("Invalid number format for commission");
-                }
-                if (parsedRecord.netPrice && isNaN(parsedRecord.netPrice)) {
-                    throw new Error("Invalid number format for netPrice");
-                }
-                if (parsedRecord.total && isNaN(parsedRecord.total)) {
-                    throw new Error("Invalid number format for total");
-                }
-                if (parsedRecord.lowStockThreshold && isNaN(parsedRecord.lowStockThreshold)) {
-                    throw new Error("Invalid number format for lowStockThreshold");
-                }
+                if (parsedRecord.bags && isNaN(parsedRecord.bags)) throw new Error("Invalid number format for bags");
+                if (parsedRecord.weight && isNaN(parsedRecord.weight)) throw new Error("Invalid number format for weight");
+                if (parsedRecord.purchaseValue && isNaN(parsedRecord.purchaseValue)) throw new Error("Invalid number format for purchaseValue");
+                if (parsedRecord.totalPurchaseValue && isNaN(parsedRecord.totalPurchaseValue)) throw new Error("Invalid number format for totalPurchaseValue");
+                if (parsedRecord.agingDays && isNaN(parsedRecord.agingDays)) throw new Error("Invalid number format for agingDays");
+                if (parsedRecord.penalty && isNaN(parsedRecord.penalty)) throw new Error("Invalid number format for penalty");
+                if (parsedRecord.bgtCommission && isNaN(parsedRecord.bgtCommission)) throw new Error("Invalid number format for bgtCommission");
+                if (parsedRecord.maerskFee && isNaN(parsedRecord.maerskFee)) throw new Error("Invalid number format for maerskFee");
+                if (parsedRecord.commission && isNaN(parsedRecord.commission)) throw new Error("Invalid number format for commission");
+                if (parsedRecord.netPrice && isNaN(parsedRecord.netPrice)) throw new Error("Invalid number format for netPrice");
+                if (parsedRecord.total && isNaN(parsedRecord.total)) throw new Error("Invalid number format for total");
+                if (parsedRecord.lowStockThreshold && isNaN(parsedRecord.lowStockThreshold)) throw new Error("Invalid number format for lowStockThreshold");
 
                 const parsed = uploadStocksCsvSchema.safeParse(parsedRecord);
 
@@ -1090,12 +1064,6 @@ export const uploadStocksCsv = async (req: Request, res: Response): Promise<void
                 }
 
                 const data = parsed.data;
-                logWithTimestamp(`Row ${rowIndex}: Parsed data:`, {
-                    lotNo: data.lotNo,
-                    weight: data.weight,
-                    purchaseValue: data.purchaseValue,
-                });
-
                 validStocks.push({
                     stock: {
                         saleCode: data.saleCode,
@@ -1127,7 +1095,6 @@ export const uploadStocksCsv = async (req: Request, res: Response): Promise<void
                     },
                     rowIndex,
                 });
-
                 logWithTimestamp(`Row ${rowIndex}: Added to valid stocks`);
             } catch (error) {
                 logWithTimestamp(`Error processing row ${rowIndex}:`, {
@@ -1146,55 +1113,65 @@ export const uploadStocksCsv = async (req: Request, res: Response): Promise<void
 
         logWithTimestamp(`Found ${validStocks.length} valid stocks to process`);
 
-        const result = await prisma.$transaction(async (tx) => {
-            let createdCount = 0;
-            let skippedCount = 0;
-            let replacedCount = 0;
+        // Process in batches to avoid transaction timeout
+        const BATCH_SIZE = 50;
+        const batches = [];
+        for (let i = 0; i < validStocks.length; i += BATCH_SIZE) {
+            batches.push(validStocks.slice(i, i + BATCH_SIZE));
+        }
 
-            for (const { stock, rowIndex } of validStocks) {
-                logWithTimestamp(`Checking for existing stock with lotNo ${stock.lotNo} at row ${rowIndex}`);
-                const existing = await tx.stocks.findUnique({
-                    where: { lotNo: stock.lotNo },
-                });
+        let createdCount = 0;
+        let skippedCount = 0;
+        let replacedCount = 0;
 
-                if (existing) {
-                    if (duplicateAction === "skip") {
-                        logWithTimestamp(`Skipping existing stock with lotNo ${stock.lotNo} at row ${rowIndex}`);
-                        skippedCount++;
-                        continue;
-                    } else if (duplicateAction === "replace") {
-                        logWithTimestamp(`Replacing existing stock with lotNo ${stock.lotNo} at row ${rowIndex}`);
-                        await tx.stocks.delete({ where: { id: existing.id } });
-                        replacedCount++;
+        for (const batch of batches) {
+            await prisma.$transaction(
+                async (tx) => {
+                    for (const { stock, rowIndex } of batch) {
+                        logWithTimestamp(`Checking for existing stock with lotNo ${stock.lotNo} at row ${rowIndex}`);
+                        const existing = await tx.stocks.findUnique({
+                            where: { lotNo: stock.lotNo },
+                        });
+
+                        if (existing) {
+                            if (duplicateAction === "skip") {
+                                logWithTimestamp(`Skipping existing stock with lotNo ${stock.lotNo} at row ${rowIndex}`);
+                                skippedCount++;
+                                continue;
+                            } else if (duplicateAction === "replace") {
+                                logWithTimestamp(`Replacing existing stock with lotNo ${stock.lotNo} at row ${rowIndex}`);
+                                await tx.stocks.delete({ where: { id: existing.id } });
+                                replacedCount++;
+                            }
+                        }
+
+                        const createdStock = await tx.stocks.create({ data: stock });
+                        await tx.stockHistory.create({
+                            data: {
+                                stocksId: createdStock.id,
+                                action: "Stock Created via CSV",
+                                adminCognitoId: authenticatedUser.userId,
+                                timestamp: new Date(),
+                                details: { lotNo: stock.lotNo },
+                            },
+                        });
+                        createdCount++;
+                        logWithTimestamp(`Created stock with lotNo ${stock.lotNo} at row ${rowIndex}`);
                     }
-                }
-
-                const createdStock = await tx.stocks.create({ data: stock });
-                await tx.stockHistory.create({
-                    data: {
-                        stocksId: createdStock.id, // ✅ REFERENCE stock ID here
-                        action: "Stock Created via CSV",
-                        adminCognitoId: authenticatedUser.userId,
-                        timestamp: new Date(),
-                        details: { lotNo: stock.lotNo },
-                    },
-                });
-                createdCount++;
-                logWithTimestamp(`Created stock with lotNo ${stock.lotNo} at row ${rowIndex}`);
-            }
-
-            return { createdCount, skippedCount, replacedCount };
-        });
+                },
+                { timeout: 30000 } // 30-second timeout
+            );
+        }
 
         logWithTimestamp(
-            `Successfully created ${result.createdCount} stocks, ` +
-            `skipped ${result.skippedCount}, replaced ${result.replacedCount}`
+            `Successfully created ${createdCount} stocks, ` +
+            `skipped ${skippedCount}, replaced ${replacedCount}`
         );
         res.status(201).json({
             success: {
-                created: result.createdCount,
-                skipped: result.skippedCount,
-                replaced: result.replacedCount,
+                created: createdCount,
+                skipped: skippedCount,
+                replaced: replacedCount,
             },
             errors,
         });

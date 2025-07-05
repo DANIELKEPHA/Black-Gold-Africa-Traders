@@ -31,7 +31,7 @@ export type CatalogResponse = {
     saleCode: string;
     category: TeaCategory;
     broker: Broker;
-    reprint: number;
+    reprint: string;
     bags: number;
     netWeight: number;
     totalWeight: number;
@@ -61,7 +61,7 @@ export interface SellingPriceResponse {
     category: string;
     grade: string;
     broker: string;
-    reprint: number;
+    reprint: string;
     createdAt: string;
     updatedAt: string;
     admin: {
@@ -168,7 +168,7 @@ export interface Notification {
 }
 
 export interface FiltersState {
-    // Common fields across SellingPrice, SellingPrice, SellingPrice
+    // Common fields across SellingPrice, OutLots, Catalog
     lotNo?: string;
     sellingMark?: string;
     grade?: TeaGrade | "any";
@@ -185,17 +185,17 @@ export interface FiltersState {
     sortBy: string;
     sortOrder: 'asc' | 'desc';
 
-    // SellingPrice and SellingPrice specific
+    // SellingPrice and Catalog specific
     saleCode?: string;
     category?: TeaCategory | "any";
-    reprint?: number;
+    reprint?: string;
     askingPrice?: number;
     country?: string;
     purchasePrice?: number;
     producerCountry?: string;
     adminCognitoId?: string;
 
-    // SellingPrice specific
+    // OutLots specific
     auction?: string;
     baselinePrice?: number;
 

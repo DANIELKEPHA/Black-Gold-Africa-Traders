@@ -33,7 +33,7 @@ import {Shipment} from "@/state/shipment";
 
 // Configure base query with API base URL
 const rawBaseQuery = fetchBaseQuery({
-    baseUrl: process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3001/api",
+    baseUrl: process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3001",
 });
 
 // Custom baseQuery that attaches Cognito token
@@ -77,8 +77,9 @@ export const api = createApi({
     tagTypes: [
         "Admin",
         "Users",
-        "SellingPrice",
+        "Catalog",
         "SellingPrices",
+        "OutLots",
         "Favorites",
         "Shipments",
         "Stocks",
@@ -100,10 +101,10 @@ export const api = createApi({
                     const rawRole = idToken?.payload?.['custom:role'];
                     const userRole = typeof rawRole === 'string' ? rawRole.toLowerCase() : 'user';
 
-                    console.log(
-                        `[${new Date().toLocaleString('en-US', { timeZone: 'Africa/Nairobi' })}] Cognito session:`,
-                        JSON.stringify({ userId: user.userId, role: userRole }, null, 4)
-                    );
+                    // console.log(
+                    //     `[${new Date().toLocaleString('en-US', { timeZone: 'Africa/Nairobi' })}] Cognito session:`,
+                    //     JSON.stringify({ userId: user.userId, role: userRole }, null, 4)
+                    // );
 
                     const endpoint = userRole === 'admin' ? `/admin/${user.userId}` : `/users/${user.userId}`;
                     let userDetailsResponse = await fetchWithBQ({
@@ -111,10 +112,10 @@ export const api = createApi({
                         params: { includeShipments: true, includeAssignedStocks: true, includeFavoritedStocks: true },
                     });
 
-                    console.log(
-                        `[${new Date().toLocaleString('en-US', { timeZone: 'Africa/Nairobi' })}] getAuthUser API Response:`,
-                        JSON.stringify(userDetailsResponse, null, 4)
-                    );
+                    // console.log(
+                    //     `[${new Date().toLocaleString('en-US', { timeZone: 'Africa/Nairobi' })}] getAuthUser API Response:`,
+                    //     JSON.stringify(userDetailsResponse, null, 4)
+                    // );
 
                     if (userDetailsResponse.error) {
                         if (userDetailsResponse.error.status === 404) {
@@ -270,7 +271,7 @@ export const api = createApi({
             },
         }),
 
-        // SellingPrice Endpoints (Unchanged)
+        // Catalog Endpoints
         getCatalog: builder.query<{ data: CatalogResponse[]; meta: { page: number; limit: number; total: number; totalPages: number } }, Partial<FiltersState> & { page?: number; limit?: number }>({
             query: (filters) => ({
                 url: "/catalogs",
@@ -297,14 +298,14 @@ export const api = createApi({
             providesTags: (result) =>
                 result?.data
                     ? [
-                        ...result.data.map(({ id }) => ({ type: "SellingPrice" as const, id })),
-                        { type: "SellingPrice" as const, id: "LIST" },
+                        ...result.data.map(({ id }) => ({ type: "Catalog" as const, id })),
+                        { type: "Catalog" as const, id: "LIST" },
                     ]
-                    : [{ type: "SellingPrice" as const, id: "LIST" }],
+                    : [{ type: "Catalog" as const, id: "LIST" }],
             async onQueryStarted(filters, { queryFulfilled }) {
                 try {
                     const { data } = await queryFulfilled;
-                    console.log(`[${new Date().toLocaleString("en-US", { timeZone: "Africa/Nairobi" })}] getCatalog: ${JSON.stringify(data.meta)}`);
+                    // console.log(`[${new Date().toLocaleString("en-US", { timeZone: "Africa/Nairobi" })}] getCatalog: ${JSON.stringify(data.meta)}`);
                 } catch (error: any) {
                     console.error(`[${new Date().toLocaleString("en-US", { timeZone: "Africa/Nairobi" })}] getCatalog error:`, {
                         status: error?.error?.status,
@@ -317,17 +318,17 @@ export const api = createApi({
         }),
         getCatalogById: builder.query<CatalogResponse, number>({
             query: (id) => `/catalogs/${id}`,
-            providesTags: (result, error, id): TagDescription<"SellingPrice">[] => [{ type: "SellingPrice", id }],
+            providesTags: (result, error, id): TagDescription<"Catalog">[] => [{ type: "Catalog", id }],
         }),
         getCatalogByLotNo: builder.query<CatalogResponse, string>({
             query: (lotNo) => `/catalogs/lot/${lotNo}`,
-            providesTags: (result, error, lotNo): TagDescription<"SellingPrice">[] => [
-                { type: "SellingPrice", id: result?.id || lotNo },
+            providesTags: (result, error, lotNo): TagDescription<"Catalog">[] => [
+                { type: "Catalog", id: result?.id || lotNo },
             ],
         }),
         getCatalogFilterOptions: builder.query<FilterOptions, void>({
             query: () => "/catalogs/filters",
-            providesTags: ["SellingPrice"],
+            providesTags: ["Catalog"],
         }),
         createCatalogFromCsv: builder.mutation<{
             count: any;
@@ -344,11 +345,11 @@ export const api = createApi({
                     body: formData,
                 };
             },
-            invalidatesTags: [{ type: "SellingPrice", id: "LIST" }],
+            invalidatesTags: [{ type: "Catalog", id: "LIST" }],
             async onQueryStarted({ file, duplicateAction }, { queryFulfilled }) {
                 try {
                     const { data } = await queryFulfilled;
-                    console.log(`[${new Date().toLocaleString("en-US", { timeZone: "Africa/Nairobi" })}] createCatalogFromCsv: Successfully uploaded ${data.success.created} catalog(s), skipped ${data.success.skipped}, replaced ${data.success.replaced}`);
+                    // console.log(`[${new Date().toLocaleString("en-US", { timeZone: "Africa/Nairobi" })}] createCatalogFromCsv: Successfully uploaded ${data.success.created} catalog(s), skipped ${data.success.skipped}, replaced ${data.success.replaced}`);
                     await withToast(queryFulfilled, {
                         success: `Successfully uploaded ${data.success.created} catalog(s)!`,
                         error: "Failed to upload CSV file.",
@@ -363,7 +364,8 @@ export const api = createApi({
                 }
             },
         }),
-        exportCatalogsCsv: builder.mutation<
+
+        exportCatalogsXlsx: builder.mutation<
             { success: boolean },
             { catalogIds?: number[] } & Partial<FiltersState>
         >({
@@ -383,82 +385,48 @@ export const api = createApi({
                     producerCountry: filters.country,
                     manufactureDate: filters.manufactureDate,
                     broker: filters.broker,
-                    catalogIds: catalogIds?.join(','),
+                    catalogIds: catalogIds?.join(","),
+                    page: 1,
+                    limit: 10000,
                 });
-                console.log(
-                    `[${new Date().toLocaleString('en-US', { timeZone: 'Africa/Nairobi', hour12: true })}] Sending export request with params:`,
-                    params
-                );
+                // console.log(
+                //     `[${new Date().toLocaleString("en-US", { timeZone: "Africa/Nairobi" })}] Sending XLSX export request with params:`,
+                //     params
+                // );
                 return {
-                    url: '/catalogs/export',
-                    method: 'POST',
+                    url: "/catalogs/export/xlsx",
+                    method: "POST",
                     body: params,
                     responseHandler: async (response: Response) => {
                         if (!response.ok) {
                             const errorText = await response.text();
                             throw new Error(`Export failed: ${response.status} ${response.statusText} - ${errorText}`);
                         }
+                        const blob = await response.blob();
+                        if (!blob || blob.type !== "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet") {
+                            throw new Error("Unexpected response format or empty XLSX");
+                        }
+                        const url = window.URL.createObjectURL(blob);
+                        const link = document.createElement("a");
+                        link.href = url;
+                        link.download = `tea_catalog_${new Date().toISOString().split("T")[0]}.xlsx`;
+                        document.body.appendChild(link);
+                        link.click();
+                        document.body.removeChild(link);
+                        window.URL.revokeObjectURL(url);
                         return { success: true };
                     },
-                    cache: 'no-cache',
+                    cache: "no-cache",
                 };
             },
             async onQueryStarted(arg, { queryFulfilled }) {
-                const time = new Date().toLocaleString('en-US', { timeZone: 'Africa/Nairobi', hour12: true });
-                console.log(`[${time}] Starting CSV download query:`, arg);
+                const time = new Date().toLocaleString("en-US", { timeZone: "Africa/Nairobi" });
+                // console.log(`[${time}] Starting XLSX download query:`, arg);
                 try {
-                    const session = await fetchAuthSession({ forceRefresh: true });
-                    const token = session.tokens?.idToken?.toString();
-
-                    const params = cleanParams({
-                        lotNo: arg.lotNo,
-                        sellingMark: arg.sellingMark,
-                        grade: arg.grade,
-                        invoiceNo: arg.invoiceNo,
-                        saleCode: arg.saleCode,
-                        category: arg.category,
-                        reprint: arg.reprint,
-                        bags: arg.bags,
-                        netWeight: arg.netWeight,
-                        totalWeight: arg.totalWeight,
-                        askingPrice: arg.askingPrice,
-                        producerCountry: arg.country,
-                        manufactureDate: arg.manufactureDate,
-                        broker: arg.broker,
-                        catalogIds: arg.catalogIds?.join(','),
-                    });
-
-                    const response = await fetch('http://localhost:3001/catalogs/export', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            ...(token ? { Authorization: `Bearer ${token}` } : {}),
-                        },
-                        body: JSON.stringify(params),
-                    });
-
-                    if (!response.ok) {
-                        const errorText = await response.text();
-                        throw new Error(`Fetch failed: ${response.status} ${response.statusText} - ${errorText}`);
-                    }
-
-                    const blob = await response.blob();
-                    if (!blob || blob.type !== 'text/csv') {
-                        throw new Error('Unexpected response format or empty CSV');
-                    }
-
-                    const url = window.URL.createObjectURL(blob);
-                    const link = document.createElement('a');
-                    link.href = url;
-                    link.download = `tea_catalog_${new Date().toISOString().split('T')[0]}.csv`;
-                    document.body.appendChild(link);
-                    link.click();
-                    document.body.removeChild(link);
-                    window.URL.revokeObjectURL(url);
-
                     await queryFulfilled;
+                    // console.log(`[${time}] XLSX export successful`);
                 } catch (error) {
-                    console.error(`[${time}] CSV download failed:`, error);
+                    console.error(`[${time}] XLSX download failed:`, error);
                     throw error;
                 }
             },
@@ -466,13 +434,14 @@ export const api = createApi({
                 maxRetries: 0,
             },
         }),
+
         deleteCatalogs: builder.mutation<{ message: string }, { ids: number[] }>({
             query: ({ ids }) => ({
                 url: "/catalogs/bulk",
                 method: "DELETE",
                 body: { ids },
             }),
-            invalidatesTags: [{ type: "SellingPrice", id: "LIST" }],
+            invalidatesTags: [{ type: "Catalog", id: "LIST" }],
             async onQueryStarted(_, { queryFulfilled }) {
                 await withToast(queryFulfilled, {
                     success: "SellingPrice items deleted successfully!",
@@ -481,11 +450,34 @@ export const api = createApi({
             },
         }),
 
+        deleteAllCatalogs: builder.mutation<
+            { message: string; associations: { id: number; lotNo: string }[] },
+            Record<string, any>
+        >({
+            query: (filters) => ({
+                url: "/catalogs/bulk/delete-all",
+                method: "DELETE",
+                body: filters,
+            }),
+            invalidatesTags: [{ type: "Catalog", id: "LIST" }],
+            async onQueryStarted(_, { queryFulfilled }) {
+                await withToast(queryFulfilled, {
+                    success: "All catalogs deleted successfully!",
+                    error: (err) => {
+                        const errorData = err as {
+                            error?: { data?: { message?: string } };
+                        };
+                        return `Failed to delete all catalogs: ${errorData?.error?.data?.message || "Unknown error"}`;
+                    },
+                });
+            },
+        }),
+
         // New SellingPrice Endpoints
         getSellingPrices: builder.query<{ data: SellingPriceResponse[]; meta: { page: number; limit: number; total: number; totalPages: number } }, Partial<FiltersState> & { page?: number; limit?: number }>({
-            query: (filters) => ({
-                url: "/sellingPrices",
-                params: cleanParams({
+            query: (filters) => {
+                const time = new Date().toLocaleString("en-US", { timeZone: "Africa/Nairobi" });
+                const params = cleanParams({
                     lotNo: filters.lotNo,
                     sellingMark: filters.sellingMark,
                     grade: filters.grade,
@@ -504,37 +496,46 @@ export const api = createApi({
                     search: filters.search,
                     page: filters.page,
                     limit: filters.limit,
-                }),
-            }),
+                });
+                // console.log(`[${time}] Sending getSellingPrices request with params:`, params);
+                return {
+                    url: "/sellingPrices",
+                    params,
+                };
+            },
             providesTags: (result) =>
                 result?.data
                     ? [
-                        ...result.data.map(({ id }) => ({ type: "SellingPrice" as const, id })),
-                        { type: "SellingPrice" as const, id: "LIST" },
+                        ...result.data.map(({ id }) => ({ type: "SellingPrices" as const, id })),
+                        { type: "SellingPrices" as const, id: "LIST" },
                     ]
-                    : [{ type: "SellingPrice" as const, id: "LIST" }],
+                    : [{ type: "SellingPrices" as const, id: "LIST" }],
             async onQueryStarted(filters, { queryFulfilled }) {
+                const time = new Date().toLocaleString("en-US", { timeZone: "Africa/Nairobi" });
                 try {
                     const { data } = await queryFulfilled;
-                    console.log(`[${new Date().toLocaleString("en-US", { timeZone: "Africa/Nairobi" })}] getSellingPrices: ${JSON.stringify(data.meta)}`);
+                    // console.log(`[${time}] getSellingPrices success:`, { meta: data.meta, dataLength: data.data.length });
                 } catch (error: any) {
-                    console.error(`[${new Date().toLocaleString("en-US", { timeZone: "Africa/Nairobi" })}] getSellingPrices error:`, {
+                    console.error(`[${time}] getSellingPrices error:`, {
                         status: error?.error?.status,
                         message: error?.error?.data?.message,
                         details: error?.error?.data?.details,
                         params: filters,
+                        url: `/sellingPrices`,
                     });
                 }
             },
         }),
+
         getSellingPriceById: builder.query<SellingPriceResponse, number>({
             query: (id) => `/sellingPrices/${id}`,
-            providesTags: (result, error, id): TagDescription<"SellingPrice">[] => [{ type: "SellingPrice", id }],
+            providesTags: (result, error, id): TagDescription<"SellingPrices">[] => [{ type: "SellingPrices", id }],
         }),
+
         getSellingPriceByLotNo: builder.query<SellingPriceResponse, string>({
-            query: (lotNo) => `/selling-prices/lot/${lotNo}`,
-            providesTags: (result, error, lotNo): TagDescription<"SellingPrice">[] => [
-                { type: "SellingPrice", id: result?.id || lotNo },
+            query: (lotNo) => `/sellingPrices/lot/${lotNo}`,
+            providesTags: (result, error, lotNo): TagDescription<"SellingPrices">[] => [
+                { type: "SellingPrices", id: result?.id || lotNo },
             ],
         }),
         createSellingPrice: builder.mutation<SellingPriceResponse, {
@@ -545,7 +546,7 @@ export const api = createApi({
             invoiceNo: string;
             saleCode: string;
             category: string;
-            reprint?: number;
+            reprint?: string;
             bags: number;
             netWeight: number;
             totalWeight: number;
@@ -556,11 +557,11 @@ export const api = createApi({
             adminCognitoId: string;
         }>({
             query: (body) => ({
-                url: "/selling-prices",
+                url: "/sellingPrices",
                 method: "POST",
                 body,
             }),
-            invalidatesTags: [{ type: "SellingPrice", id: "LIST" }],
+            invalidatesTags: [{ type: "SellingPrices", id: "LIST" }],
             async onQueryStarted(_, { queryFulfilled }) {
                 await withToast(queryFulfilled, {
                     success: "Selling price created successfully!",
@@ -574,7 +575,7 @@ export const api = createApi({
                 method: "DELETE",
                 body: { ids },
             }),
-            invalidatesTags: [{ type: "SellingPrice", id: "LIST" }],
+            invalidatesTags: [{ type: "SellingPrices", id: "LIST" }],
             async onQueryStarted(_, { queryFulfilled }) {
                 await withToast(queryFulfilled, {
                     success: "Selling prices deleted successfully!",
@@ -582,15 +583,28 @@ export const api = createApi({
                 });
             },
         }),
+        deleteAllSellingPrices: builder.mutation<void, void>({
+            query: () => ({
+                url: "/sellingPrices/deleteAll",
+                method: "DELETE",
+            }),
+            invalidatesTags: [{ type: "SellingPrices", id: "LIST" }],
+        }),
         uploadSellingPricesCsv: builder.mutation<{
             count: any;
             success: { created: number; skipped: number; replaced: number };
-            errors: { row: number; message: string }[]
-        }, { file: File; duplicateAction?: 'skip' | 'replace' }>({
+            errors: { row: number; message: string }[];
+        }, { file: File; duplicateAction?: "skip" | "replace" }>({
             query: ({ file, duplicateAction }) => {
+                const time = new Date().toLocaleString("en-US", { timeZone: "Africa/Nairobi" });
                 const formData = new FormData();
-                formData.append('file', file);
-                if (duplicateAction) formData.append('duplicateAction', duplicateAction);
+                formData.append("file", file);
+                if (duplicateAction) formData.append("duplicateAction", duplicateAction);
+                // console.log(`[${time}] Preparing uploadSellingPricesCsv request:`, {
+                //     fileName: file.name,
+                //     size: file.size,
+                //     duplicateAction,
+                // });
                 return {
                     url: "/sellingPrices/upload",
                     method: "POST",
@@ -598,12 +612,24 @@ export const api = createApi({
                     headers: {}, // Let browser set Content-Type for FormData
                 };
             },
-            invalidatesTags: [{ type: "SellingPrice", id: "LIST" }],
+            invalidatesTags: [{ type: "SellingPrices", id: "LIST" }],
             async onQueryStarted(_, { queryFulfilled }) {
-                await withToast(queryFulfilled, {
-                    success: "Selling prices uploaded successfully!",
-                    error: "Failed to upload selling prices.",
-                });
+                const time = new Date().toLocaleString("en-US", { timeZone: "Africa/Nairobi" });
+                try {
+                    const { data } = await queryFulfilled;
+                    // console.log(`[${time}] uploadSellingPricesCsv success:`, data);
+                    await withToast(queryFulfilled, {
+                        success: "Selling prices uploaded successfully!",
+                        error: "Failed to upload selling prices.",
+                    });
+                } catch (error: any) {
+                    console.error(`[${time}] uploadSellingPricesCsv error:`, {
+                        status: error?.error?.status,
+                        message: error?.error?.data?.message,
+                        details: error?.error?.data?.details,
+                        originalError: error,
+                    });
+                }
             },
         }),
 
@@ -613,7 +639,7 @@ export const api = createApi({
                 method: "PUT",
                 body,
             }),
-            invalidatesTags: (result, error, { id }) => [{ type: "SellingPrice", id }, { type: "SellingPrice", id: "LIST" }],
+            invalidatesTags: (result, error, { id }) => [{ type: "SellingPrices", id }, { type: "SellingPrices", id: "LIST" }],
             async onQueryStarted(_, { queryFulfilled }) {
                 await withToast(queryFulfilled, {
                     success: "Selling price updated successfully!",
@@ -622,7 +648,7 @@ export const api = createApi({
             },
         }),
 
-        exportSellingPricesCsv: builder.mutation<
+        exportSellingPricesXlsx: builder.mutation<
             { success: boolean },
             { sellingPriceIds?: number[] } & Partial<FiltersState>
         >({
@@ -639,110 +665,62 @@ export const api = createApi({
                     netWeight: filters.netWeight,
                     totalWeight: filters.totalWeight,
                     askingPrice: filters.askingPrice,
-                    producerCountry: filters.producerCountry,
+                    purchasePrice: filters.purchasePrice,
+                    producerCountry: filters.country,
                     manufactureDate: filters.manufactureDate,
                     broker: filters.broker,
-                    purchasePrice: filters.purchasePrice,
-                    adminCognitoId: filters.adminCognitoId,
                     sellingPriceIds: sellingPriceIds?.join(","),
+                    page: 1,
+                    limit: 3000,
                 });
 
-                console.log(
-                    `[${new Date().toLocaleString("en-US", {
-                        timeZone: "Africa/Nairobi",
-                    })}] Sending export request with params:`,
-                    params
-                );
+                const time = new Date().toLocaleString("en-US", { timeZone: "Africa/Nairobi" });
+                // console.log(`[${time}] Sending Selling Prices XLSX export with params:`, params);
 
                 return {
-                    url: "/sellingPrices/export-csv",
+                    url: "/sellingPrices/export-xlsx",
                     method: "POST",
                     body: params,
                     responseHandler: async (response: Response) => {
                         if (!response.ok) {
                             const errorText = await response.text();
-                            throw new Error(
-                                `Export failed: ${response.status} ${response.statusText} - ${errorText}`
-                            );
+                            throw new Error(`Export failed: ${response.status} ${response.statusText} - ${errorText}`);
                         }
+
+                        const blob = await response.blob();
+
+                        if (
+                            !blob ||
+                            blob.type !== "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                        ) {
+                            throw new Error("Unexpected response format or empty XLSX");
+                        }
+
+                        const url = window.URL.createObjectURL(blob);
+                        const link = document.createElement("a");
+                        link.href = url;
+                        link.download = `selling_prices_${new Date().toISOString().split("T")[0]}.xlsx`;
+                        document.body.appendChild(link);
+                        link.click();
+                        document.body.removeChild(link);
+                        window.URL.revokeObjectURL(url);
+
                         return { success: true };
                     },
                     cache: "no-cache",
                 };
             },
-
             async onQueryStarted(arg, { queryFulfilled }) {
-                const time = new Date().toLocaleString("en-US", {
-                    timeZone: "Africa/Nairobi",
-                });
-                console.log(`[${time}] Starting CSV download query:`, arg);
-
+                const time = new Date().toLocaleString("en-US", { timeZone: "Africa/Nairobi" });
+                // console.log(`[${time}] Starting Selling Prices XLSX download:`, arg);
                 try {
-                    const session = await fetchAuthSession({ forceRefresh: true });
-                    const token = session.tokens?.idToken?.toString();
-
-                    const params = cleanParams({
-                        lotNo: arg.lotNo,
-                        sellingMark: arg.sellingMark,
-                        grade: arg.grade,
-                        invoiceNo: arg.invoiceNo,
-                        saleCode: arg.saleCode,
-                        category: arg.category,
-                        reprint: arg.reprint,
-                        bags: arg.bags,
-                        netWeight: arg.netWeight,
-                        totalWeight: arg.totalWeight,
-                        askingPrice: arg.askingPrice,
-                        producerCountry: arg.producerCountry,
-                        manufactureDate: arg.manufactureDate,
-                        broker: arg.broker,
-                        purchasePrice: arg.purchasePrice,
-                        adminCognitoId: arg.adminCognitoId,
-                        sellingPriceIds: arg.sellingPriceIds?.join(","),
-                    });
-
-                    const response = await fetch(
-                        "http://localhost:3001/sellingPrices/export-csv",
-                        {
-                            method: "POST",
-                            headers: {
-                                "Content-Type": "application/json",
-                                ...(token ? { Authorization: `Bearer ${token}` } : {}),
-                            },
-                            body: JSON.stringify(params),
-                        }
-                    );
-
-                    if (!response.ok) {
-                        const errorText = await response.text();
-                        throw new Error(
-                            `Fetch failed: ${response.status} ${response.statusText} - ${errorText}`
-                        );
-                    }
-
-                    const blob = await response.blob();
-                    if (!blob || blob.type !== "text/csv") {
-                        throw new Error("Unexpected response format or empty CSV");
-                    }
-
-                    const url = window.URL.createObjectURL(blob);
-                    const link = document.createElement("a");
-                    link.href = url;
-                    link.download = `selling_prices_${new Date()
-                        .toISOString()
-                        .split("T")[0]}.csv`;
-                    document.body.appendChild(link);
-                    link.click();
-                    document.body.removeChild(link);
-                    window.URL.revokeObjectURL(url);
-
                     await queryFulfilled;
+                    // console.log(`[${time}] Selling Prices XLSX export successful`);
                 } catch (error) {
-                    console.error(`[${time}] CSV download failed:`, error);
+                    console.error(`[${time}] Selling Prices XLSX export failed:`, error);
                     throw error;
                 }
             },
-
             extraOptions: {
                 maxRetries: 0,
             },
@@ -753,7 +731,7 @@ export const api = createApi({
             providesTags: ["SellingPrices"],
         }),
 
-        // New SellingPrice Endpoints
+        // New Outlots Endpoints
         getOutlots: builder.query<
             { data: OutLotsResponse[]; meta: { page: number; limit: number; total: number; totalPages: number } },
             Partial<FiltersState> & { page?: number; limit?: number }
@@ -777,21 +755,21 @@ export const api = createApi({
                 });
                 console.log(`[${new Date().toLocaleString("en-US", { timeZone: "Africa/Nairobi" })}] getOutlots: Sending query params:`, params);
                 return {
-                    url: "/outlots",
+                    url: "/outLots",
                     params,
                 };
             },
             providesTags: (result) =>
                 result?.data
                     ? [
-                        ...result.data.map(({ id }) => ({ type: "SellingPrice" as const, id })),
-                        { type: "SellingPrice" as const, id: "LIST" },
+                        ...result.data.map(({ id }) => ({ type: "OutLots" as const, id })),
+                        { type: "OutLots" as const, id: "LIST" },
                     ]
-                    : [{ type: "SellingPrice" as const, id: "LIST" }],
+                    : [{ type: "OutLots" as const, id: "LIST" }],
             async onQueryStarted(filters, { queryFulfilled }) {
                 try {
                     const { data } = await queryFulfilled;
-                    console.log(`[${new Date().toLocaleString("en-US", { timeZone: "Africa/Nairobi" })}] getOutlots: Success:`, data.meta);
+                    // console.log(`[${new Date().toLocaleString("en-US", { timeZone: "Africa/Nairobi" })}] getOutlots: Success:`, data.meta);
                 } catch (error: any) {
                     console.error(`[${new Date().toLocaleString("en-US", { timeZone: "Africa/Nairobi" })}] getOutlots: Error:`, {
                         status: error?.error?.status,
@@ -807,12 +785,12 @@ export const api = createApi({
 
         getOutlotById: builder.query<OutlotResponse, number>({
             query: (id) => `/outlots/${id}`,
-            providesTags: (result, error, id): TagDescription<"SellingPrice">[] => [{ type: "SellingPrice", id }],
+            providesTags: (result, error, id): TagDescription<"OutLots">[] => [{ type: "OutLots", id }],
         }),
         getOutlotByLotNo: builder.query<OutlotResponse, string>({
             query: (lotNo) => `/outlots/lot/${lotNo}`,
-            providesTags: (result, error, lotNo): TagDescription<"SellingPrice">[] => [
-                { type: "SellingPrice", id: result?.id || lotNo },
+            providesTags: (result, error, lotNo): TagDescription<"OutLots">[] => [
+                { type: "OutLots", id: result?.id || lotNo },
             ],
         }),
         createOutlot: builder.mutation<OutlotResponse, {
@@ -834,7 +812,7 @@ export const api = createApi({
                 method: "POST",
                 body,
             }),
-            invalidatesTags: [{ type: "SellingPrice", id: "LIST" }],
+            invalidatesTags: [{ type: "OutLots", id: "LIST" }],
             async onQueryStarted(_, { queryFulfilled }) {
                 await withToast(queryFulfilled, {
                     success: "Outlot created successfully!",
@@ -844,14 +822,14 @@ export const api = createApi({
         }),
         deleteOutlots: builder.mutation<{ message: string; associations: { id: number; lotNo: string }[] }, { ids: number[] }>({
             query: ({ ids }) => ({
-                url: "/outlots",
+                url: "/outLots",
                 method: "DELETE",
                 body: { ids },
             }),
-            invalidatesTags: [{ type: "SellingPrice", id: "LIST" }],
+            invalidatesTags: [{ type: "OutLots", id: "LIST" }],
             async onQueryStarted(_, { queryFulfilled }) {
                 await withToast(queryFulfilled, {
-                    success: "SellingPrice deleted successfully!",
+                    success: "outLots deleted successfully!",
                     error: "Failed to delete outLots.",
                 });
             },
@@ -872,7 +850,7 @@ export const api = createApi({
                     headers: {}, // Let browser set Content-Type for FormData
                 };
             },
-            invalidatesTags: [{ type: "SellingPrice", id: "LIST" }],
+            invalidatesTags: [{ type: "OutLots", id: "LIST" }],
             async onQueryStarted(_, { queryFulfilled }) {
                 await withToast(queryFulfilled, {
                     success: "SellingPrice uploaded successfully!",
@@ -881,9 +859,9 @@ export const api = createApi({
             },
         }),
 
-        exportOutLotsCsv: builder.mutation<
+        exportOutLotsXlsx: builder.mutation<
             { success: boolean },
-            { outLotIds?: string } & Partial<FiltersState> // Changed from number[] to string
+            { outLotIds?: number[] } & Partial<FiltersState>
         >({
             query: ({ outLotIds, ...filters }) => {
                 const params = cleanParams({
@@ -899,99 +877,45 @@ export const api = createApi({
                     baselinePrice: filters.baselinePrice,
                     manufactureDate: filters.manufactureDate,
                     adminCognitoId: filters.adminCognitoId,
-                    outLotIds: outLotIds, // Already a string, no need for join
+                    outLotIds: outLotIds?.join(","),
+                    page: 1,
+                    limit: 10000,
                 });
 
-                console.log(
-                    `[${new Date().toLocaleString("en-US", {
-                        timeZone: "Africa/Nairobi",
-                    })}] Sending export request with params:`,
-                    params
-                );
-
                 return {
-                    url: "/outLots/export-csv",
+                    url: "/outLots/export-xlsx",
                     method: "POST",
                     body: params,
                     responseHandler: async (response: Response) => {
+                        const time = new Date().toLocaleString("en-US", { timeZone: "Africa/Nairobi" });
                         if (!response.ok) {
                             const errorText = await response.text();
-                            throw new Error(
-                                `Export failed: ${response.status} ${response.statusText} - ${errorText}`
-                            );
+                            console.error(`[${time}] Export failed:`, { status: response.status, text: errorText });
+                            throw new Error(`Export failed: ${response.status} ${response.statusText} - ${errorText}`);
                         }
+
+                        const blob = await response.blob();
+                        if (!blob || blob.type !== "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet") {
+                            console.error(`[${time}] Unexpected response format:`, { type: blob?.type });
+                            throw new Error("Unexpected response format or empty XLSX");
+                        }
+
+                        const url = window.URL.createObjectURL(blob);
+                        const link = document.createElement("a");
+                        link.href = url;
+                        link.download = `outlots_${new Date().toISOString().split("T")[0]}.xlsx`;
+                        document.body.appendChild(link);
+                        link.click();
+                        document.body.removeChild(link);
+                        window.URL.revokeObjectURL(url);
+
+                        console.log(`[${time}] XLSX export successful`);
                         return { success: true };
                     },
                     cache: "no-cache",
                 };
             },
-
-            async onQueryStarted(arg, { queryFulfilled }) {
-                const time = new Date().toLocaleString("en-US", {
-                    timeZone: "Africa/Nairobi",
-                });
-                console.log(`[${time}] Starting CSV download query:`, arg);
-
-                try {
-                    const session = await fetchAuthSession({ forceRefresh: true });
-                    const token = session.tokens?.idToken?.toString();
-
-                    const params = cleanParams({
-                        auction: arg.auction,
-                        lotNo: arg.lotNo,
-                        broker: arg.broker,
-                        sellingMark: arg.sellingMark,
-                        grade: arg.grade,
-                        invoiceNo: arg.invoiceNo,
-                        bags: arg.bags,
-                        netWeight: arg.netWeight,
-                        totalWeight: arg.totalWeight,
-                        baselinePrice: arg.baselinePrice,
-                        manufactureDate: arg.manufactureDate,
-                        adminCognitoId: arg.adminCognitoId,
-                        outLotIds: arg.outLotIds, // Already a string
-                    });
-
-                    const response = await fetch(
-                        "http://localhost:3001/outLots/export-csv",
-                        {
-                            method: "POST",
-                            headers: {
-                                "Content-Type": "application/json",
-                                ...(token ? { Authorization: `Bearer ${token}` } : {}),
-                            },
-                            body: JSON.stringify(params),
-                        }
-                    );
-
-                    if (!response.ok) {
-                        const errorText = await response.text();
-                        throw new Error(
-                            `Fetch failed: ${response.status} ${response.statusText} - ${errorText}`
-                        );
-                    }
-
-                    const blob = await response.blob();
-                    if (!blob || blob.type !== "text/csv") {
-                        throw new Error("Unexpected response format or empty CSV");
-                    }
-
-                    const url = window.URL.createObjectURL(blob);
-                    const link = document.createElement("a");
-                    link.href = url;
-                    link.download = `outlots_${new Date().toISOString().split("T")[0]}.csv`;
-                    document.body.appendChild(link);
-                    link.click();
-                    document.body.removeChild(link);
-                    window.URL.revokeObjectURL(url);
-
-                    await queryFulfilled;
-                } catch (error) {
-                    console.error(`[${time}] CSV download failed:`, error);
-                    throw error;
-                }
-            },
-
+            // Remove onQueryStarted to avoid duplicate fetch
             extraOptions: {
                 maxRetries: 0,
             },
@@ -999,7 +923,7 @@ export const api = createApi({
 
         getOutlotsFilterOptions: builder.query<FilterOptions, void>({
             query: () => "/outLots/filters",
-            providesTags: ["SellingPrice"],
+            providesTags: ["OutLots"],
         }),
 
         // Stocks Endpoints
@@ -1034,9 +958,9 @@ export const api = createApi({
             async onQueryStarted(filters, { queryFulfilled }) {
                 try {
                     const { data } = await queryFulfilled;
-                    console.log(
-                        `[${new Date().toLocaleString("en-US", { timeZone: "Africa/Nairobi" })}] getStocks: ${JSON.stringify(data.meta)}`
-                    );
+                    // console.log(
+                    //     `[${new Date().toLocaleString("en-US", { timeZone: "Africa/Nairobi" })}] getStocks: ${JSON.stringify(data.meta)}`
+                    // );
                 } catch (error: any) {
                     console.error(`[${new Date().toLocaleString("en-US", { timeZone: "Africa/Nairobi" })}] getStocks error:`, {
                         status: error?.error?.status,
@@ -1184,7 +1108,7 @@ export const api = createApi({
             },
             async onQueryStarted(arg, { queryFulfilled }) {
                 const time = new Date().toLocaleString("en-US", { timeZone: "Africa/Nairobi" });
-                console.log(`[${time}] Starting CSV download query:`, arg);
+                // console.log(`[${time}] Starting CSV download query:`, arg);
                 try {
                     const session = await fetchAuthSession({ forceRefresh: true });
                     const token = session.tokens?.idToken?.toString();
@@ -1201,7 +1125,7 @@ export const api = createApi({
                             ? arg.stockIds.join(",")
                             : arg.stockIds,
                     });
-                    const response = await fetch("http://localhost:3001/stocks/export-csv", {
+                    const response = await fetch("NEXT_PUBLIC_API_BASE_URL/stocks/export-csv", {
                         method: "POST",
                         headers: {
                             "Content-Type": "application/json",
@@ -1514,15 +1438,17 @@ export const {
     useCreateCatalogFromCsvMutation,
     useGetCatalogByLotNoQuery,
     useDeleteCatalogsMutation,
+    useDeleteAllCatalogsMutation,
     useGetCatalogFilterOptionsQuery,
-    useExportCatalogsCsvMutation,
+    useExportCatalogsXlsxMutation,
     useGetSellingPricesQuery,
     useGetSellingPriceByIdQuery,
     useGetSellingPriceByLotNoQuery,
     useCreateSellingPriceMutation,
     useDeleteSellingPricesMutation,
+    useDeleteAllSellingPricesMutation,
     useUploadSellingPricesCsvMutation,
-    useExportSellingPricesCsvMutation,
+    useExportSellingPricesXlsxMutation,
     useGetSellingPricesFilterOptionsQuery,
     useGetOutlotsQuery,
     useGetOutlotByIdQuery,
@@ -1530,7 +1456,7 @@ export const {
     useCreateOutlotMutation,
     useDeleteOutlotsMutation,
     useUploadOutlotsCsvMutation,
-    useExportOutLotsCsvMutation,
+    useExportOutLotsXlsxMutation,
     useGetOutlotsFilterOptionsQuery,
     useGetStocksQuery,
     useToggleFavoriteMutation,

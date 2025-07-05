@@ -7,11 +7,10 @@ import { Broker, OutLots, TeaGrade } from "@prisma/client";
 import { authenticateUser } from "../utils/controllerUtils";
 import { PrismaClient, Prisma } from '@prisma/client';
 import { createOutLotSchema, csvRecordSchema, querySchema } from "../schemas/outLotsSchema";
-import { AuthenticatedUser } from "../types";
+import ExcelJS from "exceljs";
 
 const prisma = new PrismaClient();
 
-// Schema for CSV upload request
 const csvUploadSchema = z.object({
     duplicateAction: z.enum(['skip', 'replace']).optional().default('skip'),
 });
@@ -58,7 +57,6 @@ export const serializeOutLot = (
     admin: outLot.admin ?? null,
 });
 
-// Build Where Conditions for SellingPrice
 const buildWhereConditions = (
     params: Omit<z.infer<typeof querySchema>, 'page' | 'limit'> & { shipmentId?: number }
 ): Prisma.OutLotsWhereInput => {
@@ -208,7 +206,6 @@ export async function getOutLots(req: Request, res: Response): Promise<void> {
     }
 }
 
-// Get filter options for SellingPrice
 export const getOutLotsFilterOptions = async (req: Request, res: Response): Promise<void> => {
     try {
         const where: Prisma.OutLotsWhereInput = {
@@ -308,7 +305,7 @@ export const createOutLot = async (req: Request, res: Response): Promise<void> =
                 netWeight: outLotData.data.netWeight,
                 totalWeight: outLotData.data.totalWeight,
                 baselinePrice: outLotData.data.baselinePrice,
-                manufactureDate: new Date(outLotData.data.manufactureDate),
+                manufactureDate: new Date(outLotData.data.manufactureDate ?? new Date()),
                 adminCognitoId: outLotData.data.adminCognitoId,
             },
             include: {
@@ -387,7 +384,6 @@ export const getOutLotById = async (req: Request, res: Response): Promise<void> 
     }
 };
 
-// Delete multiple SellingPrice
 export const deleteOutLots = async (req: Request, res: Response): Promise<void> => {
     try {
         const authenticatedUser = authenticateUser(req, res);
@@ -441,46 +437,85 @@ export const deleteOutLots = async (req: Request, res: Response): Promise<void> 
 };
 
 export async function uploadOutLotsCsv(req: Request, res: Response): Promise<void> {
-    const user = (req as any).user;
+    const errors: Array<{ row: number; message: string }> = [];
+    let createdCount = 0;
+    let skippedCount = 0;
+    let replacedCount = 0;
 
     try {
+        const time = new Date().toLocaleString("en-US", { timeZone: "Africa/Nairobi" });
+        console.log(`[${time}] Starting CSV upload:`, {
+            file: req.file?.originalname,
+            size: req.file?.size,
+            body: req.body,
+        });
+
         // Validate authenticated user
+        const user = (req as any).user;
         if (!user || !user.userId || !user.role) {
+            console.error(`[${time}] Authentication failed`);
             res.status(401).json({ message: "Unauthorized: No authenticated user found" });
             return;
         }
 
         if (user.role.toLowerCase() !== "admin") {
+            console.error(`[${time}] Forbidden: User role ${user.role}`);
             res.status(403).json({ message: "Forbidden: Only admins can upload outLots" });
             return;
         }
 
         if (!req.file) {
+            console.error(`[${time}] No CSV file provided`, { body: req.body });
             res.status(400).json({ message: "CSV file required" });
+            return;
+        }
+
+        const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+        if (req.file.size > MAX_FILE_SIZE) {
+            console.error(`[${time}] File too large: ${req.file.size} bytes`);
+            res.status(400).json({ message: `File size exceeds limit of ${MAX_FILE_SIZE / (1024 * 1024)}MB` });
             return;
         }
 
         const parsedParams = csvUploadSchema.safeParse(req.body);
         if (!parsedParams.success) {
+            console.error(`[${time}] Invalid duplicateAction:`, {
+                body: req.body,
+                errors: parsedParams.error.errors,
+            });
             res.status(400).json({ message: "Invalid duplicateAction", details: parsedParams.error.errors });
             return;
         }
         const { duplicateAction } = parsedParams.data;
+        console.log(`[${time}] Parsed duplicateAction:`, duplicateAction);
 
-        const errors: Array<{ row: number; message: string }> = [];
-        const validOutLots: Array<{
-            outLot: Prisma.OutLotsCreateInput;
-            rowIndex: number;
-        }> = [];
+        const admin = await prisma.admin.findUnique({ where: { adminCognitoId: user.userId } });
+        if (!admin) {
+            console.error(`[${time}] Admin with adminCognitoId ${user.userId} not found`);
+            res.status(403).json({ message: `Admin with adminCognitoId ${user.userId} not found` });
+            return;
+        }
 
         let rowIndex = 1;
+        let batch: Array<{ outLot: Prisma.OutLotsCreateInput; rowIndex: number }> = [];
+        const BATCH_SIZE = 50;
+        const MAX_CONCURRENT_BATCHES = 2;
+
+        let csvBuffer = req.file.buffer;
+        if (csvBuffer.toString("utf8", 0, 3) === "\uFEFF") {
+            csvBuffer = csvBuffer.slice(3);
+        }
+
+        console.log(`[${time}] Parsing CSV file: ${req.file.originalname}`);
+
         const parser = new Parser({
-            columns: (header) =>
-                header.map((h: string) =>
+            columns: (header) => {
+                console.log(`[${time}] CSV headers:`, header);
+                return header.map((h: string) =>
                     h
-                        .replace(/^\ufeff/, "") // Remove BOM
+                        .replace(/^\ufeff/, "")
                         .trim()
-                        .replace(/\s+/g, "") // Remove spaces
+                        .replace(/\s+/g, "")
                         .replace(/^Auction$/i, "auction")
                         .replace(/^LotNo$/i, "lotNo")
                         .replace(/^Broker$/i, "broker")
@@ -492,18 +527,98 @@ export async function uploadOutLotsCsv(req: Request, res: Response): Promise<voi
                         .replace(/^TotalWeight$/i, "totalWeight")
                         .replace(/^BaselinePrice$/i, "baselinePrice")
                         .replace(/^ManufactureDate$/i, "manufactureDate")
-                ),
+                );
+            },
             skip_empty_lines: true,
             trim: true,
         });
 
-        const stream = Readable.from(req.file.buffer);
+        const stream = Readable.from(csvBuffer);
         stream.pipe(parser);
+
+        const processBatch = async (batch: Array<{ outLot: Prisma.OutLotsCreateInput; rowIndex: number }>) => {
+            let retries = 3;
+            let success = false;
+            let lastError: unknown;
+
+            while (retries > 0 && !success) {
+                try {
+                    const result = await prisma.$transaction(async (tx) => {
+                        let batchCreated = 0;
+                        let batchSkipped = 0;
+                        let batchReplaced = 0;
+
+                        if (duplicateAction === "skip") {
+                            const lotNos = batch.map((item) => item.outLot.lotNo);
+                            const existing = await tx.outLots.findMany({
+                                where: { lotNo: { in: lotNos } },
+                                select: { lotNo: true },
+                            });
+                            const existingLotNos = new Set(existing.map((item) => item.lotNo));
+
+                            const toCreate = batch.filter((item) => !existingLotNos.has(item.outLot.lotNo));
+                            batchSkipped += batch.length - toCreate.length;
+
+                            if (toCreate.length > 0) {
+                                await tx.outLots.createMany({
+                                    data: toCreate.map((item) => item.outLot),
+                                    skipDuplicates: true,
+                                });
+                                batchCreated += toCreate.length;
+                            }
+                        } else if (duplicateAction === "replace") {
+                            for (const { outLot, rowIndex } of batch) {
+                                try {
+                                    await tx.outLots.upsert({
+                                        where: { lotNo: outLot.lotNo },
+                                        update: { ...outLot, updatedAt: new Date() },
+                                        create: outLot,
+                                    });
+                                    batchReplaced++;
+                                } catch (error) {
+                                    errors.push({
+                                        row: rowIndex,
+                                        message: error instanceof Error ? error.message : String(error),
+                                    });
+                                }
+                            }
+                        } else {
+                            await tx.outLots.createMany({
+                                data: batch.map((item) => item.outLot),
+                                skipDuplicates: true,
+                            });
+                            batchCreated += batch.length;
+                        }
+
+                        return { batchCreated, batchSkipped, batchReplaced };
+                    }, { timeout: 60000 });
+
+                    createdCount += result.batchCreated;
+                    skippedCount += result.batchSkipped;
+                    replacedCount += result.batchReplaced;
+                    success = true;
+                } catch (error) {
+                    lastError = error;
+                    retries--;
+                    console.warn(`[${time}] Batch ${Math.floor(rowIndex / BATCH_SIZE)} failed, retries left: ${retries}`, {
+                        message: error instanceof Error ? error.message : String(error),
+                        stack: error instanceof Error ? error.stack : undefined,
+                    });
+                    if (retries === 0) {
+                        throw lastError;
+                    }
+                    await new Promise((resolve) => setTimeout(resolve, 1000));
+                }
+            }
+        };
+
+        let activeBatches = 0;
+        const batchPromises: Promise<void>[] = [];
 
         for await (const record of parser) {
             rowIndex++;
             try {
-                // Filter out empty keys (e.g., '')
+                console.log(`[${time}] Processing row ${rowIndex}:`, record);
                 const cleanedRecord = Object.fromEntries(
                     Object.entries(record).filter(([key]) => key.trim() !== "")
                 );
@@ -520,115 +635,122 @@ export async function uploadOutLotsCsv(req: Request, res: Response): Promise<voi
 
                 if (!parsed.success) {
                     throw new Error(
-                        `Invalid data: ${parsed.error.errors.map((err) => err.message).join(", ")}. ` +
+                        `Invalid data at row ${rowIndex}: ${parsed.error.errors.map((err) => err.message).join(", ")}. ` +
                         `Expected headers: auction, lotNo, broker, sellingMark, grade, invoiceNo, bags, netWeight, totalWeight, baselinePrice, manufactureDate. ` +
-                        `Ensure no trailing commas in CSV rows.`
+                        `Manufacture Date should be YYYY/MM/DD, DD/MM/YYYY, or M/D/YYYY. Check for trailing commas or invalid dates.`
                     );
                 }
 
                 const data = parsed.data;
+                const outLot: Prisma.OutLotsCreateInput = {
+                    auction: data.auction,
+                    lotNo: data.lotNo,
+                    broker: data.broker as Broker,
+                    sellingMark: data.sellingMark,
+                    grade: data.grade as TeaGrade,
+                    invoiceNo: data.invoiceNo,
+                    bags: data.bags,
+                    netWeight: data.netWeight,
+                    totalWeight: data.totalWeight,
+                    baselinePrice: data.baselinePrice ?? 0,
+                    manufactureDate: new Date(data.manufactureDate ?? new Date()),
+                };
 
-                const admin = await prisma.admin.findUnique({ where: { adminCognitoId: user.userId } });
-                if (!admin) {
-                    throw new Error(`Admin with adminCognitoId ${user.userId} not found`);
+                batch.push({ outLot, rowIndex });
+
+                if (batch.length >= BATCH_SIZE) {
+                    console.log(`[${time}] Processing batch ${Math.floor(rowIndex / BATCH_SIZE)} (${batch.length} items)`);
+                    batchPromises.push(processBatch(batch));
+                    batch = [];
+                    activeBatches++;
+
+                    if (activeBatches >= MAX_CONCURRENT_BATCHES) {
+                        await Promise.all(batchPromises);
+                        batchPromises.length = 0;
+                        activeBatches = 0;
+                    }
                 }
-
-                validOutLots.push({
-                    outLot: {
-                        auction: data.auction,
-                        lotNo: data.lotNo,
-                        broker: data.broker as Broker,
-                        sellingMark: data.sellingMark,
-                        grade: data.grade as TeaGrade,
-                        invoiceNo: data.invoiceNo,
-                        bags: data.bags,
-                        netWeight: data.netWeight,
-                        totalWeight: data.totalWeight,
-                        baselinePrice: data.baselinePrice ?? 0,
-                        manufactureDate: new Date(data.manufactureDate),
-                        admin: {
-                            connect: { adminCognitoId: user.userId },
-                        },
-                    },
-                    rowIndex,
-                });
             } catch (error) {
+                console.error(`[${time}] Error processing row ${rowIndex}:`, {
+                    message: error instanceof Error ? error.message : String(error),
+                    stack: error instanceof Error ? error.stack : undefined,
+                });
                 errors.push({ row: rowIndex, message: error instanceof Error ? error.message : String(error) });
             }
         }
 
-        if (validOutLots.length === 0) {
-            res.status(400).json({
-                success: { created: 0, skipped: 0, replaced: 0 },
-                errors: errors.length > 0
-                    ? errors
-                    : [{
-                        row: 0,
-                        message: "No valid data found. Ensure CSV headers match: auction, lotNo, broker, sellingMark, grade, invoiceNo, bags, netWeight, totalWeight, baselinePrice, manufactureDate. Check for trailing commas."
-                    }],
+        if (batch.length > 0) {
+            console.log(`[${time}] Processing final batch (${batch.length} items)`);
+            batchPromises.push(processBatch(batch));
+        }
+
+        await Promise.all(batchPromises);
+
+        console.log(`[${time}] Parsed ${rowIndex - 1} rows, ${createdCount + skippedCount + replacedCount} processed, ${errors.length} errors`);
+
+        if (createdCount + skippedCount + replacedCount === 0) {
+            console.error(`[${time}] No valid outLots processed`);
+            res.status(400).json({ success: 0, errors });
+            return;
+        }
+
+        if (errors.length > 0) {
+            res.status(207).json({
+                success: { created: createdCount, skipped: skippedCount, replaced: replacedCount },
+                errors,
             });
             return;
         }
 
-        // Process in batches to handle large uploads efficiently
-        const BATCH_SIZE = 1000;
-        let createdCount = 0;
-        let skippedCount = 0;
-        let replacedCount = 0;
-
-        for (let i = 0; i < validOutLots.length; i += BATCH_SIZE) {
-            const batch = validOutLots.slice(i, i + BATCH_SIZE);
-            await prisma.$transaction(async (tx) => {
-                for (const { outLot, rowIndex } of batch) {
-                    const existing = await tx.outLots.findUnique({
-                        where: { lotNo: outLot.lotNo },
-                    });
-
-                    if (existing) {
-                        if (duplicateAction === "skip") {
-                            skippedCount++;
-                            continue;
-                        } else if (duplicateAction === "replace") {
-                            await tx.outLots.delete({ where: { id: existing.id } });
-                            replacedCount++;
-                        }
-                    }
-
-                    await tx.outLots.create({ data: outLot });
-                    createdCount++;
-                }
-            });
-        }
-
         res.status(201).json({
-            success: {
-                created: createdCount,
-                skipped: skippedCount,
-                replaced: replacedCount,
-            },
+            success: { created: createdCount, skipped: skippedCount, replaced: replacedCount },
             errors,
         });
     } catch (error) {
+        const time = new Date().toLocaleString("en-US", { timeZone: "Africa/Nairobi" });
+        console.error(`[${time}] Upload outLots error:`, {
+            message: error instanceof Error ? error.message : String(error),
+            stack: error instanceof Error ? error.stack : undefined,
+            file: req.file?.originalname,
+            size: req.file?.size,
+            body: req.body,
+            processedCount: createdCount + skippedCount + replacedCount,
+            errorsCount: errors.length,
+        });
         if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
-            res.status(409).json({ message: "One or more outLots have duplicate lotNo", details: error.meta });
+            res.status(409).json({
+                message: "One or more outLots have duplicate lotNo",
+                details: error.meta,
+            });
             return;
         }
         res.status(500).json({
             message: "Internal server error",
             details: error instanceof Error ? error.message : String(error),
+            file: req.file?.originalname,
+            size: req.file?.size,
+            body: req.body,
+            processedCount: createdCount + skippedCount + replacedCount,
+            errorsCount: errors.length,
         });
     } finally {
         await prisma.$disconnect();
     }
 }
-// Export SellingPrice as CSV
-export const exportOutLotsCsv = async (req: Request, res: Response): Promise<void> => {
+
+export const exportOutLotsXlsx = async (req: Request, res: Response): Promise<void> => {
     try {
-        // Handle parameters from either query (GET) or body (POST)
+        const authenticatedUser = authenticateUser(req, res);
+        if (!authenticatedUser) {
+            res.status(401).json({ message: "Unauthorized" });
+            return;
+        }
+
         const paramsSource = req.method === 'POST' ? req.body : req.query;
         const params = querySchema.extend({ outLotIds: z.string().optional() }).safeParse(paramsSource);
+
         if (!params.success) {
-            res.status(400).json({ message: 'Invalid parameters', details: params.error.errors });
+            res.status(400).json({ message: "Invalid parameters", details: params.error.errors });
             return;
         }
 
@@ -641,15 +763,14 @@ export const exportOutLotsCsv = async (req: Request, res: Response): Promise<voi
 
         let where: Prisma.OutLotsWhereInput = {};
         if (outLotIds) {
-            const ids = [...new Set(outLotIds.split(',').map(id => parseInt(id.trim())))]
-                .filter(id => !isNaN(id));
+            const ids = [...new Set(outLotIds.split(',').map(id => parseInt(id.trim())))].filter(id => !isNaN(id));
             if (ids.length === 0) {
-                res.status(400).json({ message: 'Invalid outLotIds provided' });
+                res.status(400).json({ message: "Invalid outLotIds provided" });
                 return;
             }
             where = { id: { in: ids } };
-        } else {
-            where = buildWhereConditions(filterParams);
+        } else if (Object.keys(filterParams).length > 0) {
+            where = buildWhereConditions(filterParams); // ✅ FIXED
         }
 
         const outLots = await prisma.outLots.findMany({
@@ -671,53 +792,102 @@ export const exportOutLotsCsv = async (req: Request, res: Response): Promise<voi
         });
 
         if (!outLots.length) {
-            res.status(404).json({ message: 'No outLots found for the provided filters or IDs' });
+            res.status(404).json({ message: "No OutLots found for the provided filters or IDs" });
             return;
         }
 
-        const csvStringifier = createObjectCsvStringifier({
-            header: [
-                { id: 'auction', title: 'Auction' },
-                { id: 'lotNo', title: 'Lot Number' },
-                { id: 'broker', title: 'Broker' },
-                { id: 'sellingMark', title: 'Selling Mark' },
-                { id: 'grade', title: 'Grade' },
-                { id: 'invoiceNo', title: 'Invoice Number' },
-                { id: 'bags', title: 'Bags' },
-                { id: 'netWeight', title: 'Net Weight' },
-                { id: 'totalWeight', title: 'Total Weight' },
-                { id: 'baselinePrice', title: 'Baseline Price' },
-                { id: 'manufactureDate', title: 'Manufacture Date' },
-            ],
+        const workbook = new ExcelJS.Workbook();
+        const worksheet = workbook.addWorksheet("OutLots");
+
+        worksheet.addRow(["Official Black Gold Africa Traders Ltd OutLots"]);
+        worksheet.mergeCells("A1:K1");
+        worksheet.getCell("A1").font = { name: "Calibri", size: 16, bold: true, color: { argb: "FFFFFF" } };
+        worksheet.getCell("A1").fill = { type: "pattern", pattern: "solid", fgColor: { argb: "4CAF50" } };
+        worksheet.getCell("A1").alignment = { horizontal: "center", vertical: "middle" };
+        worksheet.getRow(1).height = 30;
+        worksheet.addRow([]);
+
+        const headers = [
+            "Auction", "Lot Number", "Broker", "Selling Mark", "Grade",
+            "Invoice No", "Bags", "Net Weight", "Total Weight", "Baseline Price", "Mft Date"
+        ];
+        const headerRow = worksheet.addRow(headers);
+        headerRow.eachCell((cell) => {
+            cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "D3D3D3" } };
+            cell.font = { name: "Calibri", size: 11, bold: true };
+            cell.border = {
+                top: { style: "thin" },
+                left: { style: "thin" },
+                bottom: { style: "thin" },
+                right: { style: "thin" },
+            };
+            cell.alignment = { horizontal: "center" };
         });
 
-        const csvContent =
-            csvStringifier.getHeaderString() +
-            csvStringifier.stringifyRecords(
-                outLots.map((outLot) => ({
-                    ...outLot,
-                    manufactureDate: new Date(outLot.manufactureDate).toLocaleDateString('en-US', {
-                        month: 'numeric',
-                        day: 'numeric',
-                        year: 'numeric',
-                    }),
-                    netWeight: Number(outLot.netWeight),
-                    totalWeight: Number(outLot.totalWeight),
-                    baselinePrice: Number(outLot.baselinePrice),
-                }))
-            );
+        outLots.forEach((item) => {
+            worksheet.addRow([
+                item.auction || "",
+                item.lotNo || "",
+                item.broker || "",
+                item.sellingMark || "",
+                item.grade || "",
+                item.invoiceNo || "",
+                item.bags ?? "",
+                item.netWeight?.toFixed(2) ?? "",
+                item.totalWeight?.toFixed(2) ?? "",
+                item.baselinePrice?.toFixed(2) ?? "",
+                item.manufactureDate ? new Date(item.manufactureDate).toLocaleDateString("en-GB") : "",
+            ]);
+        });
 
-        res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+        worksheet.eachRow((row, rowNumber) => {
+            if (rowNumber > 2) {
+                row.eachCell((cell) => {
+                    cell.border = {
+                        top: { style: "thin" },
+                        left: { style: "thin" },
+                        bottom: { style: "thin" },
+                        right: { style: "thin" },
+                    };
+                    cell.alignment = { horizontal: "left" };
+                });
+            }
+        });
+
+        const widths = [12, 14, 12, 14, 10, 14, 8, 12, 12, 14, 12];
+        widths.forEach((width, i) => {
+            worksheet.getColumn(i + 1).width = width;
+        });
+
+        const lastRow = worksheet.addRow([]);
+        lastRow.getCell(1).value = `Generated from bgatltd.com on ${new Date().toLocaleString("en-KE", { timeZone: "Africa/Nairobi" })}`;
+        lastRow.getCell(1).font = { name: "Calibri", size: 8, italic: true };
+        lastRow.getCell(1).alignment = { horizontal: "center" };
+        worksheet.mergeCells(`A${lastRow.number}:K${lastRow.number}`);
+
+        worksheet.views = [{ state: "frozen", ySplit: 3 }];
+
+        worksheet.protect("bgatltd2025", {
+            selectLockedCells: false,
+            selectUnlockedCells: false,
+        });
+
+        res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
         res.setHeader(
-            'Content-Disposition',
-            `attachment; filename="outlots_${new Date().toISOString().split('T')[0]}.csv"`
+            "Content-Disposition",
+            `attachment; filename="outlots_${new Date().toISOString().split("T")[0]}.xlsx"`
         );
 
-        res.status(200).send(csvContent);
+        await workbook.xlsx.write(res);
+        res.end();
+
     } catch (error) {
+        console.error("Export XLSX error:", error);
         res.status(500).json({
-            message: 'Internal server error',
+            message: "Internal server error",
             details: error instanceof Error ? error.message : String(error),
         });
+    } finally {
+        await prisma.$disconnect();
     }
 };

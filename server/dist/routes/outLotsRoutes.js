@@ -25,7 +25,7 @@ const upload = (0, multer_1.default)({
 // Get filter options for outLots
 router.get("/filters", (0, asyncHandler_1.asyncHandler)(outLotsContoller_1.getOutLotsFilterOptions));
 // Export outLots as CSV
-router.post("/export-csv", (0, authMiddleware_1.authMiddleware)(["admin", "user"]), (0, asyncHandler_1.asyncHandler)(outLotsContoller_1.exportOutLotsCsv));
+router.post("/export-xlsx", (0, authMiddleware_1.authMiddleware)(["admin", "user"]), (0, asyncHandler_1.asyncHandler)(outLotsContoller_1.exportOutLotsXlsx));
 // Get all outLots with filters and pagination
 router.get("/", (0, asyncHandler_1.asyncHandler)(outLotsContoller_1.getOutLots));
 // Get a single outlot by ID

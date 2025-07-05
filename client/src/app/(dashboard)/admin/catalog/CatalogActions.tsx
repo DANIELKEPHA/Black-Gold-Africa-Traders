@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Catalog } from "@/state/catalog";
 import { Toaster, toast } from "sonner";
 import { Download, Upload, Loader2 } from "lucide-react";
-import { useExportCatalogsCsvMutation } from "@/state/api";
+import { useExportCatalogsXlsxMutation } from "@/state/api";
 import { useRouter } from "next/navigation";
 import { useGetAuthUserQuery } from "@/state/api";
 
@@ -30,7 +30,7 @@ const CatalogActions: React.FC<CatalogActionsProps> = ({
     const router = useRouter();
     const { data: authUser } = useGetAuthUserQuery();
     const isAdmin = authUser?.userRole === "admin";
-    const [exportCatalogsCsv, { isLoading: isExporting }] = useExportCatalogsCsvMutation();
+    const [exportCatalogsCsv, { isLoading: isExporting }] = useExportCatalogsXlsxMutation();
 
     if (!isAdmin) return null;
 

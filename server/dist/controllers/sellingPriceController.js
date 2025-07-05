@@ -26,24 +26,27 @@ var __rest = (this && this.__rest) || function (s, e) {
         }
     return t;
 };
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.exportSellingPricesCsv = exports.deleteSellingPrices = exports.getSellingPricesById = exports.createSellingPrices = exports.getSellingPricesFilterOptions = exports.getSellingPrices = exports.serializeSellingPrice = void 0;
+exports.exportSellingPricesXlsx = exports.deleteAllSellingPrices = exports.deleteSellingPrices = exports.getSellingPriceById = exports.createSellingPrice = exports.getSellingPricesFilterOptions = exports.getSellingPrices = exports.serializeSellingPrice = void 0;
 exports.uploadSellingPricesCsv = uploadSellingPricesCsv;
 const stream_1 = require("stream");
 const zod_1 = require("zod");
-const csv_writer_1 = require("csv-writer");
 const csv_parse_1 = require("csv-parse");
 const client_1 = require("@prisma/client");
+const exceljs_1 = __importDefault(require("exceljs"));
+const sellingPricesSchema_1 = require("../schemas/sellingPricesSchema");
 const controllerUtils_1 = require("../utils/controllerUtils");
 const client_2 = require("@prisma/client");
-const sellingPricesSchema_1 = require("../schemas/sellingPricesSchema");
 const prisma = new client_2.PrismaClient();
 // Schema for CSV upload request
 const csvUploadSchema = zod_1.z.object({
-    duplicateAction: zod_1.z.enum(['skip', 'replace']).optional().default('skip'),
+    duplicateAction: zod_1.z.enum(["skip", "replace"]).optional().default("skip"),
 });
 const serializeSellingPrice = (sellingPrice) => {
-    var _a, _b, _c, _d;
+    var _a, _b, _c, _d, _e;
     return ({
         id: sellingPrice.id,
         lotNo: sellingPrice.lotNo,
@@ -61,15 +64,28 @@ const serializeSellingPrice = (sellingPrice) => {
         category: sellingPrice.category,
         grade: sellingPrice.grade,
         broker: sellingPrice.broker,
-        reprint: sellingPrice.reprint,
-        admin: (_d = sellingPrice.admin) !== null && _d !== void 0 ? _d : null,
+        reprint: (_d = sellingPrice.reprint) !== null && _d !== void 0 ? _d : null,
+        admin: (_e = sellingPrice.admin) !== null && _e !== void 0 ? _e : null,
     });
 };
 exports.serializeSellingPrice = serializeSellingPrice;
-const buildWhereConditions = (params) => {
+// Build Where Conditions
+const buildWhereConditions = (params, userId, role) => {
     const conditions = {};
+    if (userId && role === "admin") {
+        conditions.OR = [
+            { adminCognitoId: userId },
+            { adminCognitoId: null },
+        ];
+    }
+    else if (userId && role === "user") {
+        conditions.userCognitoId = userId;
+    }
+    if (!params || typeof params !== "object") {
+        return conditions;
+    }
     const filterMap = {
-        ids: (value) => { if (value === null || value === void 0 ? void 0 : value.length)
+        favoriteIds: (value) => { if (value === null || value === void 0 ? void 0 : value.length)
             conditions.id = { in: value }; },
         lotNo: (value) => { if (value)
             conditions.lotNo = { equals: value }; },
@@ -91,16 +107,22 @@ const buildWhereConditions = (params) => {
             conditions.manufactureDate = new Date(value); },
         saleCode: (value) => { if (value)
             conditions.saleCode = value; },
-        category: (value) => { if (value && value !== 'any')
+        category: (value) => { if (value && value !== "any")
             conditions.category = value; },
-        grade: (value) => { if (value && value !== 'any')
+        grade: (value) => { if (value && value !== "any")
             conditions.grade = value; },
-        broker: (value) => { if (value && value !== 'any')
+        broker: (value) => { if (value && value !== "any")
             conditions.broker = value; },
         invoiceNo: (value) => { if (value)
             conditions.invoiceNo = { equals: value }; },
-        reprint: (value) => { if (value !== undefined)
-            conditions.reprint = value; },
+        reprint: (value) => {
+            if (value !== undefined) {
+                if (value !== "No" && isNaN(Number(value))) {
+                    throw new Error(`Invalid reprint: ${value}. Must be "No" or a number`);
+                }
+                conditions.reprint = value;
+            }
+        },
     };
     Object.entries(params).forEach(([key, value]) => {
         if (value !== undefined && filterMap[key])
@@ -108,10 +130,10 @@ const buildWhereConditions = (params) => {
     });
     if (params.search) {
         const orConditions = [
-            { lotNo: { contains: params.search, mode: 'insensitive' } },
-            { invoiceNo: { contains: params.search, mode: 'insensitive' } },
-            { sellingMark: { contains: params.search, mode: 'insensitive' } },
-            { producerCountry: { contains: params.search, mode: 'insensitive' } },
+            { lotNo: { contains: params.search, mode: "insensitive" } },
+            { invoiceNo: { contains: params.search, mode: "insensitive" } },
+            { sellingMark: { contains: params.search, mode: "insensitive" } },
+            { producerCountry: { contains: params.search, mode: "insensitive" } },
         ];
         if (Object.values(client_1.TeaCategory).includes(params.search)) {
             orConditions.push({ category: params.search });
@@ -119,30 +141,48 @@ const buildWhereConditions = (params) => {
         if (Object.values(client_1.Broker).includes(params.search)) {
             orConditions.push({ broker: params.search });
         }
-        if (Object.values(client_1.TeaGrade).includes(params.search)) {
-            orConditions.push({ grade: params.search });
-        }
-        conditions.OR = orConditions;
+        conditions.OR = [...(conditions.OR || []), ...orConditions];
     }
     return conditions;
 };
 const getSellingPrices = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const time = new Date().toLocaleString("en-US", { timeZone: "Africa/Nairobi" });
+    // console.log(`[${time}] Received getSellingPrices request:`, {
+    //     method: req.method,
+    //     url: req.url,
+    //     query: req.query,
+    //     headers: req.headers,
+    // });
     try {
         let rawIds = req.query.ids;
-        if (typeof rawIds === 'string') {
-            rawIds = rawIds.split(',').map(id => id.trim());
+        if (typeof rawIds === "string") {
+            rawIds = rawIds.split(",").map((id) => id.trim());
         }
         else if (!Array.isArray(rawIds)) {
             rawIds = rawIds ? [rawIds] : undefined;
         }
-        const params = sellingPricesSchema_1.querySchema.safeParse(Object.assign(Object.assign({}, req.query), { ids: rawIds ? rawIds.map(id => Number(id)) : undefined }));
+        // console.log(`[${time}] Parsed rawIds:`, rawIds);
+        const params = sellingPricesSchema_1.querySchema.safeParse(Object.assign(Object.assign({}, req.query), { ids: rawIds ? rawIds.map((id) => Number(id)) : undefined }));
         if (!params.success) {
+            console.error(`[${time}] Invalid query parameters:`, params.error.errors);
             return res.status(400).json({
-                message: 'Invalid query parameters',
+                message: "Invalid query parameters",
                 details: params.error.errors,
             });
         }
-        const { ids, lotNo, sellingMark, bags, totalWeight, netWeight, askingPrice, purchasePrice, producerCountry, manufactureDate, saleCode, category, grade, broker, invoiceNo, reprint, page = 1, limit = 20, } = params.data;
+        // console.log(`[${time}] Validated params:`, params.data);
+        const { ids, lotNo, sellingMark, bags, totalWeight, netWeight, askingPrice, purchasePrice, producerCountry, manufactureDate, saleCode, category, grade, broker, invoiceNo, reprint, page = 1, limit = 100, } = params.data;
+        // Removed authentication check
+        // const authenticatedUser = authenticateUser(req, res);
+        // if (!authenticatedUser) {
+        //     console.error(`[${time}] Authentication failed: No authenticated user`);
+        //     return res.status(401).json({ message: "Unauthorized" });
+        // }
+        // console.log(`[${time}] Authenticated user:`, {
+        //     userId: authenticatedUser.userId,
+        //     role: authenticatedUser.role,
+        // });
+        // Adjusted where conditions to remove user-specific filters
         const where = buildWhereConditions({
             ids,
             lotNo,
@@ -160,9 +200,11 @@ const getSellingPrices = (req, res) => __awaiter(void 0, void 0, void 0, functio
             broker,
             invoiceNo,
             reprint,
-        });
+        }, undefined, undefined); // Passing undefined for userId and role
+        // console.log(`[${time}] Built where conditions:`, where);
         const skip = (page - 1) * limit;
         const take = limit;
+        // console.log(`[${time}] Querying database with skip: ${skip}, take: ${take}`);
         const [sellingPrices, total] = yield Promise.all([
             prisma.sellingPrice.findMany({
                 where,
@@ -182,20 +224,25 @@ const getSellingPrices = (req, res) => __awaiter(void 0, void 0, void 0, functio
             }),
             prisma.sellingPrice.count({ where }),
         ]);
+        // console.log(`[${time}] Database query result:`, { count: sellingPrices.length, total });
         const totalPages = Math.ceil(total / limit);
-        // Normalize admin property for serializeSellingPrice
         const normalizedSellingPrices = sellingPrices.map((sellingPrice) => {
             var _a;
             return (Object.assign(Object.assign({}, sellingPrice), { admin: (_a = sellingPrice.admin) !== null && _a !== void 0 ? _a : undefined }));
         });
+        // console.log(`[${time}] Sending response with totalPages: ${totalPages}, data length: ${normalizedSellingPrices.length}`);
         return res.status(200).json({
             data: normalizedSellingPrices.map(exports.serializeSellingPrice),
             meta: { page, limit, total, totalPages },
         });
     }
     catch (error) {
+        console.error(`[${time}] Internal server error:`, {
+            message: error instanceof Error ? error.message : String(error),
+            stack: error instanceof Error ? error.stack : undefined,
+        });
         return res.status(500).json({
-            message: 'Internal server error',
+            message: "Internal server error",
             details: error instanceof Error ? error.message : String(error),
         });
     }
@@ -204,12 +251,8 @@ exports.getSellingPrices = getSellingPrices;
 const getSellingPricesFilterOptions = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m, _o, _p;
     try {
-        const where = {
-            AND: [{ producerCountry: { not: undefined } }, { invoiceNo: { not: undefined } }],
-        };
         const [distinctValues, aggregates] = yield Promise.all([
             prisma.sellingPrice.findMany({
-                where,
                 select: {
                     producerCountry: true,
                     grade: true,
@@ -219,11 +262,10 @@ const getSellingPricesFilterOptions = (req, res) => __awaiter(void 0, void 0, vo
                     sellingMark: true,
                     invoiceNo: true,
                 },
-                distinct: ['producerCountry', 'grade', 'category', 'saleCode', 'broker', 'sellingMark', 'invoiceNo'],
-                orderBy: { producerCountry: 'asc' },
+                distinct: ["producerCountry", "grade", "category", "saleCode", "broker", "sellingMark", "invoiceNo"],
+                orderBy: { producerCountry: "asc" },
             }),
             prisma.sellingPrice.aggregate({
-                where,
                 _min: { askingPrice: true, purchasePrice: true, manufactureDate: true, bags: true, totalWeight: true, netWeight: true },
                 _max: { askingPrice: true, purchasePrice: true, manufactureDate: true, bags: true, totalWeight: true, netWeight: true },
             }),
@@ -246,45 +288,33 @@ const getSellingPricesFilterOptions = (req, res) => __awaiter(void 0, void 0, vo
             askingPrice: { min: (_a = Number(aggregates._min.askingPrice)) !== null && _a !== void 0 ? _a : 0, max: (_b = Number(aggregates._max.askingPrice)) !== null && _b !== void 0 ? _b : 1000 },
             purchasePrice: { min: (_c = Number(aggregates._min.purchasePrice)) !== null && _c !== void 0 ? _c : 0, max: (_d = Number(aggregates._max.purchasePrice)) !== null && _d !== void 0 ? _d : 1000 },
             manufactureDate: {
-                min: (_f = (_e = aggregates._min.manufactureDate) === null || _e === void 0 ? void 0 : _e.toISOString()) !== null && _f !== void 0 ? _f : '2020-01-01T00:00:00Z',
+                min: (_f = (_e = aggregates._min.manufactureDate) === null || _e === void 0 ? void 0 : _e.toISOString()) !== null && _f !== void 0 ? _f : "2020-01-01T00:00:00Z",
                 max: (_h = (_g = aggregates._max.manufactureDate) === null || _g === void 0 ? void 0 : _g.toISOString()) !== null && _h !== void 0 ? _h : new Date().toISOString(),
             },
-            bags: { min: (_j = aggregates._min.bags) !== null && _j !== void 0 ? _j : 0, max: (_k = aggregates._max.bags) !== null && _k !== void 0 ? _k : 1000 },
+            bags: { min: (_j = aggregates._min.bags) !== null && _j !== void 0 ? _j : 0, max: (_k = aggregates._max.bags) !== null && _k !== void 0 ? _k : 10000 },
             totalWeight: { min: (_l = Number(aggregates._min.totalWeight)) !== null && _l !== void 0 ? _l : 0, max: (_m = Number(aggregates._max.totalWeight)) !== null && _m !== void 0 ? _m : 100000 },
             netWeight: { min: (_o = Number(aggregates._min.netWeight)) !== null && _o !== void 0 ? _o : 0, max: (_p = Number(aggregates._max.netWeight)) !== null && _p !== void 0 ? _p : 1000 },
         });
     }
     catch (error) {
         res.status(500).json({
-            message: 'Internal server error',
+            message: "Internal server error",
             details: error instanceof Error ? error.message : String(error),
         });
     }
 });
 exports.getSellingPricesFilterOptions = getSellingPricesFilterOptions;
-const createSellingPrices = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    var _a;
+const createSellingPrice = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    var _a, _b;
     try {
         const authenticatedUser = (0, controllerUtils_1.authenticateUser)(req, res);
         if (!authenticatedUser) {
-            res.status(401).json({ message: 'Unauthorized' });
+            res.status(401).json({ message: "Unauthorized" });
             return;
         }
-        // Restrict creation to admins
-        if (authenticatedUser.role.toLowerCase() !== 'admin') {
-            res.status(403).json({ message: 'Forbidden: Only admins can create selling prices' });
-            return;
-        }
-        const sellingPriceData = sellingPricesSchema_1.createSellingPriceSchema.safeParse(Object.assign(Object.assign({}, req.body), { adminCognitoId: authenticatedUser.userId }));
+        const sellingPriceData = sellingPricesSchema_1.createSellingPriceSchema.safeParse(Object.assign(Object.assign({}, req.body), { adminCognitoId: authenticatedUser.userId, purchasePrice: req.body.purchasePrice || null }));
         if (!sellingPriceData.success) {
-            res.status(400).json({ message: 'Invalid request body', details: sellingPriceData.error.errors });
-            return;
-        }
-        const admin = yield prisma.admin.findUnique({
-            where: { adminCognitoId: sellingPriceData.data.adminCognitoId },
-        });
-        if (!admin) {
-            res.status(404).json({ message: `Admin with cognitoId ${sellingPriceData.data.adminCognitoId} not found` });
+            res.status(400).json({ message: "Invalid request body", details: sellingPriceData.error.errors });
             return;
         }
         const newSellingPrice = yield prisma.sellingPrice.create({
@@ -292,14 +322,14 @@ const createSellingPrices = (req, res) => __awaiter(void 0, void 0, void 0, func
                 broker: sellingPriceData.data.broker,
                 sellingMark: sellingPriceData.data.sellingMark,
                 lotNo: sellingPriceData.data.lotNo,
-                reprint: sellingPriceData.data.reprint,
+                reprint: (_a = sellingPriceData.data.reprint) !== null && _a !== void 0 ? _a : null,
                 bags: sellingPriceData.data.bags,
                 totalWeight: sellingPriceData.data.totalWeight,
                 netWeight: sellingPriceData.data.netWeight,
                 invoiceNo: sellingPriceData.data.invoiceNo,
                 saleCode: sellingPriceData.data.saleCode,
                 askingPrice: sellingPriceData.data.askingPrice,
-                purchasePrice: sellingPriceData.data.purchasePrice,
+                purchasePrice: sellingPriceData.data.purchasePrice, // Can be null
                 adminCognitoId: sellingPriceData.data.adminCognitoId,
                 producerCountry: sellingPriceData.data.producerCountry,
                 manufactureDate: new Date(sellingPriceData.data.manufactureDate),
@@ -318,97 +348,106 @@ const createSellingPrices = (req, res) => __awaiter(void 0, void 0, void 0, func
                 },
             },
         });
-        // Normalize admin property for serializeSellingPrice
-        const normalizedSellingPrice = Object.assign(Object.assign({}, newSellingPrice), { admin: (_a = newSellingPrice.admin) !== null && _a !== void 0 ? _a : undefined });
-        res.status(201).json({ data: (0, exports.serializeSellingPrice)(normalizedSellingPrice) });
+        const sellingPriceWithAdmin = Object.assign(Object.assign({}, newSellingPrice), { admin: (_b = newSellingPrice.admin) !== null && _b !== void 0 ? _b : undefined });
+        res.status(201).json({ data: (0, exports.serializeSellingPrice)(sellingPriceWithAdmin) });
     }
     catch (error) {
-        if (error instanceof client_2.Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
-            res.status(409).json({ message: 'Duplicate selling price entry', details: error.meta });
+        if (error instanceof client_2.Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
+            res.status(409).json({ message: "Duplicate selling price entry", details: error.meta });
             return;
         }
         res.status(500).json({
-            message: 'Internal server error',
+            message: "Internal server error",
             details: error instanceof Error ? error.message : String(error),
         });
     }
+    finally {
+        yield prisma.$disconnect();
+    }
 });
-exports.createSellingPrices = createSellingPrices;
-const getSellingPricesById = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+exports.createSellingPrice = createSellingPrice;
+const getSellingPriceById = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    var _a;
     try {
-        const idSchema = zod_1.z.string().regex(/^\d+$/, 'Selling price ID must be a positive integer');
-        const parsedId = idSchema.safeParse(req.params.id);
-        if (!parsedId.success) {
-            res.status(400).json({ message: 'Invalid selling price ID', details: parsedId.error.errors });
+        const id = parseInt(req.params.id, 10);
+        if (isNaN(id)) {
+            res.status(400).json({ message: "Invalid selling price ID" });
             return;
         }
-        const id = parseInt(parsedId.data);
         const sellingPrice = yield prisma.sellingPrice.findUnique({
             where: { id },
-            select: {
-                id: true,
-                saleCode: true,
-                lotNo: true,
-                category: true,
-                grade: true,
-                broker: true,
-                sellingMark: true,
-                bags: true,
-                netWeight: true,
-                totalWeight: true,
-                producerCountry: true,
-                askingPrice: true,
-                purchasePrice: true,
-                invoiceNo: true,
-                manufactureDate: true,
-                reprint: true,
-                adminCognitoId: true,
-                createdAt: true,
-                updatedAt: true,
+            include: {
+                admin: {
+                    select: {
+                        id: true,
+                        adminCognitoId: true,
+                        name: true,
+                        email: true,
+                        phoneNumber: true,
+                    },
+                },
             },
         });
         if (!sellingPrice) {
-            res.status(404).json({ message: `Selling price with ID ${id} not found` });
+            res.status(404).json({ message: "Selling price not found" });
             return;
         }
-        res.status(200).json(sellingPrice);
+        const sellingPriceWithAdmin = Object.assign(Object.assign({}, sellingPrice), { admin: (_a = sellingPrice.admin) !== null && _a !== void 0 ? _a : undefined });
+        res.status(200).json((0, exports.serializeSellingPrice)(sellingPriceWithAdmin));
     }
     catch (error) {
         res.status(500).json({
-            message: 'Internal server error',
+            message: "Internal server error",
             details: error instanceof Error ? error.message : String(error),
         });
     }
 });
-exports.getSellingPricesById = getSellingPricesById;
+exports.getSellingPriceById = getSellingPriceById;
 const deleteSellingPrices = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const authenticatedUser = (0, controllerUtils_1.authenticateUser)(req, res);
-        if (!authenticatedUser)
+        if (!authenticatedUser) {
+            res.status(401).json({ message: "Unauthorized" });
             return;
+        }
         const { ids } = req.body;
+        // console.log(`[${new Date().toLocaleString("en-US", { timeZone: "Africa/Nairobi" })}] Deleting selling prices with ids:`, ids);
         if (!Array.isArray(ids) || ids.length === 0) {
             res.status(400).json({ message: "No selling price IDs provided" });
             return;
         }
         const sellingPriceIds = ids.map((id) => parseInt(id, 10)).filter((id) => !isNaN(id));
         if (sellingPriceIds.length === 0) {
-            res.status(400).json({ message: "Invalid selling price IDs" });
+            res.status(400).json({ message: "Invalid selling price IDs", details: { providedIds: ids } });
             return;
         }
         const result = yield prisma.$transaction((tx) => __awaiter(void 0, void 0, void 0, function* () {
             const sellingPrices = yield tx.sellingPrice.findMany({
-                where: { id: { in: sellingPriceIds } },
-                select: { id: true, lotNo: true },
+                where: {
+                    id: { in: sellingPriceIds },
+                    OR: [
+                        { adminCognitoId: authenticatedUser.userId },
+                        { adminCognitoId: null },
+                    ],
+                },
+                select: { id: true, lotNo: true, adminCognitoId: true },
             });
             if (sellingPrices.length === 0) {
-                throw new Error("No selling prices found");
+                throw new Error("No selling prices found or unauthorized");
             }
             const associations = sellingPrices.map((sellingPrice) => ({
                 id: sellingPrice.id,
                 lotNo: sellingPrice.lotNo,
             }));
-            yield tx.sellingPrice.deleteMany({ where: { id: { in: sellingPriceIds } } });
+            yield tx.sellingPrice.deleteMany({
+                where: {
+                    id: { in: sellingPriceIds },
+                    OR: [
+                        { adminCognitoId: authenticatedUser.userId },
+                        { adminCognitoId: null },
+                    ],
+                },
+            });
             return { deletedCount: sellingPrices.length, associations };
         }));
         res.status(200).json({
@@ -417,214 +456,349 @@ const deleteSellingPrices = (req, res) => __awaiter(void 0, void 0, void 0, func
         });
     }
     catch (error) {
+        console.error(`[${new Date().toLocaleString("en-US", { timeZone: "Africa/Nairobi" })}] Delete selling prices error:`, {
+            message: error instanceof Error ? error.message : String(error),
+            stack: error instanceof Error ? error.stack : undefined,
+            ids: req.body.ids,
+        });
         if (error instanceof client_2.Prisma.PrismaClientKnownRequestError && error.code === "P2025") {
             res.status(404).json({ message: "No selling prices found" });
             return;
         }
         res.status(error instanceof Error ? 400 : 500).json({
             message: error instanceof Error ? error.message : "Internal server error",
+            details: { ids: req.body.ids },
         });
+    }
+    finally {
+        yield prisma.$disconnect();
     }
 });
 exports.deleteSellingPrices = deleteSellingPrices;
-function uploadSellingPricesCsv(req, res) {
-    return __awaiter(this, void 0, void 0, function* () {
-        var _a, e_1, _b, _c;
-        try {
-            const authenticatedUser = (0, controllerUtils_1.authenticateUser)(req, res);
-            if (!authenticatedUser) {
-                return;
-            }
-            if (authenticatedUser.role.toLowerCase() !== 'admin') {
-                res.status(403).json({ message: 'Forbidden: Only admins can upload selling prices' });
-                return;
-            }
-            if (!req.file) {
-                res.status(400).json({ message: 'CSV file required' });
-                return;
-            }
-            const parsedParams = csvUploadSchema.safeParse(req.body);
-            if (!parsedParams.success) {
-                res.status(400).json({ message: 'Invalid duplicateAction', details: parsedParams.error.errors });
-                return;
-            }
-            const { duplicateAction } = parsedParams.data;
-            const errors = [];
-            const validSellingPrices = [];
-            let rowIndex = 1;
-            const parser = new csv_parse_1.Parser({
-                columns: true,
-                skip_empty_lines: true,
-                trim: true,
-                bom: true, // Handle UTF-8 BOM
-            });
-            // Header normalization map
-            const headerMap = {
-                'broker': 'broker',
-                'lot no': 'lotNo',
-                'selling mark': 'sellingMark',
-                'grade': 'grade',
-                'invoice no': 'invoiceNo',
-                'sale code': 'saleCode',
-                'category': 'category',
-                'rp': 'reprint',
-                'bags': 'bags',
-                'net weight': 'netWeight',
-                'total weight': 'totalWeight',
-                'asking price': 'askingPrice',
-                'purchase price': 'purchasePrice',
-                'producer country': 'producerCountry',
-                'manufactured date': 'manufactureDate',
-                'manufacture date': 'manufactureDate',
-            };
-            const stream = stream_1.Readable.from(req.file.buffer.toString('utf8').replace(/^\uFEFF/, '')); // Strip BOM
-            stream.pipe(parser);
-            try {
-                for (var _d = true, parser_1 = __asyncValues(parser), parser_1_1; parser_1_1 = yield parser_1.next(), _a = parser_1_1.done, !_a; _d = true) {
-                    _c = parser_1_1.value;
-                    _d = false;
-                    const record = _c;
-                    rowIndex++;
-                    try {
-                        // Normalize headers
-                        const normalizedRecord = {};
-                        for (const [key, value] of Object.entries(record)) {
-                            const lowerKey = key.toLowerCase().trim().replace(/﻿/g, '');
-                            const mappedKey = headerMap[lowerKey] || lowerKey;
-                            if (typeof value === "string") {
-                                normalizedRecord[mappedKey] = value;
-                            }
-                        }
-                        const parsed = sellingPricesSchema_1.csvRecordSchema.safeParse(Object.assign(Object.assign({}, normalizedRecord), { bags: normalizedRecord.bags ? parseInt(normalizedRecord.bags, 10) : undefined, totalWeight: normalizedRecord.totalWeight ? parseFloat(normalizedRecord.totalWeight) : undefined, netWeight: normalizedRecord.netWeight ? parseFloat(normalizedRecord.netWeight) : undefined, askingPrice: normalizedRecord.askingPrice ? parseFloat(normalizedRecord.askingPrice) : undefined, purchasePrice: normalizedRecord.purchasePrice ? parseFloat(normalizedRecord.purchasePrice) : undefined, reprint: normalizedRecord.reprint ? (normalizedRecord.reprint.toLowerCase() === 'true' ? 1 : normalizedRecord.reprint.toLowerCase() === 'false' ? 0 : parseInt(normalizedRecord.reprint, 10)) : 0, saleCode: normalizedRecord.saleCode, adminCognitoId: authenticatedUser.userId }));
-                        if (!parsed.success) {
-                            throw new Error(parsed.error.errors.map((err) => err.message).join(', '));
-                        }
-                        const data = parsed.data;
-                        const admin = yield prisma.admin.findUnique({ where: { adminCognitoId: authenticatedUser.userId } });
-                        if (!admin) {
-                            throw new Error(`Admin with adminCognitoId ${authenticatedUser.userId} not found`);
-                        }
-                        validSellingPrices.push({
-                            sellingPrice: {
-                                broker: data.broker,
-                                sellingMark: data.sellingMark,
-                                lotNo: data.lotNo,
-                                reprint: data.reprint,
-                                bags: data.bags,
-                                totalWeight: data.totalWeight,
-                                netWeight: data.netWeight,
-                                invoiceNo: data.invoiceNo,
-                                saleCode: data.saleCode,
-                                askingPrice: data.askingPrice,
-                                purchasePrice: data.purchasePrice,
-                                producerCountry: data.producerCountry,
-                                manufactureDate: new Date(data.manufactureDate),
-                                category: data.category,
-                                grade: data.grade,
-                                admin: {
-                                    connect: { adminCognitoId: authenticatedUser.userId },
-                                },
-                            },
-                            rowIndex,
-                        });
-                    }
-                    catch (error) {
-                        errors.push({ row: rowIndex, message: error instanceof Error ? error.message : String(error) });
-                    }
-                }
-            }
-            catch (e_1_1) { e_1 = { error: e_1_1 }; }
-            finally {
-                try {
-                    if (!_d && !_a && (_b = parser_1.return)) yield _b.call(parser_1);
-                }
-                finally { if (e_1) throw e_1.error; }
-            }
-            if (validSellingPrices.length === 0) {
-                res.status(400).json({ success: 0, errors });
-                return;
-            }
-            const result = yield prisma.$transaction((tx) => __awaiter(this, void 0, void 0, function* () {
-                let createdCount = 0;
-                let skippedCount = 0;
-                let replacedCount = 0;
-                for (const { sellingPrice, rowIndex } of validSellingPrices) {
-                    const existing = yield tx.sellingPrice.findUnique({
-                        where: { lotNo: sellingPrice.lotNo },
-                    });
-                    if (existing) {
-                        if (duplicateAction === 'skip') {
-                            skippedCount++;
-                            continue;
-                        }
-                        else if (duplicateAction === 'replace') {
-                            yield tx.sellingPrice.delete({ where: { id: existing.id } });
-                            replacedCount++;
-                        }
-                    }
-                    yield tx.sellingPrice.create({ data: sellingPrice });
-                    createdCount++;
-                }
-                return { createdCount, skippedCount, replacedCount };
-            }));
-            res.status(201).json({
-                success: {
-                    created: result.createdCount,
-                    skipped: result.skippedCount,
-                    replaced: result.replacedCount,
-                },
-                errors,
-            });
-        }
-        catch (error) {
-            if (error instanceof client_2.Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
-                res.status(409).json({ message: 'One or more selling prices have duplicate lotNo', details: error.meta });
-                return;
-            }
-            res.status(500).json({
-                message: 'Internal server error',
-                details: error instanceof Error ? error.message : String(error),
-            });
-        }
-        finally {
-            yield prisma.$disconnect();
-        }
-    });
-}
-const exportSellingPricesCsv = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+const deleteAllSellingPrices = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const authenticatedUser = (0, controllerUtils_1.authenticateUser)(req, res);
         if (!authenticatedUser) {
             res.status(401).json({ message: "Unauthorized" });
             return;
         }
-        const params = sellingPricesSchema_1.querySchema
-            .extend({ sellingPriceIds: zod_1.z.string().optional() })
-            .safeParse(req.body);
-        if (!params.success) {
-            res.status(400).json({
-                message: 'Invalid query parameters',
-                details: params.error.errors,
+        const filters = req.body || {};
+        const where = buildWhereConditions(filters, authenticatedUser.userId);
+        const result = yield prisma.$transaction((tx) => __awaiter(void 0, void 0, void 0, function* () {
+            const sellingPrices = yield tx.sellingPrice.findMany({
+                where,
+                select: { id: true, lotNo: true },
             });
+            if (sellingPrices.length === 0) {
+                throw new Error("No selling prices found or unauthorized");
+            }
+            const associations = sellingPrices.map((sellingPrice) => ({
+                id: sellingPrice.id,
+                lotNo: sellingPrice.lotNo,
+            }));
+            const { count } = yield tx.sellingPrice.deleteMany({ where });
+            return { deletedCount: count, associations };
+        }));
+        res.status(200).json({
+            message: `Successfully deleted ${result.deletedCount} selling price(s)`,
+            associations: result.associations,
+        });
+    }
+    catch (error) {
+        console.error(`[${new Date().toLocaleString("en-US", { timeZone: "Africa/Nairobi" })}] Delete all selling prices error:`, {
+            message: error instanceof Error ? error.message : String(error),
+            stack: error instanceof Error ? error.stack : undefined,
+            filters: req.body,
+        });
+        if (error instanceof client_2.Prisma.PrismaClientKnownRequestError && error.code === "P2025") {
+            res.status(404).json({ message: "No selling prices found", details: { filters: req.body } });
             return;
         }
-        const _a = params.data, { page = 1, limit = Number.MAX_SAFE_INTEGER, sellingPriceIds } = _a, filterParams = __rest(_a, ["page", "limit", "sellingPriceIds"]);
+        res.status(400).json({
+            message: error instanceof Error ? error.message : "Internal server error",
+            details: { filters: req.body },
+        });
+    }
+    finally {
+        yield prisma.$disconnect();
+    }
+});
+exports.deleteAllSellingPrices = deleteAllSellingPrices;
+// Utility function to normalize field names
+function normalizeFieldName(field) {
+    const cleanField = field.replace(/^\uFEFF/, "").trim();
+    return cleanField
+        .toLowerCase()
+        .replace(/\s+|_+/g, "")
+        .replace(/([a-z])([A-Z])/g, "$1$2")
+        .replace(/^(.)/, (match) => match.toLowerCase());
+}
+// Mapping of normalized CSV field names to schema field names
+const fieldNameMapping = {
+    broker: "broker",
+    lotno: "lotNo",
+    sellingmark: "sellingMark",
+    grade: "grade",
+    invoiceno: "invoiceNo",
+    salecode: "saleCode",
+    category: "category",
+    rp: "reprint",
+    bags: "bags",
+    netweight: "netWeight",
+    totalweight: "totalWeight",
+    askingprice: "askingPrice",
+    purchaseprice: "purchasePrice",
+    producercountry: "producerCountry",
+    manufactureddate: "manufactureDate",
+};
+// Cache enum values
+const teaCategories = new Set(Object.values(client_1.TeaCategory));
+const teaGrades = new Set(Object.values(client_1.TeaGrade));
+const brokers = new Set(Object.values(client_1.Broker));
+function uploadSellingPricesCsv(req, res) {
+    return __awaiter(this, void 0, void 0, function* () {
+        var _a, e_1, _b, _c;
+        var _d, _e;
+        const errors = [];
+        let createdCount = 0;
+        let skippedCount = 0;
+        let replacedCount = 0;
+        const time = new Date().toLocaleString("en-US", { timeZone: "Africa/Nairobi" });
+        // console.log(`[${time}] Starting CSV upload:`, { file: req.file?.originalname, size: req.file?.size });
+        try {
+            if (!req.file) {
+                console.error(`[${time}] No CSV file provided`);
+                res.status(400).json({ message: "CSV file required" });
+                return;
+            }
+            const authenticatedUser = (0, controllerUtils_1.authenticateUser)(req, res);
+            if (!authenticatedUser) {
+                console.error(`[${time}] Authentication failed`);
+                res.status(401).json({ message: "Authentication failed: No authenticated user found" });
+                return;
+            }
+            if (authenticatedUser.role.toLowerCase() !== "admin") {
+                console.error(`[${time}] Forbidden: User is not admin`);
+                res.status(403).json({ message: "Forbidden: Only admins can upload selling prices" });
+                return;
+            }
+            const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+            if (req.file.size > MAX_FILE_SIZE) {
+                console.error(`[${time}] File too large`);
+                res.status(400).json({ message: `File size exceeds limit of ${MAX_FILE_SIZE / (1024 * 1024)}MB` });
+                return;
+            }
+            const parsedParams = csvUploadSchema.safeParse(req.body);
+            if (!parsedParams.success) {
+                console.error(`[${time}] Invalid duplicateAction`);
+                res.status(400).json({ message: "Invalid duplicateAction", details: parsedParams.error.errors });
+                return;
+            }
+            const { duplicateAction } = parsedParams.data;
+            let csvBuffer = req.file.buffer;
+            if (csvBuffer.toString("utf8", 0, 3) === "\uFEFF") {
+                csvBuffer = csvBuffer.slice(3);
+            }
+            const parser = new csv_parse_1.Parser({
+                columns: (header) => header.map((field) => normalizeFieldName(field) || field),
+                skip_empty_lines: true,
+                trim: true,
+            });
+            const stream = stream_1.Readable.from(csvBuffer);
+            const records = [];
+            let rowIndex = 0;
+            try {
+                // Pre-collect and validate records
+                for (var _f = true, _g = __asyncValues(stream.pipe(parser)), _h; _h = yield _g.next(), _a = _h.done, !_a; _f = true) {
+                    _c = _h.value;
+                    _f = false;
+                    const record = _c;
+                    rowIndex++;
+                    records.push({ record, rowIndex });
+                }
+            }
+            catch (e_1_1) { e_1 = { error: e_1_1 }; }
+            finally {
+                try {
+                    if (!_f && !_a && (_b = _g.return)) yield _b.call(_g);
+                }
+                finally { if (e_1) throw e_1.error; }
+            }
+            const reprintSchema = zod_1.z.union([
+                zod_1.z.literal("No"),
+                zod_1.z.string().regex(/^[1-9]\d*$/, { message: "Reprint must be 'No' or a positive integer" }),
+            ]).optional();
+            const csvRecordSchema = zod_1.z.object({
+                broker: zod_1.z.enum(Array.from(brokers), { message: "Invalid broker value" }),
+                sellingMark: zod_1.z.string().min(1, "Selling mark is required"),
+                lotNo: zod_1.z.string().min(1, "Lot number is required"),
+                reprint: reprintSchema,
+                bags: zod_1.z.number().int().positive("Bags must be a positive integer"),
+                netWeight: zod_1.z.number().positive("Net weight must be a positive number"),
+                totalWeight: zod_1.z.number().positive("Total weight must be a positive number"),
+                invoiceNo: zod_1.z.string().min(1, "Invoice number is required"),
+                saleCode: zod_1.z.string().min(1, "Sale code is required"),
+                askingPrice: zod_1.z.number().positive("Asking price must be a positive number"),
+                purchasePrice: zod_1.z.number().positive("Purchase price must be a positive number"),
+                producerCountry: zod_1.z.string().min(1).optional(),
+                manufactureDate: zod_1.z.string().refine((val) => !isNaN(new Date(val).getTime()), "Invalid date format"),
+                category: zod_1.z.enum(Array.from(teaCategories), { message: "Invalid tea category" }),
+                grade: zod_1.z.enum(Array.from(teaGrades), { message: "Invalid tea grade" }),
+            }).strict();
+            const validatedRecords = records.map(({ record, rowIndex }) => {
+                try {
+                    const parsedRecord = Object.assign(Object.assign({}, record), { bags: record.bags ? Number(record.bags) : undefined, totalWeight: record.totalWeight ? Number(record.totalWeight) : undefined, netWeight: record.netWeight ? Number(record.netWeight) : undefined, askingPrice: record.askingPrice ? Number(record.askingPrice) : undefined, purchasePrice: record.purchasePrice ? Number(record.purchasePrice) : undefined, reprint: record.reprint !== undefined && record.reprint.trim().toLowerCase() !== "no" ? record.reprint : "No", manufactureDate: record.manufactureDate });
+                    const parsed = csvRecordSchema.safeParse(parsedRecord);
+                    if (!parsed.success) {
+                        throw new Error(parsed.error.errors.map(err => err.message).join(", "));
+                    }
+                    const data = parsed.data;
+                    return {
+                        sellingPrice: {
+                            broker: data.broker,
+                            sellingMark: data.sellingMark,
+                            lotNo: data.lotNo,
+                            reprint: data.reprint === undefined || data.reprint.trim().toLowerCase() === "no" ? "No" : data.reprint,
+                            bags: data.bags,
+                            totalWeight: data.totalWeight,
+                            netWeight: data.netWeight,
+                            invoiceNo: data.invoiceNo,
+                            saleCode: data.saleCode,
+                            askingPrice: data.askingPrice,
+                            purchasePrice: data.purchasePrice,
+                            producerCountry: data.producerCountry,
+                            manufactureDate: new Date(data.manufactureDate),
+                            category: data.category,
+                            grade: data.grade,
+                        },
+                        rowIndex,
+                    };
+                }
+                catch (error) {
+                    errors.push({ row: rowIndex, message: error instanceof Error ? error.message : String(error) });
+                    return null;
+                }
+            }).filter(Boolean);
+            const BATCH_SIZE = 500; // Increased batch size for better performance
+            const processBatch = (batch) => __awaiter(this, void 0, void 0, function* () {
+                try {
+                    const timeBatch = new Date().toLocaleString("en-US", { timeZone: "Africa/Nairobi" });
+                    const result = yield prisma.$transaction((tx) => __awaiter(this, void 0, void 0, function* () {
+                        let batchCreated = 0;
+                        let batchSkipped = 0;
+                        let batchReplaced = 0;
+                        if (duplicateAction === "skip") {
+                            const lotNos = batch.map(item => item.sellingPrice.lotNo);
+                            const existing = yield tx.sellingPrice.findMany({
+                                where: { lotNo: { in: lotNos } },
+                                select: { lotNo: true },
+                            });
+                            const existingLotNos = new Set(existing.map(item => item.lotNo));
+                            const toCreate = batch.filter(item => !existingLotNos.has(item.sellingPrice.lotNo));
+                            batchSkipped += batch.length - toCreate.length;
+                            if (toCreate.length > 0) {
+                                const createResult = yield tx.sellingPrice.createMany({
+                                    data: toCreate.map(item => item.sellingPrice),
+                                    skipDuplicates: true,
+                                });
+                                batchCreated += createResult.count;
+                            }
+                        }
+                        else if (duplicateAction === "replace") {
+                            yield Promise.all(batch.map((_a) => __awaiter(this, [_a], void 0, function* ({ sellingPrice, rowIndex }) {
+                                try {
+                                    yield tx.sellingPrice.upsert({
+                                        where: { lotNo: sellingPrice.lotNo },
+                                        update: Object.assign(Object.assign({}, sellingPrice), { updatedAt: new Date() }),
+                                        create: sellingPrice,
+                                    });
+                                    batchReplaced++;
+                                }
+                                catch (error) {
+                                    errors.push({ row: rowIndex, message: error instanceof Error ? error.message : String(error) });
+                                }
+                            })));
+                        }
+                        else {
+                            const createResult = yield tx.sellingPrice.createMany({
+                                data: batch.map(item => item.sellingPrice),
+                                skipDuplicates: true,
+                            });
+                            batchCreated += createResult.count;
+                        }
+                        return { batchCreated, batchSkipped, batchReplaced };
+                    }), { timeout: 30000 }); // Reduced timeout
+                    createdCount += result.batchCreated;
+                    skippedCount += result.batchSkipped;
+                    replacedCount += result.batchReplaced;
+                }
+                catch (error) {
+                    console.error(`[${time}] Batch failed:`, { message: error instanceof Error ? error.message : String(error) });
+                }
+            });
+            const batches = [];
+            for (let i = 0; i < validatedRecords.length; i += BATCH_SIZE) {
+                batches.push(validatedRecords.slice(i, i + BATCH_SIZE));
+            }
+            yield Promise.all(batches.map(batch => processBatch(batch)));
+            // console.log(`[${time}] Processed ${rowIndex - 1} rows, ${createdCount + skippedCount + replacedCount} records, ${errors.length} errors`);
+            if (createdCount + skippedCount + replacedCount === 0) {
+                console.error(`[${time}] No valid selling prices processed`);
+                res.status(400).json({ success: 0, errors });
+                return;
+            }
+            if (errors.length > 0) {
+                res.status(207).json({
+                    success: { created: createdCount, skipped: skippedCount, replaced: replacedCount },
+                    errors,
+                });
+                return;
+            }
+            res.status(201).json({
+                success: { created: createdCount, skipped: skippedCount, replaced: replacedCount },
+                errors,
+            });
+        }
+        catch (error) {
+            console.error(`[${time}] Upload selling prices error:`, {
+                message: error instanceof Error ? error.message : String(error),
+                file: (_d = req.file) === null || _d === void 0 ? void 0 : _d.originalname,
+                size: (_e = req.file) === null || _e === void 0 ? void 0 : _e.size,
+            });
+            if (error instanceof client_2.Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
+                res.status(409).json({ message: "Duplicate lotNo", details: error.meta });
+                return;
+            }
+            res.status(500).json({ message: "Internal server error", details: error instanceof Error ? error.message : String(error) });
+        }
+    });
+}
+const exportSellingPricesXlsx = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const authenticatedUser = (0, controllerUtils_1.authenticateUser)(req, res);
+        if (!authenticatedUser) {
+            res.status(401).json({ message: "Unauthorized" });
+            return;
+        }
+        const params = sellingPricesSchema_1.querySchema.extend({ sellingPriceIds: zod_1.z.string().optional() }).safeParse(req.body || { page: 1, limit: 10000 });
+        if (!params.success) {
+            res.status(400).json({ message: "Invalid query parameters", details: params.error.errors });
+            return;
+        }
+        const _a = params.data, { page = 1, limit = 10000, sellingPriceIds } = _a, filterParams = __rest(_a, ["page", "limit", "sellingPriceIds"]);
         let where = {};
         if (sellingPriceIds) {
-            const ids = [...new Set(sellingPriceIds.split(',').map(id => parseInt(id.trim())))]
-                .filter(id => !isNaN(id));
+            const ids = [...new Set(sellingPriceIds.split(",").map((id) => parseInt(id.trim())))].filter((id) => !isNaN(id));
             if (ids.length === 0) {
-                res.status(400).json({ message: 'Invalid sellingPriceIds provided' });
+                res.status(400).json({ message: "Invalid sellingPriceIds provided" });
                 return;
             }
             where = { id: { in: ids } };
         }
         else if (Object.keys(filterParams).length > 0) {
-            where = buildWhereConditions(filterParams);
+            where = buildWhereConditions(filterParams, authenticatedUser.userId, authenticatedUser.role.toLowerCase());
         }
-        const sellingPrices = yield prisma.sellingPrice.findMany({
-            where,
-            select: {
+        const sellingPrices = yield prisma.sellingPrice.findMany(Object.assign({ where, select: {
                 saleCode: true,
                 lotNo: true,
                 category: true,
@@ -640,51 +814,123 @@ const exportSellingPricesCsv = (req, res) => __awaiter(void 0, void 0, void 0, f
                 invoiceNo: true,
                 manufactureDate: true,
                 reprint: true,
-            },
-        });
+            } }, (sellingPriceIds ? {} : { skip: (page - 1) * limit, take: limit })));
         if (!sellingPrices.length) {
-            res.status(404).json({
-                message: 'No selling prices found for the provided filters or IDs',
-            });
+            res.status(404).json({ message: "No selling prices found for the provided filters or IDs" });
             return;
         }
-        const csvStringifier = (0, csv_writer_1.createObjectCsvStringifier)({
-            header: [
-                { id: 'saleCode', title: 'Sale Code' },
-                { id: 'lotNo', title: 'Lot Number' },
-                { id: 'category', title: 'Category' },
-                { id: 'grade', title: 'Grade' },
-                { id: 'broker', title: 'Broker' },
-                { id: 'sellingMark', title: 'Selling Mark' },
-                { id: 'bags', title: 'Bags' },
-                { id: 'netWeight', title: 'Net Weight' },
-                { id: 'totalWeight', title: 'Total Weight' },
-                { id: 'producerCountry', title: 'Producer Country' },
-                { id: 'askingPrice', title: 'Asking Price' },
-                { id: 'purchasePrice', title: 'Purchase Price' },
-                { id: 'invoiceNo', title: 'Invoice Number' },
-                { id: 'manufactureDate', title: 'Manufacture Date' },
-                { id: 'reprint', title: 'Reprint' },
-            ],
+        const workbook = new exceljs_1.default.Workbook();
+        const worksheet = workbook.addWorksheet("Selling Prices");
+        const headers = [
+            "Sale Code", "Lot Number", "Category", "Grade", "Broker", "Selling Mark", "Bags",
+            "Net Weight", "Total Weight", "Country", "Asking Price", "Purchase Price",
+            "Invoice No", "Mft Date", "Reprint"
+        ];
+        // Add title row
+        const titleRow = worksheet.addRow(["Official Black Gold Africa Traders Ltd Selling Prices"]);
+        worksheet.mergeCells("A1:O1");
+        const titleCell = worksheet.getCell("A1");
+        titleCell.font = { name: "Calibri", size: 16, bold: true, color: { argb: "FFFFFF" } };
+        titleCell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "4CAF50" } };
+        titleCell.alignment = { horizontal: "center", vertical: "middle" };
+        worksheet.getRow(1).height = 30;
+        worksheet.addRow([]); // Blank spacer row
+        // Add column headers
+        const headerRow = worksheet.addRow(headers);
+        headerRow.eachCell((cell) => {
+            cell.font = { name: "Calibri", size: 11, bold: true };
+            cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "D3D3D3" } };
+            cell.border = {
+                top: { style: "thin" },
+                left: { style: "thin" },
+                bottom: { style: "thin" },
+                right: { style: "thin" },
+            };
+            cell.alignment = { horizontal: "center" };
         });
-        const csvContent = csvStringifier.getHeaderString() +
-            csvStringifier.stringifyRecords(sellingPrices.map(s => (Object.assign(Object.assign({}, s), { manufactureDate: new Date(s.manufactureDate).toLocaleDateString('en-GB', {
-                    year: 'numeric',
-                    month: '2-digit',
-                    day: '2-digit',
-                }).split('/').join('/'), totalWeight: Number(s.totalWeight), netWeight: Number(s.netWeight), askingPrice: Number(s.askingPrice), purchasePrice: Number(s.purchasePrice) }))));
-        res.setHeader('Content-Type', 'text/csv; charset=utf-8');
-        res.setHeader('Content-Disposition', `attachment; filename="selling_prices_${new Date().toISOString().split('T')[0]}.csv"`);
-        res.status(200).send(csvContent);
+        // Add data rows
+        sellingPrices.forEach((item) => {
+            var _a, _b, _c, _d, _e, _f;
+            worksheet.addRow([
+                item.saleCode || "",
+                item.lotNo || "",
+                item.category || "",
+                item.grade || "",
+                item.broker || "",
+                item.sellingMark || "",
+                (_a = item.bags) !== null && _a !== void 0 ? _a : "",
+                (_b = item.netWeight) !== null && _b !== void 0 ? _b : "",
+                (_c = item.totalWeight) !== null && _c !== void 0 ? _c : "",
+                item.producerCountry || "",
+                (_d = item.askingPrice) !== null && _d !== void 0 ? _d : "",
+                (_e = item.purchasePrice) !== null && _e !== void 0 ? _e : "",
+                item.invoiceNo || "",
+                item.manufactureDate
+                    ? new Date(item.manufactureDate).toLocaleDateString("en-GB")
+                    : "",
+                (_f = item.reprint) !== null && _f !== void 0 ? _f : "",
+            ]);
+        });
+        // Style data rows
+        worksheet.eachRow((row, rowNumber) => {
+            if (rowNumber > 3) {
+                row.eachCell((cell) => {
+                    cell.alignment = { horizontal: "left" };
+                    cell.border = {
+                        top: { style: "thin" },
+                        left: { style: "thin" },
+                        bottom: { style: "thin" },
+                        right: { style: "thin" },
+                    };
+                });
+            }
+        });
+        // Set fixed column widths for consistent professional layout
+        const columnWidths = [
+            14, // Sale Code
+            12, // Lot Number
+            10, // Category
+            10, // Grade
+            12, // Broker
+            14, // Selling Mark
+            8, // Bags
+            12, // Net Weight
+            14, // Total Weight
+            12, // Country
+            14, // Asking Price
+            14, // Purchase Price
+            12, // Invoice No
+            12, // Mft Date
+            10 // Reprint
+        ];
+        columnWidths.forEach((width, i) => {
+            worksheet.getColumn(i + 1).width = width;
+        });
+        // Add footer
+        const lastRow = worksheet.addRow([]);
+        lastRow.getCell(1).value = `Generated from bgatltd.com on ${new Date().toLocaleString("en-KE", { timeZone: "Africa/Nairobi" })}`;
+        lastRow.getCell(1).font = { name: "Calibri", size: 8, italic: true };
+        lastRow.getCell(1).alignment = { horizontal: "center" };
+        worksheet.mergeCells(`A${lastRow.number}:O${lastRow.number}`);
+        // Freeze rows: title + spacer + header
+        worksheet.views = [{ state: "frozen", ySplit: 3 }];
+        worksheet.protect("bgatltd2025", {
+            selectLockedCells: false,
+            selectUnlockedCells: false,
+        });
+        // Send the file
+        res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+        res.setHeader("Content-Disposition", `attachment; filename="selling_prices_${new Date().toISOString().split("T")[0]}.xlsx"`);
+        yield workbook.xlsx.write(res);
+        res.end();
+        console.log(`[${new Date().toLocaleString("en-KE", { timeZone: "Africa/Nairobi" })}] Exported ${sellingPrices.length} selling prices to XLSX`);
     }
     catch (error) {
-        res.status(500).json({
-            message: 'Internal server error',
-            details: error instanceof Error ? error.message : String(error),
-        });
+        console.error("Export error:", error);
+        res.status(500).json({ message: "Internal server error", details: error instanceof Error ? error.message : String(error) });
     }
     finally {
         yield prisma.$disconnect();
     }
 });
-exports.exportSellingPricesCsv = exportSellingPricesCsv;
+exports.exportSellingPricesXlsx = exportSellingPricesXlsx;

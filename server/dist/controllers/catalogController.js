@@ -26,14 +26,17 @@ var __rest = (this && this.__rest) || function (s, e) {
         }
     return t;
 };
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.exportCatalogsCsv = exports.deleteCatalogs = exports.getCatalogById = exports.createCatalog = exports.getCatalogFilterOptions = exports.getCatalogs = exports.serializeCatalog = void 0;
+exports.exportCatalogsXlsx = exports.deleteAllCatalogs = exports.deleteCatalogs = exports.getCatalogById = exports.createCatalog = exports.getCatalogFilterOptions = exports.getCatalogs = exports.serializeCatalog = void 0;
 exports.uploadCatalogsCsv = uploadCatalogsCsv;
 const stream_1 = require("stream");
 const zod_1 = require("zod");
-const csv_writer_1 = require("csv-writer");
 const csv_parse_1 = require("csv-parse");
 const client_1 = require("@prisma/client");
+const exceljs_1 = __importDefault(require("exceljs"));
 const catalogSchemas_1 = require("../schemas/catalogSchemas");
 const controllerUtils_1 = require("../utils/controllerUtils");
 const client_2 = require("@prisma/client");
@@ -66,8 +69,20 @@ const serializeCatalog = (catalog) => {
 };
 exports.serializeCatalog = serializeCatalog;
 // Build Where Conditions
-const buildWhereConditions = (params) => {
+const buildWhereConditions = (params, userId, role) => {
     const conditions = {};
+    if (userId && role === "admin") {
+        conditions.OR = [
+            { adminCognitoId: userId },
+            { adminCognitoId: null },
+        ];
+    }
+    else if (userId && role === "user") {
+        conditions.userCognitoId = userId;
+    }
+    if (!params || typeof params !== "object") {
+        return conditions;
+    }
     const filterMap = {
         favoriteIds: (value) => {
             if (value === null || value === void 0 ? void 0 : value.length)
@@ -126,8 +141,12 @@ const buildWhereConditions = (params) => {
                 conditions.invoiceNo = { equals: value };
         },
         reprint: (value) => {
-            if (value !== undefined)
+            if (value !== undefined) {
+                if (value !== "No" && isNaN(Number(value))) {
+                    throw new Error(`Invalid reprint: ${value}. Must be "No" or a number`);
+                }
                 conditions.reprint = value;
+            }
         },
     };
     Object.entries(params).forEach(([key, value]) => {
@@ -147,7 +166,10 @@ const buildWhereConditions = (params) => {
         if (Object.values(client_1.Broker).includes(params.search)) {
             orConditions.push({ broker: params.search });
         }
-        conditions.OR = orConditions;
+        conditions.OR = [
+            ...(conditions.OR || []),
+            ...orConditions,
+        ];
     }
     return conditions;
 };
@@ -281,7 +303,7 @@ const getCatalogFilterOptions = (req, res) => __awaiter(void 0, void 0, void 0, 
 });
 exports.getCatalogFilterOptions = getCatalogFilterOptions;
 const createCatalog = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    var _a;
+    var _a, _b;
     try {
         const authenticatedUser = (0, controllerUtils_1.authenticateUser)(req, res);
         if (!authenticatedUser) {
@@ -298,7 +320,7 @@ const createCatalog = (req, res) => __awaiter(void 0, void 0, void 0, function* 
                 broker: catalogData.data.broker,
                 sellingMark: catalogData.data.sellingMark,
                 lotNo: catalogData.data.lotNo,
-                reprint: catalogData.data.reprint,
+                reprint: (_a = catalogData.data.reprint) !== null && _a !== void 0 ? _a : null,
                 bags: catalogData.data.bags,
                 totalWeight: catalogData.data.totalWeight,
                 netWeight: catalogData.data.netWeight,
@@ -324,7 +346,7 @@ const createCatalog = (req, res) => __awaiter(void 0, void 0, void 0, function* 
             },
         });
         // Ensure admin is typed correctly for serializeCatalog
-        const catalogWithAdmin = Object.assign(Object.assign({}, newCatalog), { admin: (_a = newCatalog.admin) !== null && _a !== void 0 ? _a : undefined });
+        const catalogWithAdmin = Object.assign(Object.assign({}, newCatalog), { admin: (_b = newCatalog.admin) !== null && _b !== void 0 ? _b : undefined });
         res.status(201).json({ data: (0, exports.serializeCatalog)(catalogWithAdmin) });
     }
     catch (error) {
@@ -365,7 +387,7 @@ const getCatalogById = (req, res) => __awaiter(void 0, void 0, void 0, function*
             },
         });
         if (!catalog) {
-            res.status(404).json({ message: "Stocks not found" });
+            res.status(404).json({ message: "Catalog not found" });
             return;
         }
         // Normalize admin property for serializeCatalog
@@ -388,17 +410,17 @@ const deleteCatalogs = (req, res) => __awaiter(void 0, void 0, void 0, function*
             return;
         }
         const { ids } = req.body;
+        // console.log(`[${new Date().toLocaleString("en-US", { timeZone: "Africa/Nairobi" })}] Deleting catalogs with ids:`, ids);
         if (!Array.isArray(ids) || ids.length === 0) {
             res.status(400).json({ message: "No catalog IDs provided" });
             return;
         }
         const catalogIds = ids.map((id) => parseInt(id, 10)).filter((id) => !isNaN(id));
         if (catalogIds.length === 0) {
-            res.status(400).json({ message: "Invalid catalog IDs" });
+            res.status(400).json({ message: "Invalid catalog IDs", details: { providedIds: ids } });
             return;
         }
         const result = yield prisma.$transaction((tx) => __awaiter(void 0, void 0, void 0, function* () {
-            // Allow catalogs with null adminCognitoId or matching adminCognitoId
             const catalogs = yield tx.catalog.findMany({
                 where: {
                     id: { in: catalogIds },
@@ -433,12 +455,18 @@ const deleteCatalogs = (req, res) => __awaiter(void 0, void 0, void 0, function*
         });
     }
     catch (error) {
+        console.error(`[${new Date().toLocaleString("en-US", { timeZone: "Africa/Nairobi" })}] Delete catalogs error:`, {
+            message: error instanceof Error ? error.message : String(error),
+            stack: error instanceof Error ? error.stack : undefined,
+            ids: req.body.ids,
+        });
         if (error instanceof client_2.Prisma.PrismaClientKnownRequestError && error.code === "P2025") {
             res.status(404).json({ message: "No catalogs found" });
             return;
         }
         res.status(error instanceof Error ? 400 : 500).json({
             message: error instanceof Error ? error.message : "Internal server error",
+            details: { ids: req.body.ids },
         });
     }
     finally {
@@ -446,6 +474,55 @@ const deleteCatalogs = (req, res) => __awaiter(void 0, void 0, void 0, function*
     }
 });
 exports.deleteCatalogs = deleteCatalogs;
+const deleteAllCatalogs = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const authenticatedUser = (0, controllerUtils_1.authenticateUser)(req, res);
+        if (!authenticatedUser) {
+            res.status(401).json({ message: "Unauthorized" });
+            return;
+        }
+        const filters = req.body || {}; // Default to empty object if req.body is undefined/null
+        const where = buildWhereConditions(filters, authenticatedUser.userId);
+        const result = yield prisma.$transaction((tx) => __awaiter(void 0, void 0, void 0, function* () {
+            const catalogs = yield tx.catalog.findMany({
+                where,
+                select: { id: true, lotNo: true },
+            });
+            if (catalogs.length === 0) {
+                throw new Error("No catalogs found or unauthorized");
+            }
+            const associations = catalogs.map((catalog) => ({
+                id: catalog.id,
+                lotNo: catalog.lotNo,
+            }));
+            const { count } = yield tx.catalog.deleteMany({ where });
+            return { deletedCount: count, associations };
+        }));
+        res.status(200).json({
+            message: `Successfully deleted ${result.deletedCount} catalog(s)`,
+            associations: result.associations,
+        });
+    }
+    catch (error) {
+        console.error(`[${new Date().toLocaleString("en-US", { timeZone: "Africa/Nairobi" })}] Delete all catalogs error:`, {
+            message: error instanceof Error ? error.message : String(error),
+            stack: error instanceof Error ? error.stack : undefined,
+            filters: req.body,
+        });
+        if (error instanceof client_2.Prisma.PrismaClientKnownRequestError && error.code === "P2025") {
+            res.status(404).json({ message: "No catalogs found", details: { filters: req.body } });
+            return;
+        }
+        res.status(400).json({
+            message: error instanceof Error ? error.message : "Internal server error",
+            details: { filters: req.body },
+        });
+    }
+    finally {
+        yield prisma.$disconnect();
+    }
+});
+exports.deleteAllCatalogs = deleteAllCatalogs;
 // Utility function to normalize field names (convert to camelCase, remove spaces, handle BOM)
 function normalizeFieldName(field) {
     const cleanField = field.replace(/^\uFEFF/, "").trim();
@@ -472,39 +549,65 @@ const fieldNameMapping = {
     producercountry: "producerCountry",
     manufactureddate: "manufactureDate",
 };
+// Cache enum values for O(1) lookup
+const teaCategories = new Set(Object.values(client_1.TeaCategory));
+const teaGrades = new Set(Object.values(client_1.TeaGrade));
+const brokers = new Set(Object.values(client_1.Broker));
 function uploadCatalogsCsv(req, res) {
     return __awaiter(this, void 0, void 0, function* () {
         var _a, e_1, _b, _c;
+        var _d, _e, _f, _g, _h, _j;
+        const errors = [];
+        let createdCount = 0;
+        let skippedCount = 0;
+        let replacedCount = 0;
         try {
+            // console.log(`[${new Date().toLocaleString("en-US", { timeZone: "Africa/Nairobi" })}] Starting CSV upload:`, {
+            //     file: req.file?.originalname,
+            //     size: req.file?.size,
+            //     body: req.body,
+            // });
             const authenticatedUser = (0, controllerUtils_1.authenticateUser)(req, res);
             if (!authenticatedUser) {
+                console.error(`[${new Date().toLocaleString("en-US", { timeZone: "Africa/Nairobi" })}] Authentication failed`);
                 res.status(401).json({ message: "Authentication failed: No authenticated user found" });
                 return;
             }
             if (authenticatedUser.role.toLowerCase() !== "admin") {
+                console.error(`[${new Date().toLocaleString("en-US", { timeZone: "Africa/Nairobi" })}] Forbidden: User role ${authenticatedUser.role}`);
                 res.status(403).json({ message: "Forbidden: Only admins can upload catalogs" });
                 return;
             }
             if (!req.file) {
+                console.error(`[${new Date().toLocaleString("en-US", { timeZone: "Africa/Nairobi" })}] No CSV file provided`);
                 res.status(400).json({ message: "CSV file required" });
+                return;
+            }
+            const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+            if (req.file.size > MAX_FILE_SIZE) {
+                console.error(`[${new Date().toLocaleString("en-US", { timeZone: "Africa/Nairobi" })}] File too large: ${req.file.size} bytes`);
+                res.status(400).json({ message: `File size exceeds limit of ${MAX_FILE_SIZE / (1024 * 1024)}MB` });
                 return;
             }
             const parsedParams = csvUploadSchema.safeParse(req.body);
             if (!parsedParams.success) {
+                console.error(`[${new Date().toLocaleString("en-US", { timeZone: "Africa/Nairobi" })}] Invalid duplicateAction:`, parsedParams.error.errors);
                 res.status(400).json({ message: "Invalid duplicateAction", details: parsedParams.error.errors });
                 return;
             }
             const { duplicateAction } = parsedParams.data;
-            const errors = [];
-            const validCatalogs = [];
             let rowIndex = 1;
-            // Remove BOM from the file buffer if present
+            let batch = [];
+            const BATCH_SIZE = 50;
+            const MAX_CONCURRENT_BATCHES = 2;
             let csvBuffer = req.file.buffer;
             if (csvBuffer.toString("utf8", 0, 3) === "\uFEFF") {
                 csvBuffer = csvBuffer.slice(3);
             }
+            // console.log(`[${new Date().toLocaleString("en-US", { timeZone: "Africa/Nairobi" })}] Parsing CSV file: ${req.file.originalname}`);
             const parser = new csv_parse_1.Parser({
                 columns: (header) => {
+                    console.log(`[${new Date().toLocaleString("en-US", { timeZone: "Africa/Nairobi" })}] CSV headers:`, header);
                     const normalizedHeaders = header.map((field) => {
                         const normalized = normalizeFieldName(field);
                         return fieldNameMapping[normalized] || normalized;
@@ -516,16 +619,94 @@ function uploadCatalogsCsv(req, res) {
             });
             const stream = stream_1.Readable.from(csvBuffer);
             stream.pipe(parser);
+            const processBatch = (batch) => __awaiter(this, void 0, void 0, function* () {
+                let retries = 3;
+                let success = false;
+                let lastError;
+                while (retries > 0 && !success) {
+                    try {
+                        const result = yield prisma.$transaction((tx) => __awaiter(this, void 0, void 0, function* () {
+                            let batchCreated = 0;
+                            let batchSkipped = 0;
+                            let batchReplaced = 0;
+                            if (duplicateAction === "skip") {
+                                const lotNos = batch.map((item) => item.catalog.lotNo);
+                                const existing = yield tx.catalog.findMany({
+                                    where: { lotNo: { in: lotNos } },
+                                    select: { lotNo: true },
+                                });
+                                const existingLotNos = new Set(existing.map((item) => item.lotNo));
+                                const toCreate = batch.filter((item) => !existingLotNos.has(item.catalog.lotNo));
+                                batchSkipped += batch.length - toCreate.length;
+                                if (toCreate.length > 0) {
+                                    yield tx.catalog.createMany({
+                                        data: toCreate.map((item) => item.catalog),
+                                        skipDuplicates: true,
+                                    });
+                                    batchCreated += toCreate.length;
+                                }
+                            }
+                            else if (duplicateAction === "replace") {
+                                for (const { catalog, rowIndex } of batch) {
+                                    try {
+                                        yield tx.catalog.upsert({
+                                            where: { lotNo: catalog.lotNo },
+                                            update: Object.assign(Object.assign({}, catalog), { updatedAt: new Date() }),
+                                            create: catalog,
+                                        });
+                                        batchReplaced++;
+                                    }
+                                    catch (error) {
+                                        errors.push({
+                                            row: rowIndex,
+                                            message: error instanceof Error ? error.message : String(error),
+                                        });
+                                    }
+                                }
+                            }
+                            else {
+                                yield tx.catalog.createMany({
+                                    data: batch.map((item) => item.catalog),
+                                    skipDuplicates: true,
+                                });
+                                batchCreated += batch.length;
+                            }
+                            return { batchCreated, batchSkipped, batchReplaced };
+                        }), { timeout: 60000 });
+                        createdCount += result.batchCreated;
+                        skippedCount += result.batchSkipped;
+                        replacedCount += result.batchReplaced;
+                        success = true;
+                    }
+                    catch (error) {
+                        lastError = error;
+                        retries--;
+                        console.warn(`[${new Date().toLocaleString("en-US", { timeZone: "Africa/Nairobi" })}] Batch ${Math.floor(rowIndex / BATCH_SIZE)} failed, retries left: ${retries}`, {
+                            message: error instanceof Error ? error.message : String(error),
+                        });
+                        if (retries === 0) {
+                            throw lastError;
+                        }
+                        yield new Promise((resolve) => setTimeout(resolve, 1000));
+                    }
+                }
+            });
+            let activeBatches = 0;
+            const batchPromises = [];
             try {
-                for (var _d = true, parser_1 = __asyncValues(parser), parser_1_1; parser_1_1 = yield parser_1.next(), _a = parser_1_1.done, !_a; _d = true) {
+                for (var _k = true, parser_1 = __asyncValues(parser), parser_1_1; parser_1_1 = yield parser_1.next(), _a = parser_1_1.done, !_a; _k = true) {
                     _c = parser_1_1.value;
-                    _d = false;
+                    _k = false;
                     const record = _c;
                     rowIndex++;
                     try {
-                        // Normalize and parse the record
-                        const parsedRecord = Object.assign(Object.assign({}, record), { bags: record.bags ? Number(record.bags) : undefined, totalWeight: record.totalWeight ? Number(record.totalWeight) : undefined, netWeight: record.netWeight ? Number(record.netWeight) : undefined, askingPrice: record.askingPrice ? Number(record.askingPrice) : undefined, reprint: record.reprint !== undefined ? (record.reprint === 'true' ? 1 : record.reprint === 'false' ? 0 : Number(record.reprint)) : 0, saleCode: record.saleCode, manufactureDate: record.manufactureDate });
-                        // Validate numeric fields to prevent NaN
+                        if (!record.lotNo || !record.saleCode) {
+                            throw new Error("Missing required fields: lotNo or saleCode");
+                        }
+                        const parsedRecord = Object.assign(Object.assign({}, record), { bags: record.bags ? Number(record.bags) : undefined, totalWeight: record.totalWeight ? Number(record.totalWeight) : undefined, netWeight: record.netWeight ? Number(record.netWeight) : undefined, askingPrice: record.askingPrice ? Number(record.askingPrice) : undefined, reprint: record.reprint !== undefined ? String(record.reprint) : undefined, saleCode: record.saleCode, manufactureDate: record.manufactureDate, category: record.category, grade: record.grade, broker: record.broker });
+                        if (parsedRecord.reprint && parsedRecord.reprint !== "No" && isNaN(Number(parsedRecord.reprint))) {
+                            throw new Error(`Invalid reprint value: ${parsedRecord.reprint}. Must be "No" or a number`);
+                        }
                         if (parsedRecord.bags && isNaN(parsedRecord.bags)) {
                             throw new Error("Invalid number format for bags");
                         }
@@ -538,20 +719,26 @@ function uploadCatalogsCsv(req, res) {
                         if (parsedRecord.askingPrice && isNaN(parsedRecord.askingPrice)) {
                             throw new Error("Invalid number format for askingPrice");
                         }
-                        if (parsedRecord.reprint && isNaN(parsedRecord.reprint)) {
-                            throw new Error("Invalid number format for reprint");
+                        if (parsedRecord.category && !teaCategories.has(parsedRecord.category)) {
+                            throw new Error(`Invalid category: ${parsedRecord.category}`);
+                        }
+                        if (parsedRecord.grade && !teaGrades.has(parsedRecord.grade)) {
+                            throw new Error(`Invalid grade: ${parsedRecord.grade}`);
+                        }
+                        if (parsedRecord.broker && !brokers.has(parsedRecord.broker)) {
+                            throw new Error(`Invalid broker: ${parsedRecord.broker}`);
                         }
                         const parsed = catalogSchemas_1.csvRecordSchema.safeParse(parsedRecord);
                         if (!parsed.success) {
                             throw new Error(parsed.error.errors.map((err) => err.message).join(", "));
                         }
                         const data = parsed.data;
-                        validCatalogs.push({
+                        batch.push({
                             catalog: {
                                 broker: data.broker,
                                 sellingMark: data.sellingMark,
                                 lotNo: data.lotNo,
-                                reprint: data.reprint,
+                                reprint: (_d = data.reprint) !== null && _d !== void 0 ? _d : null,
                                 bags: data.bags,
                                 totalWeight: data.totalWeight,
                                 netWeight: data.netWeight,
@@ -559,12 +746,23 @@ function uploadCatalogsCsv(req, res) {
                                 saleCode: data.saleCode,
                                 askingPrice: data.askingPrice,
                                 producerCountry: data.producerCountry,
-                                manufactureDate: new Date(data.manufactureDate),
+                                manufactureDate: new Date((_e = data.manufactureDate) !== null && _e !== void 0 ? _e : Date.now()),
                                 category: data.category,
                                 grade: data.grade,
                             },
                             rowIndex,
                         });
+                        if (batch.length >= BATCH_SIZE) {
+                            console.log(`[${new Date().toLocaleString("en-US", { timeZone: "Africa/Nairobi" })}] Processing batch ${Math.floor(rowIndex / BATCH_SIZE)} (${batch.length} items)`);
+                            batchPromises.push(processBatch(batch));
+                            batch = [];
+                            activeBatches++;
+                            if (activeBatches >= MAX_CONCURRENT_BATCHES) {
+                                yield Promise.all(batchPromises);
+                                batchPromises.length = 0;
+                                activeBatches = 0;
+                            }
+                        }
                     }
                     catch (error) {
                         errors.push({ row: rowIndex, message: error instanceof Error ? error.message : String(error) });
@@ -574,69 +772,76 @@ function uploadCatalogsCsv(req, res) {
             catch (e_1_1) { e_1 = { error: e_1_1 }; }
             finally {
                 try {
-                    if (!_d && !_a && (_b = parser_1.return)) yield _b.call(parser_1);
+                    if (!_k && !_a && (_b = parser_1.return)) yield _b.call(parser_1);
                 }
                 finally { if (e_1) throw e_1.error; }
             }
-            if (validCatalogs.length === 0) {
+            if (batch.length > 0) {
+                // console.log(`[${new Date().toLocaleString("en-US", { timeZone: "Africa/Nairobi" })}] Processing final batch (${batch.length} items)`);
+                batchPromises.push(processBatch(batch));
+            }
+            yield Promise.all(batchPromises);
+            // console.log(`[${new Date().toLocaleString("en-US", { timeZone: "Africa/Nairobi" })}] Parsed ${rowIndex - 1} rows, ${createdCount + skippedCount + replacedCount} processed, ${errors.length} errors`);
+            if (createdCount + skippedCount + replacedCount === 0) {
+                console.error(`[${new Date().toLocaleString("en-US", { timeZone: "Africa/Nairobi" })}] No valid catalogs processed`);
                 res.status(400).json({ success: 0, errors });
                 return;
             }
-            const result = yield prisma.$transaction((tx) => __awaiter(this, void 0, void 0, function* () {
-                let createdCount = 0;
-                let skippedCount = 0;
-                let replacedCount = 0;
-                for (const { catalog, rowIndex } of validCatalogs) {
-                    const existing = yield tx.catalog.findUnique({
-                        where: { lotNo: catalog.lotNo },
-                    });
-                    if (existing) {
-                        if (duplicateAction === "skip") {
-                            skippedCount++;
-                            continue;
-                        }
-                        else if (duplicateAction === "replace") {
-                            yield tx.catalog.delete({ where: { id: existing.id } });
-                            replacedCount++;
-                        }
-                    }
-                    yield tx.catalog.create({ data: catalog });
-                    createdCount++;
-                }
-                return { createdCount, skippedCount, replacedCount };
-            }));
+            // console.log(`[${new Date().toLocaleString("en-US", { timeZone: "Africa/Nairobi" })}] Transaction complete:`, {
+            //     createdCount,
+            //     skippedCount,
+            //     replacedCount,
+            //     errors: errors.length,
+            // });
+            if (errors.length > 0) {
+                res.status(207).json({
+                    success: { created: createdCount, skipped: skippedCount, replaced: replacedCount },
+                    errors,
+                });
+                return;
+            }
             res.status(201).json({
-                success: {
-                    created: result.createdCount,
-                    skipped: result.skippedCount,
-                    replaced: result.replacedCount,
-                },
+                success: { created: createdCount, skipped: skippedCount, replaced: replacedCount },
                 errors,
             });
         }
         catch (error) {
+            console.error(`[${new Date().toLocaleString("en-US", { timeZone: "Africa/Nairobi" })}] Upload catalogs error:`, {
+                message: error instanceof Error ? error.message : String(error),
+                stack: error instanceof Error ? error.stack : undefined,
+                file: (_f = req.file) === null || _f === void 0 ? void 0 : _f.originalname,
+                size: (_g = req.file) === null || _g === void 0 ? void 0 : _g.size,
+                body: req.body,
+                processedCount: createdCount + skippedCount + replacedCount,
+                errorsCount: errors.length,
+            });
             if (error instanceof client_2.Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
-                res.status(409).json({ message: "One or more catalogs have duplicate lotNo", details: error.meta });
+                res.status(409).json({
+                    message: "One or more catalogs have duplicate lotNo",
+                    details: error.meta,
+                });
                 return;
             }
             res.status(500).json({
                 message: "Internal server error",
                 details: error instanceof Error ? error.message : String(error),
+                file: (_h = req.file) === null || _h === void 0 ? void 0 : _h.originalname,
+                size: (_j = req.file) === null || _j === void 0 ? void 0 : _j.size,
+                body: req.body,
+                processedCount: createdCount + skippedCount + replacedCount,
+                errorsCount: errors.length,
             });
-        }
-        finally {
-            yield prisma.$disconnect();
         }
     });
 }
-const exportCatalogsCsv = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+const exportCatalogsXlsx = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const authenticatedUser = (0, controllerUtils_1.authenticateUser)(req, res);
         if (!authenticatedUser) {
             res.status(401).json({ message: "Unauthorized" });
             return;
         }
-        const params = catalogSchemas_1.querySchema.extend({ catalogIds: zod_1.z.string().optional() }).safeParse(req.body);
+        const params = catalogSchemas_1.querySchema.extend({ catalogIds: zod_1.z.string().optional() }).safeParse(req.body || {});
         if (!params.success) {
             res.status(400).json({
                 message: "Invalid query parameters",
@@ -647,7 +852,7 @@ const exportCatalogsCsv = (req, res) => __awaiter(void 0, void 0, void 0, functi
         const _a = params.data, { page = 1, limit = 10000, catalogIds } = _a, filterParams = __rest(_a, ["page", "limit", "catalogIds"]);
         let where = {};
         if (catalogIds) {
-            const ids = [...new Set(catalogIds.split(",").map((id) => parseInt(id.trim())))].filter((id) => !isNaN(id));
+            const ids = [...new Set(catalogIds.split(",").map(id => parseInt(id.trim())))].filter(id => !isNaN(id));
             if (ids.length === 0) {
                 res.status(400).json({ message: "Invalid catalogIds provided" });
                 return;
@@ -655,7 +860,7 @@ const exportCatalogsCsv = (req, res) => __awaiter(void 0, void 0, void 0, functi
             where = { id: { in: ids } };
         }
         else if (Object.keys(filterParams).length > 0) {
-            where = buildWhereConditions(filterParams);
+            where = buildWhereConditions(filterParams, authenticatedUser.userId, authenticatedUser.role.toLowerCase());
         }
         const catalogs = yield prisma.catalog.findMany(Object.assign({ where, select: {
                 saleCode: true,
@@ -674,40 +879,108 @@ const exportCatalogsCsv = (req, res) => __awaiter(void 0, void 0, void 0, functi
                 reprint: true,
             } }, (catalogIds ? {} : { skip: (page - 1) * limit, take: limit })));
         if (!catalogs.length) {
-            res.status(404).json({
-                message: "No catalogs found for the provided filters or IDs",
-            });
+            res.status(404).json({ message: "No catalogs found" });
             return;
         }
-        const csvStringifier = (0, csv_writer_1.createObjectCsvStringifier)({
-            header: [
-                { id: "saleCode", title: "Sale Code" },
-                { id: "lotNo", title: "Lot Number" },
-                { id: "category", title: "Category" },
-                { id: "grade", title: "Grade" },
-                { id: "broker", title: "Broker" },
-                { id: "sellingMark", title: "Selling Mark" },
-                { id: "bags", title: "Bags" },
-                { id: "netWeight", title: "Net Weight" },
-                { id: "totalWeight", title: "Total Weight" },
-                { id: "producerCountry", title: "Producer Country" },
-                { id: "askingPrice", title: "Asking Price" },
-                { id: "invoiceNo", title: "Invoice Number" },
-                { id: "manufactureDate", title: "Manufacture day/month/year" },
-                { id: "reprint", title: "Reprint" },
-            ],
+        const workbook = new exceljs_1.default.Workbook();
+        const worksheet = workbook.addWorksheet("Tea Catalog");
+        // ✅ Title row
+        worksheet.addRow(["Official Black Gold Africa Traders Ltd Catalog"]);
+        worksheet.mergeCells("A1:N1");
+        worksheet.getCell("A1").font = { name: "Calibri", size: 16, bold: true, color: { argb: "FFFFFF" } };
+        worksheet.getCell("A1").fill = {
+            type: "pattern",
+            pattern: "solid",
+            fgColor: { argb: "4CAF50" },
+        };
+        worksheet.getCell("A1").alignment = { horizontal: "center", vertical: "middle" };
+        worksheet.getRow(1).height = 30;
+        worksheet.addRow([]); // Blank row
+        // ✅ Header row
+        const headers = [
+            "Sale Code", "Lot Number", "Category", "Grade", "Broker", "Selling Mark",
+            "Bags", "Net Weight", "Total Weight", "Country", "Asking Price",
+            "Invoice No", "Mft Date", "Reprint"
+        ];
+        const headerRow = worksheet.addRow(headers);
+        headerRow.eachCell((cell) => {
+            cell.fill = {
+                type: "pattern",
+                pattern: "solid",
+                fgColor: { argb: "D3D3D3" },
+            };
+            cell.font = { name: "Calibri", size: 11, bold: true };
+            cell.border = {
+                top: { style: "thin" },
+                left: { style: "thin" },
+                bottom: { style: "thin" },
+                right: { style: "thin" },
+            };
+            cell.alignment = { horizontal: "center" };
         });
-        const csvContent = csvStringifier.getHeaderString() +
-            csvStringifier.stringifyRecords(catalogs.map((catalog) => (Object.assign(Object.assign({}, catalog), { manufactureDate: new Date(catalog.manufactureDate).toLocaleDateString("en-US", {
-                    day: "2-digit",
-                    month: "2-digit",
-                    year: "numeric",
-                }).split("/").join("/"), totalWeight: Number(catalog.totalWeight), netWeight: Number(catalog.netWeight), askingPrice: Number(catalog.askingPrice) }))));
-        res.setHeader("Content-Type", "text/csv; charset=utf-8");
-        res.setHeader("Content-Disposition", `attachment; filename="tea_catalog_${new Date().toISOString().split("T")[0]}.csv"`);
-        res.status(200).send(csvContent);
+        // ✅ Data rows
+        catalogs.forEach((catalog) => {
+            var _a, _b, _c, _d, _e;
+            worksheet.addRow([
+                catalog.saleCode || "",
+                catalog.lotNo || "",
+                catalog.category || "",
+                catalog.grade || "",
+                catalog.broker || "",
+                catalog.sellingMark || "",
+                (_a = catalog.bags) !== null && _a !== void 0 ? _a : "",
+                (_b = catalog.netWeight) !== null && _b !== void 0 ? _b : "",
+                (_c = catalog.totalWeight) !== null && _c !== void 0 ? _c : "",
+                catalog.producerCountry || "",
+                (_d = catalog.askingPrice) !== null && _d !== void 0 ? _d : "",
+                catalog.invoiceNo || "",
+                catalog.manufactureDate
+                    ? new Date(catalog.manufactureDate).toLocaleDateString("en-GB")
+                    : "",
+                (_e = catalog.reprint) !== null && _e !== void 0 ? _e : "",
+            ]);
+        });
+        // ✅ Style data rows
+        worksheet.eachRow((row, rowNumber) => {
+            if (rowNumber > 2) {
+                row.eachCell((cell) => {
+                    cell.border = {
+                        top: { style: "thin" },
+                        left: { style: "thin" },
+                        bottom: { style: "thin" },
+                        right: { style: "thin" },
+                    };
+                    cell.alignment = { horizontal: "left" };
+                });
+            }
+        });
+        // ✅ Set manual column widths
+        const widths = [14, 12, 10, 10, 12, 14, 8, 12, 14, 12, 14, 12, 12, 10];
+        widths.forEach((width, i) => {
+            worksheet.getColumn(i + 1).width = width;
+        });
+        // ✅ Footer
+        const lastRow = worksheet.addRow([]);
+        lastRow.getCell(1).value = `Generated from bgatltd.com on ${new Date().toLocaleString("en-KE", { timeZone: "Africa/Nairobi" })}`;
+        lastRow.getCell(1).font = { name: "Calibri", size: 8, italic: true };
+        lastRow.getCell(1).alignment = { horizontal: "center" };
+        worksheet.mergeCells(`A${lastRow.number}:N${lastRow.number}`);
+        // ✅ Freeze top rows
+        worksheet.views = [{ state: "frozen", ySplit: 3 }];
+        // ✅ Protect worksheet (optional)
+        worksheet.protect("bgatltd2025", {
+            selectLockedCells: false,
+            selectUnlockedCells: false,
+        });
+        // ✅ Send file
+        res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+        res.setHeader("Content-Disposition", `attachment; filename="tea_catalog_${new Date().toISOString().split("T")[0]}.xlsx"`);
+        yield workbook.xlsx.write(res);
+        res.end();
+        // console.log(`[${new Date().toLocaleString("en-KE", { timeZone: "Africa/Nairobi" })}] Exported ${catalogs.length} catalogs as XLSX`);
     }
     catch (error) {
+        console.error("Export XLSX error:", error);
         res.status(500).json({
             message: "Internal server error",
             details: error instanceof Error ? error.message : String(error),
@@ -717,4 +990,4 @@ const exportCatalogsCsv = (req, res) => __awaiter(void 0, void 0, void 0, functi
         yield prisma.$disconnect();
     }
 });
-exports.exportCatalogsCsv = exportCatalogsCsv;
+exports.exportCatalogsXlsx = exportCatalogsXlsx;

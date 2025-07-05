@@ -49,7 +49,7 @@ model Catalog {
   invoiceNo       String
   saleCode        String
   category        TeaCategory
-  reprint         Int          @default(0)
+  reprint         String?
   bags            Int
   netWeight       Float
   totalWeight     Float
@@ -73,7 +73,7 @@ model SellingPrice {
   invoiceNo       String
   saleCode        String
   category        TeaCategory
-  reprint         Int          @default(0)
+  reprint         String?
   bags            Int
   netWeight       Float
   totalWeight     Float
@@ -89,7 +89,7 @@ model SellingPrice {
   @@index([lotNo, saleCode])
 }
 
-model SellingPrice {
+model OutLots {
   id              Int          @id @default(autoincrement())
   auction         String
   lotNo           String       @unique

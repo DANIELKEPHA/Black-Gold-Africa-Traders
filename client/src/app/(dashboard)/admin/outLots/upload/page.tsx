@@ -38,42 +38,12 @@ const OutLotsUpload: React.FC = () => {
     ];
 
     const validBrokers = [
-        "AMBR",
-        "ANJL",
-        "ATBL",
-        "ATLS",
-        "BICL",
-        "BTBL",
-        "CENT",
-        "COMK",
-        "CTBL",
-        "PRME",
-        "PTBL",
-        "TBEA",
-        "UNTB",
-        "VENS",
-        "TTBL",
+        "AMBR", "ANJL", "ATBL", "ATLS", "BICL", "BTBL", "CENT", "COMK", "CTBL", "PRME",
+        "PTBL", "TBEA", "UNTB", "VENS", "TTBL",
     ];
     const validGrades = [
-        "PD",
-        "PD2",
-        "DUST1",
-        "DUST2",
-        "PF1",
-        "BP1",
-        "FNGS",
-        "FNGS1",
-        "FNGS2",
-        "BMF",
-        "BMF1",
-        "BMFD",
-        "BP",
-        "BP2",
-        "DUST",
-        "PF2",
-        "PF",
-        "BOP",
-        "BOPF",
+        "PD", "PD2", "DUST1", "DUST2", "PF1", "BP1", "FNGS", "FNGS1", "FNGS2", "BMF",
+        "BMF1", "BMFD", "BP", "BP2", "DUST", "PF2", "PF", "BOP", "BOPF",
     ];
 
     const validateCsv = async (file: File): Promise<boolean> => {
@@ -102,9 +72,7 @@ const OutLotsUpload: React.FC = () => {
                         defaultValue: "CSV file is empty or missing data rows",
                     })
                 );
-                console.error(`[${time}] CSV validation failed: File has fewer than 2 lines`, {
-                    lines,
-                });
+                console.error(`[${time}] CSV validation failed: File has fewer than 2 lines`, { lines });
                 setErrors(newErrors);
                 return false;
             }
@@ -119,9 +87,7 @@ const OutLotsUpload: React.FC = () => {
                         defaultValue: `Missing required CSV headers: ${missingHeaders.join(", ")}`,
                     })
                 );
-                console.error(`[${time}] CSV validation failed: Missing headers`, {
-                    missingHeaders,
-                });
+                console.error(`[${time}] CSV validation failed: Missing headers`, { missingHeaders });
                 setErrors(newErrors);
                 return false;
             }
@@ -135,14 +101,9 @@ const OutLotsUpload: React.FC = () => {
 
                 if (row.length >= headers.length && row.some((v) => v)) {
                     firstRow = row;
-                    console.log(
-                        `[${time}] Found first valid data row at index ${rowIndex}:`,
-                        firstRow
-                    );
+                    console.log(`[${time}] Found first valid data row at index ${rowIndex}:`, firstRow);
                 } else {
-                    console.log(
-                        `[${time}] Skipping row ${rowIndex}: Insufficient or empty values`
-                    );
+                    console.log(`[${time}] Skipping row ${rowIndex}: Insufficient or empty values`);
                 }
                 rowIndex++;
             }
@@ -153,9 +114,7 @@ const OutLotsUpload: React.FC = () => {
                         defaultValue: "No valid data rows found in CSV",
                     })
                 );
-                console.error(`[${time}] CSV validation failed: No valid data rows found`, {
-                    lines,
-                });
+                console.error(`[${time}] CSV validation failed: No valid data rows found`, { lines });
                 setErrors(newErrors);
                 return false;
             }
@@ -166,14 +125,11 @@ const OutLotsUpload: React.FC = () => {
                         defaultValue: "First data row does not match header count",
                     })
                 );
-                console.error(
-                    `[${time}] CSV validation failed: First data row length mismatch`,
-                    {
-                        rowLength: firstRow.length,
-                        headerLength: headers.length,
-                        firstRow,
-                    }
-                );
+                console.error(`[${time}] CSV validation failed: First data row length mismatch`, {
+                    rowLength: firstRow.length,
+                    headerLength: headers.length,
+                    firstRow,
+                });
                 setErrors(newErrors);
                 return false;
             }
@@ -207,9 +163,7 @@ const OutLotsUpload: React.FC = () => {
             } else if (!validBrokers.includes(rowData["Broker"])) {
                 newErrors.push(
                     t("catalog:errors.invalidBroker", {
-                        defaultValue: `Invalid Broker in first row: must be one of ${validBrokers.join(
-                            ", "
-                        )}`,
+                        defaultValue: `Invalid Broker in first row: must be one of ${validBrokers.join(", ")}`,
                     })
                 );
             }
@@ -229,9 +183,7 @@ const OutLotsUpload: React.FC = () => {
             } else if (!validGrades.includes(rowData["Grade"])) {
                 newErrors.push(
                     t("catalog:errors.invalidGrade", {
-                        defaultValue: `Invalid Grade in first row: must be one of ${validGrades.join(
-                            ", "
-                        )}`,
+                        defaultValue: `Invalid Grade in first row: must be one of ${validGrades.join(", ")}`,
                     })
                 );
             }
@@ -259,15 +211,7 @@ const OutLotsUpload: React.FC = () => {
                 }
             }
 
-            if (!/^\d{4}\/\d{2}\/\d{2}$/.test(rowData["Manufacture Date"])) {
-                newErrors.push(
-                    t("catalog:errors.invalidDate", {
-                        defaultValue:
-                            "Invalid Manufacture Date format in first row (expected YYYY/MM/DD)",
-                    })
-                );
-            }
-
+            // Removed Manufacture Date validation, relying on server schema
             if (newErrors.length > 0) {
                 console.error(`[${time}] CSV validation failed:`, {
                     errors: newErrors,
@@ -305,15 +249,11 @@ const OutLotsUpload: React.FC = () => {
     const handleUpload = async () => {
         setErrors([]);
         if (!isAdmin) {
-            setErrors([
-                t("catalog:errors.unauthorized", { defaultValue: "Unauthorized" }),
-            ]);
+            setErrors([t("catalog:errors.unauthorized", { defaultValue: "Unauthorized" })]);
             return;
         }
         if (!file) {
-            setErrors([
-                t("catalog:errors.noFileSelected", { defaultValue: "No file selected" }),
-            ]);
+            setErrors([t("catalog:errors.noFileSelected", { defaultValue: "No file selected" })]);
             return;
         }
         if (!(await validateCsv(file))) {
@@ -324,11 +264,7 @@ const OutLotsUpload: React.FC = () => {
             const response = await uploadOutlotsCsv({ file, duplicateAction }).unwrap();
             if (response.success.created === 0 && response.errors.length > 0) {
                 setErrors(response.errors.map((e) => `Row ${e.row}: ${e.message}`));
-                toast.error(
-                    t("catalog:errors.csvUploadFailed", {
-                        defaultValue: "Failed to upload CSV",
-                    })
-                );
+                toast.error(t("catalog:errors.csvUploadFailed", { defaultValue: "Failed to upload CSV" }));
                 return;
             }
             toast.success(
@@ -340,9 +276,7 @@ const OutLotsUpload: React.FC = () => {
             router.push("/admin/outLots");
         } catch (error: any) {
             console.error(
-                `[${new Date().toLocaleString("en-US", {
-                    timeZone: "Africa/Nairobi",
-                })}] uploadOutlotsCsv error:`,
+                `[${new Date().toLocaleString("en-US", { timeZone: "Africa/Nairobi" })}] uploadOutlotsCsv error:`,
                 {
                     status: error.status,
                     message: error?.data?.message,
@@ -356,11 +290,7 @@ const OutLotsUpload: React.FC = () => {
                     defaultValue: "An error occurred while uploading the CSV",
                 });
             setErrors([errorMessage]);
-            toast.error(
-                t("catalog:errors.csvUploadFailed", {
-                    defaultValue: "Failed to upload CSV",
-                })
-            );
+            toast.error(t("catalog:errors.csvUploadFailed", { defaultValue: "Failed to upload CSV" }));
         }
     };
 
@@ -371,16 +301,11 @@ const OutLotsUpload: React.FC = () => {
             <Toaster />
             <div className="max-w-md mx-auto bg-white dark:bg-gray-800 rounded-sm shadow-xl p-8">
                 <h2 className="text-2xl font-bold text-blue-700 dark:text-blue-200 mb-6">
-                    {t("catalog:uploadOutLots", {
-                        defaultValue: "Upload SellingPrice CSV",
-                    })}
+                    {t("catalog:uploadOutLots", { defaultValue: "Upload SellingPrice CSV" })}
                 </h2>
                 <div className="space-y-4">
                     <div>
-                        <Label
-                            htmlFor="csvFile"
-                            className="text-gray-900 dark:text-gray-100 font-medium"
-                        >
+                        <Label htmlFor="csvFile" className="text-gray-900 dark:text-gray-100 font-medium">
                             {t("catalog:selectCsv", { defaultValue: "Select CSV File" })}
                         </Label>
                         <Input
@@ -397,63 +322,35 @@ const OutLotsUpload: React.FC = () => {
                             className="text-blue-600 dark:text-blue-400 text-sm mt-1 inline-flex items-center"
                         >
                             <Download className="w-4 h-4 mr-1" />
-                            {t("catalog:downloadTemplate", {
-                                defaultValue: "Download CSV Template",
-                            })}
+                            {t("catalog:downloadTemplate", { defaultValue: "Download CSV Template" })}
                         </a>
                     </div>
                     {errors.length > 0 && (
                         <Alert variant="destructive">
                             <AlertCircle className="h-4 w-4" />
-                            <AlertTitle>
-                                {t("catalog:errors.title", { defaultValue: "Errors Detected" })}
-                            </AlertTitle>
+                            <AlertTitle>{t("catalog:errors.title", { defaultValue: "Errors Detected" })}</AlertTitle>
                             <AlertDescription>
                                 <ul className="list-disc pl-4">
-                                    {errors.map((error, index) => (
-                                        <li key={index}>{error}</li>
-                                    ))}
+                                    {errors.map((error, index) => <li key={index}>{error}</li>)}
                                 </ul>
                             </AlertDescription>
                         </Alert>
                     )}
                     <div>
-                        <Label
-                            htmlFor="duplicateAction"
-                            className="text-gray-900 dark:text-gray-100 font-medium"
-                        >
-                            {t("catalog:duplicateAction", {
-                                defaultValue: "Duplicate Action",
-                            })}
+                        <Label htmlFor="duplicateAction" className="text-gray-900 dark:text-gray-100 font-medium">
+                            {t("catalog:duplicateAction", { defaultValue: "Duplicate Action" })}
                         </Label>
                         <Select
                             value={duplicateAction}
-                            onValueChange={(value: "skip" | "replace") =>
-                                setDuplicateAction(value)
-                            }
+                            onValueChange={(value: "skip" | "replace") => setDuplicateAction(value)}
                             disabled={isUploading || !isAdmin}
                         >
-                            <SelectTrigger
-                                id="duplicateAction"
-                                className="mt-1 rounded-sm border-gray-300 dark:border-gray-600"
-                            >
-                                <SelectValue
-                                    placeholder={t("catalog:selectDuplicateAction", {
-                                        defaultValue: "Select action",
-                                    })}
-                                />
+                            <SelectTrigger id="duplicateAction" className="mt-1 rounded-sm border-gray-300 dark:border-gray-600">
+                                <SelectValue placeholder={t("catalog:selectDuplicateAction", { defaultValue: "Select action" })} />
                             </SelectTrigger>
                             <SelectContent className="bg-white dark:bg-gray-800">
-                                <SelectItem value="skip">
-                                    {t("catalog:skipDuplicates", {
-                                        defaultValue: "Skip Duplicates",
-                                    })}
-                                </SelectItem>
-                                <SelectItem value="replace">
-                                    {t("catalog:replaceDuplicates", {
-                                        defaultValue: "Replace Duplicates",
-                                    })}
-                                </SelectItem>
+                                <SelectItem value="skip">{t("catalog:skipDuplicates", { defaultValue: "Skip Duplicates" })}</SelectItem>
+                                <SelectItem value="replace">{t("catalog:replaceDuplicates", { defaultValue: "Replace Duplicates" })}</SelectItem>
                             </SelectContent>
                         </Select>
                     </div>
@@ -474,11 +371,7 @@ const OutLotsUpload: React.FC = () => {
                             className="rounded-sm px-6 bg-blue-600 hover:bg-blue-700 text-white"
                             disabled={isUploading || !file || !isAdmin}
                         >
-                            {isUploading ? (
-                                <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                            ) : (
-                                <Upload className="w-4 h-4 mr-2" />
-                            )}
+                            {isUploading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Upload className="w-4 h-4 mr-2" />}
                             {t("catalog:actions.upload", { defaultValue: "Upload" })}
                         </Button>
                     </div>

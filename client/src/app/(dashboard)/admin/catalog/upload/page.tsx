@@ -164,12 +164,19 @@ const CatalogUpload: React.FC = () => {
                 }
             }
 
-            // Validate RP (reprint) - can be boolean or non-negative number
             const reprintValue = rowData["RP"]?.toLowerCase();
-            if (reprintValue && !["true", "false"].includes(reprintValue) && (isNaN(Number(reprintValue)) || Number(reprintValue) < 0)) {
-                newErrors.push(t("catalog:errors.invalidReprint", { defaultValue: "Invalid Reprint value in first row (must be a non-negative number or boolean)" }));
-            }
 
+            if (
+                reprintValue &&
+                reprintValue !== "no" &&
+                (isNaN(Number(reprintValue)) || Number(reprintValue) < 0)
+            ) {
+                newErrors.push(
+                    t("catalog:errors.invalidReprint", {
+                        defaultValue: "Invalid Reprint value in first row (must be a non-negative number or the word 'No')",
+                    })
+                );
+            }
             // Validate Manufactured Date format (DD/MM/YYYY or YYYY/MM/DD)
             if (
                 !/^(?:\d{4}\/(0?[1-9]|1[0-2])\/(0?[1-9]|[12]\d|3[01])|(0?[1-9]|[12]\d|3[01])\/(0?[1-9]|1[0-2])\/\d{4})$/.test(

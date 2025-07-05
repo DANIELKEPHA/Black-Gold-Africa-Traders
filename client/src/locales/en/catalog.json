@@ -226,7 +226,8 @@
     "delete": "Are you sure you want to delete catalog {{lotNo}}?",
     "bulkDelete": "You are about to delete {count, plural, one {1 catalog item} other {# catalog items}}. This action cannot be undone.",
     "deleteConfirm": "Are you sure you want to delete catalog item {lotNo}? This action cannot be undone.",
-    "proceed": "Are you sure you want to proceed?"
+    "proceed": "Are you sure you want to proceed?",
+    "bulkDeleteSellingPricesCount": "You are about to delete {{count}} selling prices"
   },
   "details": {
     "title": "Catalog Details",

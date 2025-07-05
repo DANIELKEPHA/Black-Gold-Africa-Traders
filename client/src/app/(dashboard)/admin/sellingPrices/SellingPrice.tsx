@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useCallback, useMemo } from "react";
+import React, { useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslation } from "react-i18next";
 import { Toaster, toast } from "sonner";
@@ -8,6 +8,7 @@ import {
     useGetAuthUserQuery,
     useGetSellingPricesQuery,
     useDeleteSellingPricesMutation,
+    useDeleteAllSellingPricesMutation,
 } from "@/state/api";
 import { useAppSelector } from "@/state/redux";
 import { Button } from "@/components/ui/button";
@@ -24,7 +25,7 @@ import SellingPricesTable from "@/app/(dashboard)/admin/sellingPrices/SellingPri
 import SellingPricesGrid from "@/app/(dashboard)/admin/sellingPrices/SellingPricesGrid";
 import Loading from "@/components/Loading";
 
-const SellingPrice: React.FC = () => {
+const SellingPrices: React.FC = () => {
     const { t } = useTranslation(["catalog", "general"]);
     const router = useRouter();
     const { data: authUser, isLoading: isAuthLoading } = useGetAuthUserQuery();
@@ -35,7 +36,7 @@ const SellingPrice: React.FC = () => {
     const [isBulkDeleting, setIsBulkDeleting] = useState<boolean>(false);
     const [isDeleteBulkOpen, setIsDeleteBulkOpen] = useState(false);
     const [isDeleting, setIsDeleting] = useState<Record<number, boolean>>({});
-    const limit = 20;
+    const limit = 100;
 
     const { data: sellingPricesDataResponse, isLoading, error } = useGetSellingPricesQuery(
         {
@@ -47,22 +48,16 @@ const SellingPrice: React.FC = () => {
     );
 
     const [deleteSellingPrices] = useDeleteSellingPricesMutation();
+    const [deleteAllSellingPrices] = useDeleteAllSellingPricesMutation();
 
-    // Memoize sellingPricesData to stabilize its reference
-    const sellingPricesData = useMemo(
-        () => sellingPricesDataResponse?.data || [],
-        [sellingPricesDataResponse?.data]
-    );
-    const { totalPages = 1, total = 0 } = sellingPricesDataResponse?.meta || {};
+    const sellingPricesData = sellingPricesDataResponse?.data || [];
+    const { totalPages = 1 } = sellingPricesDataResponse?.meta || {};
 
-    const handleSelectItem = useCallback(
-        (itemId: number) => {
-            setSelectedItems((prev) =>
-                prev.includes(itemId) ? prev.filter((id) => id !== itemId) : [...prev, itemId]
-            );
-        },
-        []
-    );
+    const handleSelectItem = useCallback((itemId: number) => {
+        setSelectedItems((prev) =>
+            prev.includes(itemId) ? prev.filter((id) => id !== itemId) : [...prev, itemId]
+        );
+    }, []);
 
     const handleSelectAll = useCallback(() => {
         if (!sellingPricesData || sellingPricesData.length === 0) {
@@ -85,6 +80,13 @@ const SellingPrice: React.FC = () => {
             toast.error(t("catalog:errors.authError", { defaultValue: "Authentication error" }));
             return;
         }
+
+        // If all items on the current page are selected, trigger delete all
+        if (selectedItems.length === sellingPricesData.length && totalPages > 1) {
+            setIsDeleteBulkOpen(true);
+            return;
+        }
+
         setIsDeleteBulkOpen(true);
     };
 
@@ -104,9 +106,17 @@ const SellingPrice: React.FC = () => {
     const confirmBulkDelete = async () => {
         try {
             setIsBulkDeleting(true);
-            await deleteSellingPrices({ ids: selectedItems }).unwrap();
-            setSelectedItems([]);
-            toast.success(t("catalog:success.sellingPricesDeleted", { defaultValue: "Selling prices deleted" }));
+            if (selectedItems.length === sellingPricesData.length && totalPages > 1) {
+                // Delete all selling prices
+                await deleteAllSellingPrices().unwrap();
+                setSelectedItems([]);
+                toast.success(t("catalog:success.allSellingPricesDeleted", { defaultValue: "All selling prices deleted" }));
+            } else {
+                // Delete selected items
+                await deleteSellingPrices({ ids: selectedItems }).unwrap();
+                setSelectedItems([]);
+                toast.success(t("catalog:success.sellingPricesDeleted", { defaultValue: "Selling prices deleted" }));
+            }
         } catch (error: any) {
             toast.error(t("catalog:errors.bulkDeleteFailed", { defaultValue: "Bulk deletion failed" }));
         } finally {
@@ -122,6 +132,11 @@ const SellingPrice: React.FC = () => {
                 {t("catalog:errors.error", { defaultValue: "Error loading selling prices" })}
             </div>
         );
+
+    const deleteMessage = t("catalog:confirm.bulkDeleteSellingPricesStatic", {
+        defaultValue: "You are about to delete all selling prices",
+    });
+
 
     return (
         <div className="bg-white dark:bg-gray-800 rounded-sm shadow-md p-6">
@@ -157,8 +172,8 @@ const SellingPrice: React.FC = () => {
                         {t("general:pagination.previous", { defaultValue: "Previous" })}
                     </Button>
                     <span className="text-gray-700 dark:text-gray-200">
-            {t("general:pagination.page", { page, totalPages })}
-          </span>
+                        {t("general:pagination.page", { page, totalPages })}
+                    </span>
                     <Button
                         disabled={page === totalPages || isLoading}
                         onClick={() => setPage((prev) => prev + 1)}
@@ -176,12 +191,7 @@ const SellingPrice: React.FC = () => {
                         </DialogTitle>
                     </DialogHeader>
                     <div className="p-6 max-h-96 overflow-y-auto">
-                        <p>
-                            {t("catalog:confirm.bulkDeleteSellingPricesCount", {
-                                defaultValue: "You are about to delete {{count}} selling prices",
-                                count: selectedItems.length,
-                            })}
-                        </p>
+                        <p>{deleteMessage}</p>
                         <p className="mt-2 font-semibold">
                             {t("catalog:confirm.proceed", { defaultValue: "Are you sure you want to proceed?" })}
                         </p>
@@ -212,4 +222,4 @@ const SellingPrice: React.FC = () => {
     );
 };
 
-export default SellingPrice;
+export default SellingPrices;

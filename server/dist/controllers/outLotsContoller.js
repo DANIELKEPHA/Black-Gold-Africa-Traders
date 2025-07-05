@@ -26,20 +26,22 @@ var __rest = (this && this.__rest) || function (s, e) {
         }
     return t;
 };
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.exportOutLotsCsv = exports.deleteOutLots = exports.getOutLotById = exports.createOutLot = exports.getOutLotsFilterOptions = exports.serializeOutLot = void 0;
+exports.exportOutLotsXlsx = exports.deleteOutLots = exports.getOutLotById = exports.createOutLot = exports.getOutLotsFilterOptions = exports.serializeOutLot = void 0;
 exports.getOutLots = getOutLots;
 exports.uploadOutLotsCsv = uploadOutLotsCsv;
 const stream_1 = require("stream");
 const zod_1 = require("zod");
-const csv_writer_1 = require("csv-writer");
 const csv_parse_1 = require("csv-parse");
 const client_1 = require("@prisma/client");
 const controllerUtils_1 = require("../utils/controllerUtils");
 const client_2 = require("@prisma/client");
 const outLotsSchema_1 = require("../schemas/outLotsSchema");
+const exceljs_1 = __importDefault(require("exceljs"));
 const prisma = new client_2.PrismaClient();
-// Schema for CSV upload request
 const csvUploadSchema = zod_1.z.object({
     duplicateAction: zod_1.z.enum(['skip', 'replace']).optional().default('skip'),
 });
@@ -63,7 +65,6 @@ const serializeOutLot = (outLot) => {
     });
 };
 exports.serializeOutLot = serializeOutLot;
-// Build Where Conditions for SellingPrice
 const buildWhereConditions = (params) => {
     const conditions = {};
     const filterMap = {
@@ -218,7 +219,6 @@ function getOutLots(req, res) {
         }
     });
 }
-// Get filter options for SellingPrice
 const getOutLotsFilterOptions = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m;
     try {
@@ -274,7 +274,7 @@ const getOutLotsFilterOptions = (req, res) => __awaiter(void 0, void 0, void 0, 
 });
 exports.getOutLotsFilterOptions = getOutLotsFilterOptions;
 const createOutLot = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    var _a;
+    var _a, _b;
     try {
         const authenticatedUser = (0, controllerUtils_1.authenticateUser)(req, res);
         if (!authenticatedUser) {
@@ -310,7 +310,7 @@ const createOutLot = (req, res) => __awaiter(void 0, void 0, void 0, function* (
                 netWeight: outLotData.data.netWeight,
                 totalWeight: outLotData.data.totalWeight,
                 baselinePrice: outLotData.data.baselinePrice,
-                manufactureDate: new Date(outLotData.data.manufactureDate),
+                manufactureDate: new Date((_a = outLotData.data.manufactureDate) !== null && _a !== void 0 ? _a : new Date()),
                 adminCognitoId: outLotData.data.adminCognitoId,
             },
             include: {
@@ -326,7 +326,7 @@ const createOutLot = (req, res) => __awaiter(void 0, void 0, void 0, function* (
             },
         });
         // Normalize admin property for serializeOutLot
-        const normalizedOutLot = Object.assign(Object.assign({}, newOutLot), { admin: (_a = newOutLot.admin) !== null && _a !== void 0 ? _a : undefined });
+        const normalizedOutLot = Object.assign(Object.assign({}, newOutLot), { admin: (_b = newOutLot.admin) !== null && _b !== void 0 ? _b : undefined });
         res.status(201).json({ data: (0, exports.serializeOutLot)(normalizedOutLot) });
     }
     catch (error) {
@@ -379,7 +379,6 @@ const getOutLotById = (req, res) => __awaiter(void 0, void 0, void 0, function* 
     }
 });
 exports.getOutLotById = getOutLotById;
-// Delete multiple SellingPrice
 const deleteOutLots = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const authenticatedUser = (0, controllerUtils_1.authenticateUser)(req, res);
@@ -429,93 +428,213 @@ exports.deleteOutLots = deleteOutLots;
 function uploadOutLotsCsv(req, res) {
     return __awaiter(this, void 0, void 0, function* () {
         var _a, e_1, _b, _c;
-        var _d;
-        const user = req.user;
+        var _d, _e, _f, _g, _h, _j, _k, _l;
+        const errors = [];
+        let createdCount = 0;
+        let skippedCount = 0;
+        let replacedCount = 0;
         try {
+            const time = new Date().toLocaleString("en-US", { timeZone: "Africa/Nairobi" });
+            console.log(`[${time}] Starting CSV upload:`, {
+                file: (_d = req.file) === null || _d === void 0 ? void 0 : _d.originalname,
+                size: (_e = req.file) === null || _e === void 0 ? void 0 : _e.size,
+                body: req.body,
+            });
             // Validate authenticated user
+            const user = req.user;
             if (!user || !user.userId || !user.role) {
+                console.error(`[${time}] Authentication failed`);
                 res.status(401).json({ message: "Unauthorized: No authenticated user found" });
                 return;
             }
             if (user.role.toLowerCase() !== "admin") {
+                console.error(`[${time}] Forbidden: User role ${user.role}`);
                 res.status(403).json({ message: "Forbidden: Only admins can upload outLots" });
                 return;
             }
             if (!req.file) {
+                console.error(`[${time}] No CSV file provided`, { body: req.body });
                 res.status(400).json({ message: "CSV file required" });
+                return;
+            }
+            const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+            if (req.file.size > MAX_FILE_SIZE) {
+                console.error(`[${time}] File too large: ${req.file.size} bytes`);
+                res.status(400).json({ message: `File size exceeds limit of ${MAX_FILE_SIZE / (1024 * 1024)}MB` });
                 return;
             }
             const parsedParams = csvUploadSchema.safeParse(req.body);
             if (!parsedParams.success) {
+                console.error(`[${time}] Invalid duplicateAction:`, {
+                    body: req.body,
+                    errors: parsedParams.error.errors,
+                });
                 res.status(400).json({ message: "Invalid duplicateAction", details: parsedParams.error.errors });
                 return;
             }
             const { duplicateAction } = parsedParams.data;
-            const errors = [];
-            const validOutLots = [];
+            console.log(`[${time}] Parsed duplicateAction:`, duplicateAction);
+            const admin = yield prisma.admin.findUnique({ where: { adminCognitoId: user.userId } });
+            if (!admin) {
+                console.error(`[${time}] Admin with adminCognitoId ${user.userId} not found`);
+                res.status(403).json({ message: `Admin with adminCognitoId ${user.userId} not found` });
+                return;
+            }
             let rowIndex = 1;
+            let batch = [];
+            const BATCH_SIZE = 50;
+            const MAX_CONCURRENT_BATCHES = 2;
+            let csvBuffer = req.file.buffer;
+            if (csvBuffer.toString("utf8", 0, 3) === "\uFEFF") {
+                csvBuffer = csvBuffer.slice(3);
+            }
+            console.log(`[${time}] Parsing CSV file: ${req.file.originalname}`);
             const parser = new csv_parse_1.Parser({
-                columns: (header) => header.map((h) => h
-                    .replace(/^\ufeff/, "") // Remove BOM
-                    .trim()
-                    .replace(/\s+/g, "") // Remove spaces
-                    .replace(/^Auction$/i, "auction")
-                    .replace(/^LotNo$/i, "lotNo")
-                    .replace(/^Broker$/i, "broker")
-                    .replace(/^SellingMark$/i, "sellingMark")
-                    .replace(/^Grade$/i, "grade")
-                    .replace(/^InvoiceNo$/i, "invoiceNo")
-                    .replace(/^Bags$/i, "bags")
-                    .replace(/^NetWeight$/i, "netWeight")
-                    .replace(/^TotalWeight$/i, "totalWeight")
-                    .replace(/^BaselinePrice$/i, "baselinePrice")
-                    .replace(/^ManufactureDate$/i, "manufactureDate")),
+                columns: (header) => {
+                    console.log(`[${time}] CSV headers:`, header);
+                    return header.map((h) => h
+                        .replace(/^\ufeff/, "")
+                        .trim()
+                        .replace(/\s+/g, "")
+                        .replace(/^Auction$/i, "auction")
+                        .replace(/^LotNo$/i, "lotNo")
+                        .replace(/^Broker$/i, "broker")
+                        .replace(/^SellingMark$/i, "sellingMark")
+                        .replace(/^Grade$/i, "grade")
+                        .replace(/^InvoiceNo$/i, "invoiceNo")
+                        .replace(/^Bags$/i, "bags")
+                        .replace(/^NetWeight$/i, "netWeight")
+                        .replace(/^TotalWeight$/i, "totalWeight")
+                        .replace(/^BaselinePrice$/i, "baselinePrice")
+                        .replace(/^ManufactureDate$/i, "manufactureDate"));
+                },
                 skip_empty_lines: true,
                 trim: true,
             });
-            const stream = stream_1.Readable.from(req.file.buffer);
+            const stream = stream_1.Readable.from(csvBuffer);
             stream.pipe(parser);
+            const processBatch = (batch) => __awaiter(this, void 0, void 0, function* () {
+                let retries = 3;
+                let success = false;
+                let lastError;
+                while (retries > 0 && !success) {
+                    try {
+                        const result = yield prisma.$transaction((tx) => __awaiter(this, void 0, void 0, function* () {
+                            let batchCreated = 0;
+                            let batchSkipped = 0;
+                            let batchReplaced = 0;
+                            if (duplicateAction === "skip") {
+                                const lotNos = batch.map((item) => item.outLot.lotNo);
+                                const existing = yield tx.outLots.findMany({
+                                    where: { lotNo: { in: lotNos } },
+                                    select: { lotNo: true },
+                                });
+                                const existingLotNos = new Set(existing.map((item) => item.lotNo));
+                                const toCreate = batch.filter((item) => !existingLotNos.has(item.outLot.lotNo));
+                                batchSkipped += batch.length - toCreate.length;
+                                if (toCreate.length > 0) {
+                                    yield tx.outLots.createMany({
+                                        data: toCreate.map((item) => item.outLot),
+                                        skipDuplicates: true,
+                                    });
+                                    batchCreated += toCreate.length;
+                                }
+                            }
+                            else if (duplicateAction === "replace") {
+                                for (const { outLot, rowIndex } of batch) {
+                                    try {
+                                        yield tx.outLots.upsert({
+                                            where: { lotNo: outLot.lotNo },
+                                            update: Object.assign(Object.assign({}, outLot), { updatedAt: new Date() }),
+                                            create: outLot,
+                                        });
+                                        batchReplaced++;
+                                    }
+                                    catch (error) {
+                                        errors.push({
+                                            row: rowIndex,
+                                            message: error instanceof Error ? error.message : String(error),
+                                        });
+                                    }
+                                }
+                            }
+                            else {
+                                yield tx.outLots.createMany({
+                                    data: batch.map((item) => item.outLot),
+                                    skipDuplicates: true,
+                                });
+                                batchCreated += batch.length;
+                            }
+                            return { batchCreated, batchSkipped, batchReplaced };
+                        }), { timeout: 60000 });
+                        createdCount += result.batchCreated;
+                        skippedCount += result.batchSkipped;
+                        replacedCount += result.batchReplaced;
+                        success = true;
+                    }
+                    catch (error) {
+                        lastError = error;
+                        retries--;
+                        console.warn(`[${time}] Batch ${Math.floor(rowIndex / BATCH_SIZE)} failed, retries left: ${retries}`, {
+                            message: error instanceof Error ? error.message : String(error),
+                            stack: error instanceof Error ? error.stack : undefined,
+                        });
+                        if (retries === 0) {
+                            throw lastError;
+                        }
+                        yield new Promise((resolve) => setTimeout(resolve, 1000));
+                    }
+                }
+            });
+            let activeBatches = 0;
+            const batchPromises = [];
             try {
-                for (var _e = true, parser_1 = __asyncValues(parser), parser_1_1; parser_1_1 = yield parser_1.next(), _a = parser_1_1.done, !_a; _e = true) {
+                for (var _m = true, parser_1 = __asyncValues(parser), parser_1_1; parser_1_1 = yield parser_1.next(), _a = parser_1_1.done, !_a; _m = true) {
                     _c = parser_1_1.value;
-                    _e = false;
+                    _m = false;
                     const record = _c;
                     rowIndex++;
                     try {
-                        // Filter out empty keys (e.g., '')
+                        console.log(`[${time}] Processing row ${rowIndex}:`, record);
                         const cleanedRecord = Object.fromEntries(Object.entries(record).filter(([key]) => key.trim() !== ""));
                         const parsed = outLotsSchema_1.csvRecordSchema.safeParse(Object.assign(Object.assign({}, cleanedRecord), { bags: parseInt(cleanedRecord.bags, 10), netWeight: parseFloat(cleanedRecord.netWeight), totalWeight: parseFloat(cleanedRecord.totalWeight), baselinePrice: parseFloat(cleanedRecord.baselinePrice), auction: cleanedRecord.auction, adminCognitoId: user.userId }));
                         if (!parsed.success) {
-                            throw new Error(`Invalid data: ${parsed.error.errors.map((err) => err.message).join(", ")}. ` +
+                            throw new Error(`Invalid data at row ${rowIndex}: ${parsed.error.errors.map((err) => err.message).join(", ")}. ` +
                                 `Expected headers: auction, lotNo, broker, sellingMark, grade, invoiceNo, bags, netWeight, totalWeight, baselinePrice, manufactureDate. ` +
-                                `Ensure no trailing commas in CSV rows.`);
+                                `Manufacture Date should be YYYY/MM/DD, DD/MM/YYYY, or M/D/YYYY. Check for trailing commas or invalid dates.`);
                         }
                         const data = parsed.data;
-                        const admin = yield prisma.admin.findUnique({ where: { adminCognitoId: user.userId } });
-                        if (!admin) {
-                            throw new Error(`Admin with adminCognitoId ${user.userId} not found`);
+                        const outLot = {
+                            auction: data.auction,
+                            lotNo: data.lotNo,
+                            broker: data.broker,
+                            sellingMark: data.sellingMark,
+                            grade: data.grade,
+                            invoiceNo: data.invoiceNo,
+                            bags: data.bags,
+                            netWeight: data.netWeight,
+                            totalWeight: data.totalWeight,
+                            baselinePrice: (_f = data.baselinePrice) !== null && _f !== void 0 ? _f : 0,
+                            manufactureDate: new Date((_g = data.manufactureDate) !== null && _g !== void 0 ? _g : new Date()),
+                        };
+                        batch.push({ outLot, rowIndex });
+                        if (batch.length >= BATCH_SIZE) {
+                            console.log(`[${time}] Processing batch ${Math.floor(rowIndex / BATCH_SIZE)} (${batch.length} items)`);
+                            batchPromises.push(processBatch(batch));
+                            batch = [];
+                            activeBatches++;
+                            if (activeBatches >= MAX_CONCURRENT_BATCHES) {
+                                yield Promise.all(batchPromises);
+                                batchPromises.length = 0;
+                                activeBatches = 0;
+                            }
                         }
-                        validOutLots.push({
-                            outLot: {
-                                auction: data.auction,
-                                lotNo: data.lotNo,
-                                broker: data.broker,
-                                sellingMark: data.sellingMark,
-                                grade: data.grade,
-                                invoiceNo: data.invoiceNo,
-                                bags: data.bags,
-                                netWeight: data.netWeight,
-                                totalWeight: data.totalWeight,
-                                baselinePrice: (_d = data.baselinePrice) !== null && _d !== void 0 ? _d : 0,
-                                manufactureDate: new Date(data.manufactureDate),
-                                admin: {
-                                    connect: { adminCognitoId: user.userId },
-                                },
-                            },
-                            rowIndex,
-                        });
                     }
                     catch (error) {
+                        console.error(`[${time}] Error processing row ${rowIndex}:`, {
+                            message: error instanceof Error ? error.message : String(error),
+                            stack: error instanceof Error ? error.stack : undefined,
+                        });
                         errors.push({ row: rowIndex, message: error instanceof Error ? error.message : String(error) });
                     }
                 }
@@ -523,66 +642,59 @@ function uploadOutLotsCsv(req, res) {
             catch (e_1_1) { e_1 = { error: e_1_1 }; }
             finally {
                 try {
-                    if (!_e && !_a && (_b = parser_1.return)) yield _b.call(parser_1);
+                    if (!_m && !_a && (_b = parser_1.return)) yield _b.call(parser_1);
                 }
                 finally { if (e_1) throw e_1.error; }
             }
-            if (validOutLots.length === 0) {
-                res.status(400).json({
-                    success: { created: 0, skipped: 0, replaced: 0 },
-                    errors: errors.length > 0
-                        ? errors
-                        : [{
-                                row: 0,
-                                message: "No valid data found. Ensure CSV headers match: auction, lotNo, broker, sellingMark, grade, invoiceNo, bags, netWeight, totalWeight, baselinePrice, manufactureDate. Check for trailing commas."
-                            }],
+            if (batch.length > 0) {
+                console.log(`[${time}] Processing final batch (${batch.length} items)`);
+                batchPromises.push(processBatch(batch));
+            }
+            yield Promise.all(batchPromises);
+            console.log(`[${time}] Parsed ${rowIndex - 1} rows, ${createdCount + skippedCount + replacedCount} processed, ${errors.length} errors`);
+            if (createdCount + skippedCount + replacedCount === 0) {
+                console.error(`[${time}] No valid outLots processed`);
+                res.status(400).json({ success: 0, errors });
+                return;
+            }
+            if (errors.length > 0) {
+                res.status(207).json({
+                    success: { created: createdCount, skipped: skippedCount, replaced: replacedCount },
+                    errors,
                 });
                 return;
             }
-            // Process in batches to handle large uploads efficiently
-            const BATCH_SIZE = 1000;
-            let createdCount = 0;
-            let skippedCount = 0;
-            let replacedCount = 0;
-            for (let i = 0; i < validOutLots.length; i += BATCH_SIZE) {
-                const batch = validOutLots.slice(i, i + BATCH_SIZE);
-                yield prisma.$transaction((tx) => __awaiter(this, void 0, void 0, function* () {
-                    for (const { outLot, rowIndex } of batch) {
-                        const existing = yield tx.outLots.findUnique({
-                            where: { lotNo: outLot.lotNo },
-                        });
-                        if (existing) {
-                            if (duplicateAction === "skip") {
-                                skippedCount++;
-                                continue;
-                            }
-                            else if (duplicateAction === "replace") {
-                                yield tx.outLots.delete({ where: { id: existing.id } });
-                                replacedCount++;
-                            }
-                        }
-                        yield tx.outLots.create({ data: outLot });
-                        createdCount++;
-                    }
-                }));
-            }
             res.status(201).json({
-                success: {
-                    created: createdCount,
-                    skipped: skippedCount,
-                    replaced: replacedCount,
-                },
+                success: { created: createdCount, skipped: skippedCount, replaced: replacedCount },
                 errors,
             });
         }
         catch (error) {
+            const time = new Date().toLocaleString("en-US", { timeZone: "Africa/Nairobi" });
+            console.error(`[${time}] Upload outLots error:`, {
+                message: error instanceof Error ? error.message : String(error),
+                stack: error instanceof Error ? error.stack : undefined,
+                file: (_h = req.file) === null || _h === void 0 ? void 0 : _h.originalname,
+                size: (_j = req.file) === null || _j === void 0 ? void 0 : _j.size,
+                body: req.body,
+                processedCount: createdCount + skippedCount + replacedCount,
+                errorsCount: errors.length,
+            });
             if (error instanceof client_2.Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
-                res.status(409).json({ message: "One or more outLots have duplicate lotNo", details: error.meta });
+                res.status(409).json({
+                    message: "One or more outLots have duplicate lotNo",
+                    details: error.meta,
+                });
                 return;
             }
             res.status(500).json({
                 message: "Internal server error",
                 details: error instanceof Error ? error.message : String(error),
+                file: (_k = req.file) === null || _k === void 0 ? void 0 : _k.originalname,
+                size: (_l = req.file) === null || _l === void 0 ? void 0 : _l.size,
+                body: req.body,
+                processedCount: createdCount + skippedCount + replacedCount,
+                errorsCount: errors.length,
             });
         }
         finally {
@@ -590,14 +702,17 @@ function uploadOutLotsCsv(req, res) {
         }
     });
 }
-// Export SellingPrice as CSV
-const exportOutLotsCsv = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+const exportOutLotsXlsx = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        // Handle parameters from either query (GET) or body (POST)
+        const authenticatedUser = (0, controllerUtils_1.authenticateUser)(req, res);
+        if (!authenticatedUser) {
+            res.status(401).json({ message: "Unauthorized" });
+            return;
+        }
         const paramsSource = req.method === 'POST' ? req.body : req.query;
         const params = outLotsSchema_1.querySchema.extend({ outLotIds: zod_1.z.string().optional() }).safeParse(paramsSource);
         if (!params.success) {
-            res.status(400).json({ message: 'Invalid parameters', details: params.error.errors });
+            res.status(400).json({ message: "Invalid parameters", details: params.error.errors });
             return;
         }
         const _a = params.data, { page = 1, limit = 100, outLotIds } = _a, filterParams = __rest(_a, ["page", "limit", "outLotIds"]);
@@ -608,16 +723,15 @@ const exportOutLotsCsv = (req, res) => __awaiter(void 0, void 0, void 0, functio
         }
         let where = {};
         if (outLotIds) {
-            const ids = [...new Set(outLotIds.split(',').map(id => parseInt(id.trim())))]
-                .filter(id => !isNaN(id));
+            const ids = [...new Set(outLotIds.split(',').map(id => parseInt(id.trim())))].filter(id => !isNaN(id));
             if (ids.length === 0) {
-                res.status(400).json({ message: 'Invalid outLotIds provided' });
+                res.status(400).json({ message: "Invalid outLotIds provided" });
                 return;
             }
             where = { id: { in: ids } };
         }
-        else {
-            where = buildWhereConditions(filterParams);
+        else if (Object.keys(filterParams).length > 0) {
+            where = buildWhereConditions(filterParams); // ✅ FIXED
         }
         const outLots = yield prisma.outLots.findMany(Object.assign({ where, select: {
                 auction: true,
@@ -633,39 +747,91 @@ const exportOutLotsCsv = (req, res) => __awaiter(void 0, void 0, void 0, functio
                 manufactureDate: true,
             } }, (outLotIds ? {} : { skip: (page - 1) * limit, take: limit })));
         if (!outLots.length) {
-            res.status(404).json({ message: 'No outLots found for the provided filters or IDs' });
+            res.status(404).json({ message: "No OutLots found for the provided filters or IDs" });
             return;
         }
-        const csvStringifier = (0, csv_writer_1.createObjectCsvStringifier)({
-            header: [
-                { id: 'auction', title: 'Auction' },
-                { id: 'lotNo', title: 'Lot Number' },
-                { id: 'broker', title: 'Broker' },
-                { id: 'sellingMark', title: 'Selling Mark' },
-                { id: 'grade', title: 'Grade' },
-                { id: 'invoiceNo', title: 'Invoice Number' },
-                { id: 'bags', title: 'Bags' },
-                { id: 'netWeight', title: 'Net Weight' },
-                { id: 'totalWeight', title: 'Total Weight' },
-                { id: 'baselinePrice', title: 'Baseline Price' },
-                { id: 'manufactureDate', title: 'Manufacture Date' },
-            ],
+        const workbook = new exceljs_1.default.Workbook();
+        const worksheet = workbook.addWorksheet("OutLots");
+        worksheet.addRow(["Official Black Gold Africa Traders Ltd OutLots"]);
+        worksheet.mergeCells("A1:K1");
+        worksheet.getCell("A1").font = { name: "Calibri", size: 16, bold: true, color: { argb: "FFFFFF" } };
+        worksheet.getCell("A1").fill = { type: "pattern", pattern: "solid", fgColor: { argb: "4CAF50" } };
+        worksheet.getCell("A1").alignment = { horizontal: "center", vertical: "middle" };
+        worksheet.getRow(1).height = 30;
+        worksheet.addRow([]);
+        const headers = [
+            "Auction", "Lot Number", "Broker", "Selling Mark", "Grade",
+            "Invoice No", "Bags", "Net Weight", "Total Weight", "Baseline Price", "Mft Date"
+        ];
+        const headerRow = worksheet.addRow(headers);
+        headerRow.eachCell((cell) => {
+            cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "D3D3D3" } };
+            cell.font = { name: "Calibri", size: 11, bold: true };
+            cell.border = {
+                top: { style: "thin" },
+                left: { style: "thin" },
+                bottom: { style: "thin" },
+                right: { style: "thin" },
+            };
+            cell.alignment = { horizontal: "center" };
         });
-        const csvContent = csvStringifier.getHeaderString() +
-            csvStringifier.stringifyRecords(outLots.map((outLot) => (Object.assign(Object.assign({}, outLot), { manufactureDate: new Date(outLot.manufactureDate).toLocaleDateString('en-US', {
-                    month: 'numeric',
-                    day: 'numeric',
-                    year: 'numeric',
-                }), netWeight: Number(outLot.netWeight), totalWeight: Number(outLot.totalWeight), baselinePrice: Number(outLot.baselinePrice) }))));
-        res.setHeader('Content-Type', 'text/csv; charset=utf-8');
-        res.setHeader('Content-Disposition', `attachment; filename="outlots_${new Date().toISOString().split('T')[0]}.csv"`);
-        res.status(200).send(csvContent);
+        outLots.forEach((item) => {
+            var _a, _b, _c, _d, _e, _f, _g;
+            worksheet.addRow([
+                item.auction || "",
+                item.lotNo || "",
+                item.broker || "",
+                item.sellingMark || "",
+                item.grade || "",
+                item.invoiceNo || "",
+                (_a = item.bags) !== null && _a !== void 0 ? _a : "",
+                (_c = (_b = item.netWeight) === null || _b === void 0 ? void 0 : _b.toFixed(2)) !== null && _c !== void 0 ? _c : "",
+                (_e = (_d = item.totalWeight) === null || _d === void 0 ? void 0 : _d.toFixed(2)) !== null && _e !== void 0 ? _e : "",
+                (_g = (_f = item.baselinePrice) === null || _f === void 0 ? void 0 : _f.toFixed(2)) !== null && _g !== void 0 ? _g : "",
+                item.manufactureDate ? new Date(item.manufactureDate).toLocaleDateString("en-GB") : "",
+            ]);
+        });
+        worksheet.eachRow((row, rowNumber) => {
+            if (rowNumber > 2) {
+                row.eachCell((cell) => {
+                    cell.border = {
+                        top: { style: "thin" },
+                        left: { style: "thin" },
+                        bottom: { style: "thin" },
+                        right: { style: "thin" },
+                    };
+                    cell.alignment = { horizontal: "left" };
+                });
+            }
+        });
+        const widths = [12, 14, 12, 14, 10, 14, 8, 12, 12, 14, 12];
+        widths.forEach((width, i) => {
+            worksheet.getColumn(i + 1).width = width;
+        });
+        const lastRow = worksheet.addRow([]);
+        lastRow.getCell(1).value = `Generated from bgatltd.com on ${new Date().toLocaleString("en-KE", { timeZone: "Africa/Nairobi" })}`;
+        lastRow.getCell(1).font = { name: "Calibri", size: 8, italic: true };
+        lastRow.getCell(1).alignment = { horizontal: "center" };
+        worksheet.mergeCells(`A${lastRow.number}:K${lastRow.number}`);
+        worksheet.views = [{ state: "frozen", ySplit: 3 }];
+        worksheet.protect("bgatltd2025", {
+            selectLockedCells: false,
+            selectUnlockedCells: false,
+        });
+        res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+        res.setHeader("Content-Disposition", `attachment; filename="outlots_${new Date().toISOString().split("T")[0]}.xlsx"`);
+        yield workbook.xlsx.write(res);
+        res.end();
     }
     catch (error) {
+        console.error("Export XLSX error:", error);
         res.status(500).json({
-            message: 'Internal server error',
+            message: "Internal server error",
             details: error instanceof Error ? error.message : String(error),
         });
     }
+    finally {
+        yield prisma.$disconnect();
+    }
 });
-exports.exportOutLotsCsv = exportOutLotsCsv;
+exports.exportOutLotsXlsx = exportOutLotsXlsx;

@@ -9,7 +9,6 @@ import { useAppDispatch, useAppSelector } from "@/state/redux";
 import FiltersBar from "@/app/(dashboard)/admin/catalog/FiltersBar";
 import Catalog from "@/app/(dashboard)/admin/catalog/Catalog";
 import { Broker, TeaCategory, TeaGrade } from "@/state/enums";
-import { cn } from "@/lib/utils";
 
 const AdminCatalogPage = () => {
     const searchParams = useSearchParams();

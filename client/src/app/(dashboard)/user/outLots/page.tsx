@@ -1,101 +1,79 @@
 "use client";
 
 import { NAVBAR_HEIGHT } from "@/lib/constants";
-import { useRouter, useSearchParams } from "next/navigation";
-import React, { useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
+import React, { useEffect } from "react";
 import { cleanParams } from "@/lib/utils";
-import { FiltersState, setFilters, setViewMode } from "@/state";
-import Outlots from "@/app/(dashboard)/user/outLots/Outlots";
-import { toast } from "sonner";
-import { useTranslation } from "react-i18next";
+import { FiltersState, setFilters } from "@/state";
 import { useAppDispatch, useAppSelector } from "@/state/redux";
-import { useGetAuthUserQuery } from "@/state/api";
-import Loading from "@/components/Loading";
+import { Broker, TeaGrade } from "@/state/enums";
 import FiltersBar from "@/app/(dashboard)/user/outLots/FiltersBar";
+import OutLots from "@/app/(dashboard)/user/outLots/OutLots";
 
-// Define filter keys and type guards outside the component for stability
-const numberKeys = ["bags", "netWeight", "totalWeight", "askingPrice", "reprint", "baselinePrice"] as const;
-const stringKeys = [
-    "lotNo",
-    "sellingMark",
-    "country",
-    "producerCountry",
-    "manufactureDate",
-    "invoiceNo",
-    "saleCode",
-    "search",
-    "category",
-    "grade",
-    "broker",
-    "auction",
-] as const;
-
-type NumberKey = typeof numberKeys[number];
-type StringKey = typeof stringKeys[number];
-
-const isNumberKey = (key: string): key is NumberKey => numberKeys.includes(key as NumberKey);
-const isStringKey = (key: string): key is StringKey => stringKeys.includes(key as StringKey);
-
-const UserOutlotsPage = () => {
-    const { t } = useTranslation("catalog");
+const UserOutLotsPage = () => {
     const searchParams = useSearchParams();
     const dispatch = useAppDispatch();
-    const router = useRouter();
-    const viewMode = useAppSelector((state) => state.global.viewMode);
     const isFiltersFullOpen = useAppSelector((state) => state.global.isFiltersFullOpen);
-    const filters = useAppSelector((state) => state.global.filters);
-    const [selectedItems, setSelectedItems] = useState<number[]>([]);
-    const { data: authUser, isLoading: authLoading, error: authError } = useGetAuthUserQuery();
-
-    useEffect(() => {
-        if (authLoading) return;
-        if (authError || !authUser?.cognitoInfo?.userId) {
-            toast.error(t("errors.unauthorized"), {
-                description: t("errors.unauthorizedDesc"),
-            });
-            router.replace("/login");
-        }
-    }, [authUser, authLoading, authError, router, t]);
 
     useEffect(() => {
         const initialFilters = Array.from(searchParams.entries()).reduce(
-            (acc, [key, value]) => {
-                if (isNumberKey(key)) {
-                    const numValue = Number(value);
-                    if (!isNaN(numValue)) {
-                        acc[key] = numValue;
+            (acc: Partial<FiltersState>, [key, value]) => {
+                const validKeys: (keyof FiltersState)[] = [
+                    "auction",
+                    "lotNo",
+                    "broker",
+                    "sellingMark",
+                    "grade",
+                    "invoiceNo",
+                    "bags",
+                    "netWeight",
+                    "totalWeight",
+                    "baselinePrice",
+                    "manufactureDate",
+                    "adminCognitoId",
+                    "search",
+                ];
+                if (validKeys.includes(key as keyof FiltersState)) {
+                    const typedKey = key as keyof FiltersState;
+                    if (["bags", "netWeight", "totalWeight", "baselinePrice"].includes(typedKey)) {
+                        const numValue = Number(value);
+                        if (!isNaN(numValue)) {
+                            acc[typedKey] = numValue as any;
+                        }
+                    } else if (typedKey === "grade" && (Object.values(TeaGrade).includes(value as TeaGrade) || value === "any")) {
+                        acc.grade = value as TeaGrade | "any";
+                    } else if (typedKey === "broker" && (Object.values(Broker).includes(value as Broker) || value === "any")) {
+                        acc.broker = value as Broker | "any";
+                    } else if (typedKey === "manufactureDate" && value) {
+                        if (value.match(/^(?:\d{4}\/(0?[1-9]|1[0-2])\/(0?[1-9]|[12]\d|3[01])|(0?[1-9]|[12]\d|3[01])\/(0?[1-9]|1[0-2])\/\d{4}|([1-9]|1[0-2])\/([1-9]|[12]\d|3[01])\/\d{4})$/)) {
+                            acc[typedKey] = value;
+                        }
+                    } else if (value !== "" && value !== "undefined") {
+                        acc[typedKey] = value as any;
                     }
-                } else if (isStringKey(key) && value !== "") {
-                    acc[key] = value;
                 }
                 return acc;
             },
-            {} as Record<NumberKey | StringKey, string | number>
+            {} as Partial<FiltersState>
         );
-
-        dispatch(setFilters(cleanParams(initialFilters as Partial<FiltersState>)));
+        dispatch(setFilters(cleanParams(initialFilters)));
     }, [searchParams, dispatch]);
-
-    const toggleViewMode = () => {
-        dispatch(setViewMode(viewMode === "list" ? "grid" : "list"));
-    };
-
-    if (authLoading) return <Loading />;
-    if (authError || !authUser?.cognitoInfo?.userId) return null;
 
     return (
         <div
             className="w-full mx-auto px-4 sm:px-6 lg:px-8 flex flex-col bg-gray-50 dark:bg-gray-900"
             style={{ minHeight: `calc(100vh - ${NAVBAR_HEIGHT}px)` }}
         >
-            <div className="w-full bg-white dark:bg-gray-800 rounded-lg shadow-sm z-10 mb-4">
+            <div className="sticky top-0 z-10">
                 <FiltersBar />
             </div>
-            <div className="flex-1 overflow-x-auto">
-                <Outlots selectedItems={selectedItems} setSelectedItems={setSelectedItems} />
+            <div className="flex flex-1 gap-4 mt-4">
+                <div className="flex-1 overflow-x-auto">
+                    <OutLots />
+                </div>
             </div>
         </div>
     );
 };
 
-export default UserOutlotsPage;
+export default UserOutLotsPage;

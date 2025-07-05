@@ -18,7 +18,6 @@ const teaStocksController_1 = require("./teaStocksController");
 const prisma = new client_1.PrismaClient({
     log: ['query', 'info', 'warn', 'error'],
 });
-// Get Shipments: Fetch shipments with pagination and filters
 const getShipments = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const time = new Date().toLocaleString('en-US', { timeZone: 'Africa/Nairobi' });
     try {
@@ -274,7 +273,6 @@ const createShipment = (req, res) => __awaiter(void 0, void 0, void 0, function*
     }
 });
 exports.createShipment = createShipment;
-// Get shipment history
 const getShipmentHistory = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const time = new Date().toLocaleString('en-US', { timeZone: 'Africa/Nairobi' });
     try {
@@ -359,7 +357,6 @@ const getShipmentHistory = (req, res) => __awaiter(void 0, void 0, void 0, funct
     }
 });
 exports.getShipmentHistory = getShipmentHistory;
-// Update Shipment: Update an existing shipment
 const updateShipment = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const time = new Date().toLocaleString('en-US', { timeZone: 'Africa/Nairobi' });
     try {
@@ -535,7 +532,6 @@ const updateShipment = (req, res) => __awaiter(void 0, void 0, void 0, function*
     }
 });
 exports.updateShipment = updateShipment;
-// Remove Shipment: Delete a shipment
 const removeShipment = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const time = new Date().toLocaleString('en-US', { timeZone: 'Africa/Nairobi' });
     try {

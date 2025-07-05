@@ -916,45 +916,31 @@ const uploadStocksCsv = (req, res) => __awaiter(void 0, void 0, void 0, function
                 rowIndex++;
                 logWithTimestamp(`Row ${rowIndex}: Raw record:`, record);
                 try {
-                    // Normalize and parse the record
                     const parsedRecord = Object.assign(Object.assign({}, record), { bags: record.bags ? Number(record.bags) : undefined, weight: record.weight ? Number(record.weight) : undefined, purchaseValue: record.purchaseValue ? Number(record.purchaseValue) : undefined, totalPurchaseValue: record.totalPurchaseValue ? Number(record.totalPurchaseValue) : undefined, agingDays: record.agingDays ? Number(record.agingDays) : undefined, penalty: record.penalty ? Number(record.penalty) : undefined, bgtCommission: record.bgtCommission ? Number(record.bgtCommission) : undefined, maerskFee: record.maerskFee ? Number(record.maerskFee) : undefined, commission: record.commission ? Number(record.commission) : undefined, netPrice: record.netPrice ? Number(record.netPrice) : undefined, total: record.total ? Number(record.total) : undefined, lowStockThreshold: record.lowStockThreshold ? Number(record.lowStockThreshold) : undefined, batchNumber: record.batchNumber || undefined, adminCognitoId: authenticatedUser.userId });
-                    // Validate numeric fields to prevent NaN
-                    if (parsedRecord.bags && isNaN(parsedRecord.bags)) {
+                    if (parsedRecord.bags && isNaN(parsedRecord.bags))
                         throw new Error("Invalid number format for bags");
-                    }
-                    if (parsedRecord.weight && isNaN(parsedRecord.weight)) {
+                    if (parsedRecord.weight && isNaN(parsedRecord.weight))
                         throw new Error("Invalid number format for weight");
-                    }
-                    if (parsedRecord.purchaseValue && isNaN(parsedRecord.purchaseValue)) {
+                    if (parsedRecord.purchaseValue && isNaN(parsedRecord.purchaseValue))
                         throw new Error("Invalid number format for purchaseValue");
-                    }
-                    if (parsedRecord.totalPurchaseValue && isNaN(parsedRecord.totalPurchaseValue)) {
+                    if (parsedRecord.totalPurchaseValue && isNaN(parsedRecord.totalPurchaseValue))
                         throw new Error("Invalid number format for totalPurchaseValue");
-                    }
-                    if (parsedRecord.agingDays && isNaN(parsedRecord.agingDays)) {
+                    if (parsedRecord.agingDays && isNaN(parsedRecord.agingDays))
                         throw new Error("Invalid number format for agingDays");
-                    }
-                    if (parsedRecord.penalty && isNaN(parsedRecord.penalty)) {
+                    if (parsedRecord.penalty && isNaN(parsedRecord.penalty))
                         throw new Error("Invalid number format for penalty");
-                    }
-                    if (parsedRecord.bgtCommission && isNaN(parsedRecord.bgtCommission)) {
+                    if (parsedRecord.bgtCommission && isNaN(parsedRecord.bgtCommission))
                         throw new Error("Invalid number format for bgtCommission");
-                    }
-                    if (parsedRecord.maerskFee && isNaN(parsedRecord.maerskFee)) {
+                    if (parsedRecord.maerskFee && isNaN(parsedRecord.maerskFee))
                         throw new Error("Invalid number format for maerskFee");
-                    }
-                    if (parsedRecord.commission && isNaN(parsedRecord.commission)) {
+                    if (parsedRecord.commission && isNaN(parsedRecord.commission))
                         throw new Error("Invalid number format for commission");
-                    }
-                    if (parsedRecord.netPrice && isNaN(parsedRecord.netPrice)) {
+                    if (parsedRecord.netPrice && isNaN(parsedRecord.netPrice))
                         throw new Error("Invalid number format for netPrice");
-                    }
-                    if (parsedRecord.total && isNaN(parsedRecord.total)) {
+                    if (parsedRecord.total && isNaN(parsedRecord.total))
                         throw new Error("Invalid number format for total");
-                    }
-                    if (parsedRecord.lowStockThreshold && isNaN(parsedRecord.lowStockThreshold)) {
+                    if (parsedRecord.lowStockThreshold && isNaN(parsedRecord.lowStockThreshold))
                         throw new Error("Invalid number format for lowStockThreshold");
-                    }
                     const parsed = teaStockSchemas_1.uploadStocksCsvSchema.safeParse(parsedRecord);
                     if (!parsed.success) {
                         logWithTimestamp(`Row ${rowIndex}: Parse error:`, {
@@ -964,11 +950,6 @@ const uploadStocksCsv = (req, res) => __awaiter(void 0, void 0, void 0, function
                         throw new Error(parsed.error.errors.map((err) => err.message).join(", "));
                     }
                     const data = parsed.data;
-                    logWithTimestamp(`Row ${rowIndex}: Parsed data:`, {
-                        lotNo: data.lotNo,
-                        weight: data.weight,
-                        purchaseValue: data.purchaseValue,
-                    });
                     validStocks.push({
                         stock: {
                             saleCode: data.saleCode,
@@ -1024,49 +1005,57 @@ const uploadStocksCsv = (req, res) => __awaiter(void 0, void 0, void 0, function
             return;
         }
         logWithTimestamp(`Found ${validStocks.length} valid stocks to process`);
-        const result = yield prisma.$transaction((tx) => __awaiter(void 0, void 0, void 0, function* () {
-            let createdCount = 0;
-            let skippedCount = 0;
-            let replacedCount = 0;
-            for (const { stock, rowIndex } of validStocks) {
-                logWithTimestamp(`Checking for existing stock with lotNo ${stock.lotNo} at row ${rowIndex}`);
-                const existing = yield tx.stocks.findUnique({
-                    where: { lotNo: stock.lotNo },
-                });
-                if (existing) {
-                    if (duplicateAction === "skip") {
-                        logWithTimestamp(`Skipping existing stock with lotNo ${stock.lotNo} at row ${rowIndex}`);
-                        skippedCount++;
-                        continue;
+        // Process in batches to avoid transaction timeout
+        const BATCH_SIZE = 50;
+        const batches = [];
+        for (let i = 0; i < validStocks.length; i += BATCH_SIZE) {
+            batches.push(validStocks.slice(i, i + BATCH_SIZE));
+        }
+        let createdCount = 0;
+        let skippedCount = 0;
+        let replacedCount = 0;
+        for (const batch of batches) {
+            yield prisma.$transaction((tx) => __awaiter(void 0, void 0, void 0, function* () {
+                for (const { stock, rowIndex } of batch) {
+                    logWithTimestamp(`Checking for existing stock with lotNo ${stock.lotNo} at row ${rowIndex}`);
+                    const existing = yield tx.stocks.findUnique({
+                        where: { lotNo: stock.lotNo },
+                    });
+                    if (existing) {
+                        if (duplicateAction === "skip") {
+                            logWithTimestamp(`Skipping existing stock with lotNo ${stock.lotNo} at row ${rowIndex}`);
+                            skippedCount++;
+                            continue;
+                        }
+                        else if (duplicateAction === "replace") {
+                            logWithTimestamp(`Replacing existing stock with lotNo ${stock.lotNo} at row ${rowIndex}`);
+                            yield tx.stocks.delete({ where: { id: existing.id } });
+                            replacedCount++;
+                        }
                     }
-                    else if (duplicateAction === "replace") {
-                        logWithTimestamp(`Replacing existing stock with lotNo ${stock.lotNo} at row ${rowIndex}`);
-                        yield tx.stocks.delete({ where: { id: existing.id } });
-                        replacedCount++;
-                    }
+                    const createdStock = yield tx.stocks.create({ data: stock });
+                    yield tx.stockHistory.create({
+                        data: {
+                            stocksId: createdStock.id,
+                            action: "Stock Created via CSV",
+                            adminCognitoId: authenticatedUser.userId,
+                            timestamp: new Date(),
+                            details: { lotNo: stock.lotNo },
+                        },
+                    });
+                    createdCount++;
+                    logWithTimestamp(`Created stock with lotNo ${stock.lotNo} at row ${rowIndex}`);
                 }
-                const createdStock = yield tx.stocks.create({ data: stock });
-                yield tx.stockHistory.create({
-                    data: {
-                        stocksId: createdStock.id, // ✅ REFERENCE stock ID here
-                        action: "Stock Created via CSV",
-                        adminCognitoId: authenticatedUser.userId,
-                        timestamp: new Date(),
-                        details: { lotNo: stock.lotNo },
-                    },
-                });
-                createdCount++;
-                logWithTimestamp(`Created stock with lotNo ${stock.lotNo} at row ${rowIndex}`);
-            }
-            return { createdCount, skippedCount, replacedCount };
-        }));
-        logWithTimestamp(`Successfully created ${result.createdCount} stocks, ` +
-            `skipped ${result.skippedCount}, replaced ${result.replacedCount}`);
+            }), { timeout: 30000 } // 30-second timeout
+            );
+        }
+        logWithTimestamp(`Successfully created ${createdCount} stocks, ` +
+            `skipped ${skippedCount}, replaced ${replacedCount}`);
         res.status(201).json({
             success: {
-                created: result.createdCount,
-                skipped: result.skippedCount,
-                replaced: result.replacedCount,
+                created: createdCount,
+                skipped: skippedCount,
+                replaced: replacedCount,
             },
             errors,
         });

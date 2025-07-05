@@ -1,97 +1,101 @@
-"use client";
-
-import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow,
-} from "@/components/ui/table";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useTranslation } from "react-i18next";
-import { formatBrokerName } from "@/lib/utils";
 import { CatalogResponse } from "@/state";
 
-interface CatalogTableProps {
+export interface CatalogTableProps {
     catalogData: CatalogResponse[];
     selectedItems: number[];
     handleSelectItem: (id: number) => void;
 }
 
-const CatalogTable: React.FC<CatalogTableProps> = ({
-                                                       catalogData,
-                                                       selectedItems,
-                                                       handleSelectItem,
-                                                   }) => {
-    const { t } = useTranslation("catalog");
+const CatalogTable: React.FC<CatalogTableProps> = ({ catalogData, selectedItems, handleSelectItem }) => {
+    const { t } = useTranslation(["catalog", "general"]);
 
     return (
-        <div className="overflow-x-auto">
-            <Table>
-                <TableHeader>
-                    <TableRow>
-                        <TableHead>
-                            <span className="sr-only">{t("headers.select")}</span>
-                        </TableHead>
-                        <TableHead className="text-sm">{t("headers.broker")}</TableHead>
-                        <TableHead className="text-sm">{t("headers.saleCode")}</TableHead>
-                        <TableHead className="text-sm">{t("headers.lotNo")}</TableHead>
-                        <TableHead className="text-sm">{t("headers.sellingMark")}</TableHead>
-                        <TableHead className="text-sm">{t("headers.grade")}</TableHead>
-                        <TableHead className="text-sm">{t("headers.invoiceNo")}</TableHead>
-                        <TableHead className="text-sm">{t("headers.category")}</TableHead>
-                        <TableHead className="text-sm">{t("headers.reprint")}</TableHead>
-                        <TableHead className="text-sm">{t("headers.bags")}</TableHead>
-                        <TableHead className="text-sm">{t("headers.netWeight")}</TableHead>
-                        <TableHead className="text-sm">{t("headers.totalWeight")}</TableHead>
-                        <TableHead className="text-sm">{t("headers.askingPrice")}</TableHead>
-                        <TableHead className="text-sm">{t("headers.country")}</TableHead>
-                        <TableHead className="text-sm">{t("headers.manufactureDate")}</TableHead>
-                    </TableRow>
-                </TableHeader>
-                <TableBody>
-                    {catalogData.length > 0 ? (
-                        catalogData.map((catalog) => (
-                            <TableRow
-                                key={catalog.id}
-                                className={selectedItems.includes(catalog.id) ? "bg-indigo-50 dark:bg-indigo-900" : "bg-white dark:bg-gray-800"}
-                            >
-                                <TableCell>
-                                    <Checkbox
-                                        checked={selectedItems.includes(catalog.id)}
-                                        onCheckedChange={() => handleSelectItem(catalog.id)}
-                                        aria-label={t("actions.selectItem", { lotNo: catalog.lotNo })}
-                                    />
-                                </TableCell>
-                                <TableCell className="text-sm">{formatBrokerName(catalog.broker)}</TableCell>
-                                <TableCell className="text-sm">{catalog.saleCode}</TableCell>
-                                <TableCell className="text-sm">{catalog.lotNo}</TableCell>
-                                <TableCell className="text-sm">{catalog.sellingMark}</TableCell>
-                                <TableCell className="text-sm">{catalog.grade}</TableCell>
-                                <TableCell className="text-sm">{catalog.invoiceNo || "N/A"}</TableCell>
-                                <TableCell className="text-sm">{catalog.category}</TableCell>
-                                <TableCell className="text-sm">{catalog.reprint ?? 0}</TableCell>
-                                <TableCell className="text-sm">{catalog.bags}</TableCell>
-                                <TableCell className="text-sm">{catalog.netWeight.toFixed(2)}</TableCell>
-                                <TableCell className="text-sm">{catalog.totalWeight.toFixed(2)}</TableCell>
-                                <TableCell className="text-sm">${catalog.askingPrice.toFixed(2)}</TableCell>
-                                <TableCell className="text-sm">{catalog.producerCountry || "N/A"}</TableCell>
-                                <TableCell className="text-sm">
-                                    {catalog.manufactureDate ? new Date(catalog.manufactureDate).toLocaleDateString("en-US") : "N/A"}
-                                </TableCell>
-                            </TableRow>
-                        ))
-                    ) : (
-                        <TableRow>
-                            <TableCell colSpan={16} className="text-center text-sm text-gray-600 dark:text-gray-300">
-                                {t("noCatalogs")}
+        <Table className="rounded-sm overflow-hidden border border-gray-200 dark:border-gray-700">
+            <TableHeader>
+                <TableRow className="bg-gray-50 dark:bg-gray-800">
+                    <TableHead className="w-[50px]">
+                        <span>{t("catalog:actions.selectAll", { defaultValue: "Select" })}</span>
+                    </TableHead>
+                    <TableHead>{t("catalog:lotNo", { defaultValue: "Lot Number" })}</TableHead>
+                    <TableHead>{t("catalog:category", { defaultValue: "Category" })}</TableHead>
+                    <TableHead>{t("catalog:grade", { defaultValue: "Grade" })}</TableHead>
+                    <TableHead>{t("catalog:broker", { defaultValue: "Broker" })}</TableHead>
+                    <TableHead>{t("catalog:sellingMark", { defaultValue: "Selling Mark" })}</TableHead>
+                    <TableHead>{t("headers:saleCode", { defaultValue: "Sale Code" })}</TableHead>
+                    <TableHead>{t("catalog:bags", { defaultValue: "Bags" })}</TableHead>
+                    <TableHead>{t("catalog:tareWeight", { defaultValue: "Tare Weight" })}</TableHead>
+                    <TableHead>{t("catalog:totalWeight", { defaultValue: "Total Weight" })}</TableHead>
+                    <TableHead>{t("catalog:country", { defaultValue: "Country" })}</TableHead>
+                    <TableHead>{t("catalog:askingPrice", { defaultValue: "Asking Price" })}</TableHead>
+                    <TableHead>{t("catalog:invoiceNo", { defaultValue: "Invoice Number" })}</TableHead>
+                    <TableHead>{t("catalog:manufactureDate", { defaultValue: "Manufacture Date" })}</TableHead>
+                    <TableHead>{t("catalog:reprint.label", { defaultValue: "Reprint" })}</TableHead>
+                </TableRow>
+            </TableHeader>
+            <TableBody>
+                {catalogData.length > 0 ? (
+                    catalogData.map((catalog) => (
+                        <TableRow
+                            key={catalog.id}
+                            className={`${
+                                selectedItems.includes(catalog.id)
+                                    ? "bg-indigo-50 dark:bg-indigo-900/30"
+                                    : "bg-white dark:bg-gray-900"
+                            } hover:bg-gray-100 dark:hover:bg-gray-800`}
+                        >
+                            <TableCell onClick={(e) => e.stopPropagation()}>
+                                <Checkbox
+                                    checked={selectedItems.includes(catalog.id)}
+                                    onChange={() => handleSelectItem(catalog.id)}
+                                    aria-label={t("catalog:actions.selectItem", {
+                                        defaultValue: "Select item {{lotNo}}",
+                                        lotNo: catalog.lotNo,
+                                    })}
+                                    className="border-gray-300 dark:border-gray-600"
+                                />
                             </TableCell>
+                            <TableCell className="text-gray-800 dark:text-gray-200">{catalog.lotNo}</TableCell>
+                            <TableCell className="text-gray-800 dark:text-gray-200">{catalog.category ?? "N/A"}</TableCell>
+                            <TableCell className="text-gray-800 dark:text-gray-200">{catalog.grade ?? "N/A"}</TableCell>
+                            <TableCell className="text-gray-800 dark:text-gray-200">{catalog.broker ?? "N/A"}</TableCell>
+                            <TableCell className="text-gray-800 dark:text-gray-200">{catalog.sellingMark ?? "N/A"}</TableCell>
+                            <TableCell className="text-gray-800 dark:text-gray-200">{catalog.saleCode ?? "N/A"}</TableCell>
+                            <TableCell className="text-gray-800 dark:text-gray-200">{catalog.bags}</TableCell>
+                            <TableCell className="text-gray-800 dark:text-gray-200">
+                                {(catalog.totalWeight - catalog.netWeight).toFixed(2)} kg
+                            </TableCell>
+                            <TableCell className="text-gray-800 dark:text-gray-200">
+                                {catalog.totalWeight.toFixed(2)} kg
+                            </TableCell>
+                            <TableCell className="text-gray-800 dark:text-gray-200">{catalog.producerCountry ?? "N/A"}</TableCell>
+                            <TableCell className="text-gray-800 dark:text-gray-200">
+                                ${catalog.askingPrice.toFixed(2)}
+                            </TableCell>
+                            <TableCell className="text-gray-800 dark:text-gray-200">{catalog.invoiceNo ?? "N/A"}</TableCell>
+                            <TableCell className="text-gray-800 dark:text-gray-200">
+                                {catalog.manufactureDate
+                                    ? new Date(catalog.manufactureDate).toLocaleDateString("en-US", {
+                                        day: "2-digit",
+                                        month: "2-digit",
+                                        year: "numeric",
+                                    })
+                                    : "N/A"}
+                            </TableCell>
+                            <TableCell className="text-gray-800 dark:text-gray-200">{catalog.reprint}</TableCell>
                         </TableRow>
-                    )}
-                </TableBody>
-            </Table>
-        </div>
+                    ))
+                ) : (
+                    <TableRow>
+                        <TableCell colSpan={15} className="text-center py-4 text-gray-500 dark:text-gray-400">
+                            {t("catalog:noCatalogs", { defaultValue: "No catalogs found" })}
+                        </TableCell>
+                    </TableRow>
+                )}
+            </TableBody>
+        </Table>
     );
 };
 

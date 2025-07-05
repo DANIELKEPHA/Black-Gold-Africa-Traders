@@ -11,6 +11,24 @@ export const settingsSchema = z.object({
     phoneNumber: z.string().min(10, "Phone number must be at least 10 digits"),
 });
 
+const reprintSchema = z.preprocess((val) => {
+    // Handle case where val is already processed
+    if (val === 'No' || val === null) return 'No';
+
+    // Handle number inputs (convert to string)
+    if (typeof val === 'number') return String(val);
+
+    // Handle string inputs
+    if (val === 'No') return 'No';
+    if (val === '') return undefined;
+
+    const num = Number(val);
+    return isNaN(num) ? undefined : String(num);
+}, z.union([
+    z.string().regex(/^[1-9]\d*$/, 'Reprint number must be positive integer'),
+    z.literal('No'),
+])).optional().describe('Either "No" or a positive integer string');
+
 export const createCatalogSchema = z.object({
     broker: z.enum(brokerValues, { message: "Invalid Broker" }),
     lotNo: z.string().min(1, "Lot number is required"),
@@ -19,7 +37,7 @@ export const createCatalogSchema = z.object({
     invoiceNo: z.string().min(1, "Invoice number is required").nullable(),
     saleCode: z.string().min(1, "Sale code is required"),
     category: z.enum(teaCategoryValues, { message: "Invalid tea category" }),
-    reprint: z.number().int().min(0, "Reprint must be non-negative"),
+    reprint: reprintSchema,
     bags: z.number().int().min(1, "Bags must be at least 1"),
     netWeight: z.number().min(0, "Net weight must be non-negative"),
     totalWeight: z.number().min(0, "Total weight must be non-negative"),
@@ -118,7 +136,7 @@ export const getStockHistoryQuerySchema = z.object({
     shipmentId: z.number().int().positive("Shipment ID must be a positive integer").optional(),
     adminCognitoId: z.string().min(1, "Admin Cognito ID must not be empty").optional(),
     page: z.coerce.number().int().positive("Page must be a positive integer").default(1),
-    limit: z.coerce.number().int().positive("Limit must be a positive integer").default(20),
+    limit: z.coerce.number().int().positive("Limit must be a positive integer").default(100),
     includeStock: z.coerce.boolean().default(false),
     includeShipment: z.coerce.boolean().default(false),
     includeAdmin: z.coerce.boolean().default(false),
@@ -144,7 +162,7 @@ export const createSellingPriceSchema = z.object({
     purchasePrice: z.number().min(0, "Purchase price must be non-negative"),
     producerCountry: z.string().min(1, "Country is required"),
     manufactureDate: z.string().min(1, "Manufacture date is required"),
-    reprint: z.number().int().min(0, "Reprint must be non-negative"),
+    reprint: reprintSchema,
     adminCognitoId: z.string().min(1, "Admin ID is required"),
 });
 

@@ -9,7 +9,7 @@ export const getStockQuerySchema = z.object({
     batchNumber: z.string().min(1, "Batch number must not be empty").optional(),
     lotNo: z.string().min(1, "Lot number must not be empty").optional(),
     page: z.coerce.number().int().positive("Page must be a positive integer").default(1),
-    limit: z.coerce.number().int().positive("Limit must be a positive integer").default(20),
+    limit: z.coerce.number().int().positive("Limit must be a positive integer").default(100),
     grade: z.enum(teaGradeValues, { message: "Invalid tea grade" }).optional(),
     broker: z.enum(brokerValues, { message: "Invalid broker" }).optional(),
     search: z.string().min(1, "Search term must not be empty").optional(),

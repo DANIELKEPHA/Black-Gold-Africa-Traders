@@ -49,13 +49,13 @@ exports.createContactSchema = zod_1.z.object({
     message: zod_1.z.string().min(1, "Message is required").max(1000, "Message is too long"),
     privacyConsent: zod_1.z
         .boolean()
-        .refine((val) => val === true, "Privacy policy consent is required"),
+        .refine((val) => val, "Privacy policy consent is required"),
     userCognitoId: zod_1.z.string().optional().nullable(),
     // recaptchaToken: z.string().min(1, "reCAPTCHA token is required"),
 });
 exports.getUserStockHistoryQuerySchema = zod_1.z.object({
     page: zod_1.z.string().transform(Number).refine((val) => val > 0, { message: "Page must be greater than 0" }).optional().default("1"),
-    limit: zod_1.z.string().transform(Number).refine((val) => val > 0, { message: "Limit must be greater than 0" }).optional().default("10"),
+    limit: zod_1.z.string().transform(Number).refine((val) => val > 0, { message: "Limit must be greater than 0" }).optional().default("20"),
     search: zod_1.z.string().optional(),
     sortBy: zod_1.z.enum(["assignedAt", "stocksId", "assignedWeight"]).optional().default("assignedAt"),
     sortOrder: zod_1.z.enum(["asc", "desc"]).optional().default("desc"),

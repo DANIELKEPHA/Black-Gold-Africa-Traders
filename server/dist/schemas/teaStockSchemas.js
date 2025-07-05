@@ -10,7 +10,7 @@ exports.getStockQuerySchema = zod_1.z.object({
     batchNumber: zod_1.z.string().min(1, "Batch number must not be empty").optional(),
     lotNo: zod_1.z.string().min(1, "Lot number must not be empty").optional(),
     page: zod_1.z.coerce.number().int().positive("Page must be a positive integer").default(1),
-    limit: zod_1.z.coerce.number().int().positive("Limit must be a positive integer").default(20),
+    limit: zod_1.z.coerce.number().int().positive("Limit must be a positive integer").default(100),
     grade: zod_1.z.enum(teaGradeValues, { message: "Invalid tea grade" }).optional(),
     broker: zod_1.z.enum(brokerValues, { message: "Invalid broker" }).optional(),
     search: zod_1.z.string().min(1, "Search term must not be empty").optional(),

@@ -26,7 +26,7 @@ interface UseFiltersConfig {
     validateFilter?: (key: keyof FiltersState, value: any, t: (key: string, options?: any) => string) => string | undefined;
 }
 
-export const useFilters = ({ translationNamespaces, filterOptions, validateFilter }: UseFiltersConfig) => {
+export const UseSellingPricesFilters = ({ translationNamespaces, filterOptions, validateFilter }: UseFiltersConfig) => {
     const { t } = useTranslation(translationNamespaces);
     const dispatch = useDispatch();
     const router = useRouter();

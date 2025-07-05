@@ -40,7 +40,7 @@ export interface Catalog {
     askingPrice: number;
     invoiceNo: string | null;
     manufactureDate: string | null;
-    reprint: number;
+    reprint: string;
     adminCognitoId: string;
     createdAt: string;
     updatedAt: string;

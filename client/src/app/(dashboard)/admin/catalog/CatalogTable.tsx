@@ -120,7 +120,7 @@ const CatalogTable: React.FC<CatalogTableProps> = ({
                 ) : (
                     <TableRow>
                         <TableCell colSpan={15} className="text-center py-4 text-gray-500 dark:text-gray-400">
-                            {t("catalog:noSellingPrices", { defaultValue: "No selling prices found" })}
+                            {t("catalog:noCatalogs", { defaultValue: "No catalogs found" })}
                         </TableCell>
                     </TableRow>
                 )}

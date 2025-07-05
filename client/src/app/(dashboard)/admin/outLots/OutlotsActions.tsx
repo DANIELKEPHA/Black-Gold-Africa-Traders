@@ -5,7 +5,7 @@ import { useTranslation } from "react-i18next";
 import { Toaster, toast } from "sonner";
 import { Download, Loader2, UploadIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useExportOutLotsCsvMutation, useGetAuthUserQuery, useGetOutlotsQuery } from "@/state/api";
+import { useExportOutLotsXlsxMutation, useGetAuthUserQuery, useGetOutlotsQuery } from "@/state/api";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
 import { OutLotsResponse } from "@/state";
@@ -29,14 +29,10 @@ const OutLotsActions: React.FC<OutLotsActionsProps> = ({
     const router = useRouter();
     const { data: authUser } = useGetAuthUserQuery();
     const isAdmin = authUser?.userRole === "admin";
-    const [exportOutLotsCsv, { isLoading: isExporting }] = useExportOutLotsCsvMutation();
-    // Fetch all outlots with limit: 10000 (now supported by backend)
+    const [exportOutLots, { isLoading: isExporting }] = useExportOutLotsXlsxMutation();
     const { data: allOutLotsData, isLoading: isAllOutLotsLoading, error: allOutLotsError } = useGetOutlotsQuery(
-        {
-            page: 1,
-            limit: 10000, // Now supported by backend
-        },
-        { skip: !authUser?.cognitoInfo?.userId || !selectAllAcrossPages }
+        { page: 1, limit: 10000 },
+        { skip: !authUser?.cognitoInfo?.userId }
     );
 
     if (!isAdmin) return null;
@@ -44,31 +40,47 @@ const OutLotsActions: React.FC<OutLotsActionsProps> = ({
     const handleDownload = async () => {
         try {
             if (allOutLotsError) {
-                const errorMessage = (allOutLotsError as any)?.data?.message ||
+                const errorMessage =
+                    (allOutLotsError as any)?.data?.message ||
                     t("catalog:errors.fetchAllFailed", { defaultValue: "Failed to fetch all outLots" });
-                console.error(`[${new Date().toLocaleString("en-US", { timeZone: "Africa/Nairobi" })}] handleDownload: allOutLotsError:`, allOutLotsError);
+                console.error(
+                    `[${new Date().toLocaleString("en-US", { timeZone: "Africa/Nairobi" })}] handleDownload: allOutLotsError:`,
+                    allOutLotsError
+                );
                 toast.error(errorMessage);
                 return;
             }
 
-            const ids = selectedItems.length > 0
-                ? selectedItems
-                : (allOutLotsData?.data || []).map((item) => item.id);
+            const ids =
+                selectedItems.length > 0
+                    ? selectedItems
+                    : (allOutLotsData?.data || []).map((item) => item.id);
 
             if (ids.length === 0) {
-                toast.error(t("catalog:errors.noItems", { defaultValue: "No outLots available to export" }));
+                toast.error(
+                    t("catalog:errors.noItems", { defaultValue: "No outLots available to export" })
+                );
                 return;
             }
 
-            console.log(`[${new Date().toLocaleString("en-US", { timeZone: "Africa/Nairobi" })}] handleDownload: Exporting outlots with IDs:`, ids);
-            await exportOutLotsCsv({
-                outLotIds: ids.join(","),
-            }).unwrap();
-            toast.success(t("catalog:success.csvDownloaded", { defaultValue: "CSV downloaded successfully" }));
+            console.log(
+                `[${new Date().toLocaleString("en-US", { timeZone: "Africa/Nairobi" })}] handleDownload: Exporting outlots with IDs:`,
+                ids
+            );
+
+            await exportOutLots({ outLotIds: ids }).unwrap();
+
+            toast.success(
+                t("catalog:success.xlsxDownloaded", { defaultValue: "XLSX downloaded successfully" })
+            );
         } catch (err: any) {
-            console.error(`[${new Date().toLocaleString("en-US", { timeZone: "Africa/Nairobi" })}] handleDownload: Export error:`, err);
-            const errorMessage = err?.data?.message ||
-                t("catalog:errors.csvError", { defaultValue: "Failed to export CSV" });
+            console.error(
+                `[${new Date().toLocaleString("en-US", { timeZone: "Africa/Nairobi" })}] handleDownload: Export error:`,
+                err
+            );
+            const errorMessage =
+                err?.data?.message ||
+                t("catalog:errors.xlsxError", { defaultValue: "Failed to export XLSX" });
             toast.error(errorMessage);
         }
     };

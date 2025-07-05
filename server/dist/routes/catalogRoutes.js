@@ -20,8 +20,9 @@ router.post("/", (0, authMiddleware_1.authMiddleware)(["admin"]), (0, asyncHandl
 router.get("/:id", (0, asyncHandler_1.asyncHandler)(catalogController_1.getCatalogById));
 // Delete multiple catalogs
 router.delete("/bulk", (0, authMiddleware_1.authMiddleware)(["admin"]), (0, asyncHandler_1.asyncHandler)(catalogController_1.deleteCatalogs));
+router.delete("/bulk/delete-all", (0, authMiddleware_1.authMiddleware)(["admin"]), (0, asyncHandler_1.asyncHandler)(catalogController_1.deleteAllCatalogs));
 // Upload catalogs via CSV
 router.post("/upload", (0, authMiddleware_1.authMiddleware)(["admin"]), upload.single("file"), (0, asyncHandler_1.asyncHandler)(catalogController_1.uploadCatalogsCsv));
 // Export multiple catalogs as CSV
-router.post("/export", (0, authMiddleware_1.authMiddleware)(["admin", "user"]), (0, asyncHandler_1.asyncHandler)(catalogController_1.exportCatalogsCsv));
+router.post("/export/xlsx", (0, authMiddleware_1.authMiddleware)(["admin", "user"]), (0, asyncHandler_1.asyncHandler)(catalogController_1.exportCatalogsXlsx));
 exports.default = router;

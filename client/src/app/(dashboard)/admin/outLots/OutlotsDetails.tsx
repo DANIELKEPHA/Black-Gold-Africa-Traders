@@ -8,7 +8,7 @@ import {
     useGetAuthUserQuery,
     useGetOutlotByIdQuery,
     useDeleteOutlotsMutation,
-    useExportOutLotsCsvMutation,
+    useExportOutLotsXlsxMutation,
 } from "@/state/api";
 import { Button } from "@/components/ui/button";
 import { Loader2, Download } from "lucide-react";
@@ -27,7 +27,7 @@ const OutLotsDetails: React.FC<OutLotsDetailsProps> = ({ params }) => {
         parseInt(params.id)
     );
     const [deleteOutLots, { isLoading: isDeleting }] = useDeleteOutlotsMutation();
-    const [exportOutLotsCsv, { isLoading: isExporting }] = useExportOutLotsCsvMutation();
+    const [exportOutLots, { isLoading: isExporting }] = useExportOutLotsXlsxMutation();
     const isAdmin = authUser?.userRole === "admin";
 
     const handleDelete = async () => {
@@ -46,10 +46,17 @@ const OutLotsDetails: React.FC<OutLotsDetailsProps> = ({ params }) => {
 
     const handleDownload = async () => {
         try {
-            await exportOutLotsCsv({ outLotIds: parseInt(params.id).toString() }).unwrap();
-            toast.success(t("catalog:success.csvDownloaded", { defaultValue: "CSV downloaded successfully" }));
+            await exportOutLots({
+                outLotIds: [parseInt(params.id)], // Always export the specific outLot
+            }).unwrap();
+
+            toast.success(
+                t("catalog:success.xlsxDownloaded", { defaultValue: "XLSX downloaded successfully" })
+            );
         } catch (err: any) {
-            toast.error(t("catalog:errors.csvError", { defaultValue: "Failed to export CSV" }));
+            toast.error(
+                t("catalog:errors.xlsxError", { defaultValue: "Failed to export XLSX" })
+            );
         }
     };
 

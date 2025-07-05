@@ -1,47 +1,16 @@
 import { z } from 'zod';
 import { Broker, TeaCategory, TeaGrade } from '@prisma/client';
 import { cognitoIdSchema } from './shipmentSchemas';
+import {dateFormat, reprintSchema} from "./catalogSchemas";
 
 const teaCategoryValues = Object.values(TeaCategory) as [string, ...string[]];
 const teaGradeValues = Object.values(TeaGrade) as [string, ...string[]];
 const brokerValues = Object.values(Broker) as [string, ...string[]];
 
-const dateFormat = z
-    .string()
-    .regex(
-        /^(?:\d{4}\/(0?[1-9]|1[0-2])\/(0?[1-9]|[12]\d|3[01])|(0?[1-9]|[12]\d|3[01])\/(0?[1-9]|1[0-2])\/\d{4}|([1-9]|1[0-2])\/([1-9]|[12]\d|3[01])\/\d{4})$/,
-        'Invalid date format (expected YYYY/MM/DD, DD/MM/YYYY, or M/D/YYYY)'
-    )
-    .transform((val) => {
-        let year: number, month: number, day: number;
-        if (val.match(/^\d{4}\/\d{2}\/\d{2}$/)) {
-            // YYYY/MM/DD
-            [year, month, day] = val.split('/').map(Number);
-        } else if (val.match(/^([1-9]|[12]\d|3[01])\/([1-9]|1[0-2])\/\d{4}$/)) {
-            // DD/MM/YYYY
-            [day, month, year] = val.split('/').map(Number);
-        } else {
-            // M/D/YYYY
-            [month, day, year] = val.split('/').map(Number);
-        }
-        const formattedDate = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-        console.log(`[Schema] Transforming date: ${val} to ${formattedDate}`);
-
-        // Validate the date is valid
-        const date = new Date(formattedDate);
-        if (isNaN(date.getTime())) {
-            console.error(`[Schema] Invalid date: ${formattedDate}`);
-            throw new Error('Invalid date');
-        }
-
-        // Return in YYYY-MM-DD format for consistency
-        return formattedDate;
-    });
-
 export const querySchema = z
     .object({
         page: z.coerce.number().int().positive('Page must be a positive integer').optional().default(1),
-        limit: z.coerce.number().int().positive('Limit must be a positive integer').optional().default(20),
+        limit: z.coerce.number().int().positive('Limit must be a positive integer').optional().default(100),
         lotNo: z.string().min(1, 'Lot number must not be empty').optional(),
         sellingMark: z.string().min(1, 'Selling mark must not be empty').optional(),
         bags: z.coerce.number().int().positive('Bags must be a positive integer').optional(),
@@ -56,10 +25,7 @@ export const querySchema = z
         grade: z.enum([...teaGradeValues, 'any'] as const).optional(),
         broker: z.enum([...brokerValues, 'any'] as const).optional(),
         invoiceNo: z.string().min(1, 'Invoice number must not be empty').optional(),
-        reprint: z.union([
-            z.coerce.number().int().nonnegative('Reprint must be non-negative').default(0),
-            z.coerce.boolean().transform(val => (val ? 1 : 0))
-        ]),
+        reprint: reprintSchema,
         search: z.string().min(1, 'Search term must not be empty').optional(),
         ids: z.array(z.number().int().positive('IDs must be positive integers')).optional(),
         adminCognitoId: cognitoIdSchema.optional(),
@@ -83,10 +49,7 @@ export const createSellingPriceSchema = z.object({
     broker: z.enum(brokerValues, { message: 'Invalid broker value' }),
     sellingMark: z.string().min(1, 'Selling mark is required'),
     lotNo: z.string().min(1, 'Lot number is required'),
-    reprint: z.union([
-        z.coerce.number().int().nonnegative('Reprint must be non-negative').default(0),
-        z.coerce.boolean().transform(val => (val ? 1 : 0))
-    ]),
+    reprint: reprintSchema,
     bags: z.number().int().positive('Bags must be a positive integer'),
     netWeight: z.number().positive('Net weight must be positive'),
     totalWeight: z.number().positive('Total weight must be positive'),
@@ -102,35 +65,27 @@ export const createSellingPriceSchema = z.object({
 }).strict();
 
 export const csvRecordSchema = z.object({
-    broker: z.enum(brokerValues, { message: 'Invalid broker value. Must be one of: ' + brokerValues.join(', ') }),
-    sellingMark: z.string().min(1, 'Selling mark is required and cannot be empty'),
-    lotNo: z.string().min(1, 'Lot number is required and cannot be empty'),
-    reprint: z.union([
-        z.coerce.number().int().nonnegative('Reprint must be non-negative').default(0),
-        z.coerce.boolean().transform(val => (val ? 1 : 0)),
-        z.string().transform(val => val.toLowerCase() === 'true' ? 1 : val.toLowerCase() === 'false' ? 0 : parseInt(val, 10))
-    ]),
-    bags: z.number().int().positive('Bags must be a positive integer'),
-    netWeight: z.number().positive('Net weight must be a positive number'),
-    totalWeight: z.number().positive('Total weight must be a positive number'),
-    invoiceNo: z.string().min(1, 'Invoice number is required and cannot be empty'),
-    saleCode: z.string().min(1, 'Sale code is required and cannot be empty'),
-    askingPrice: z.number().positive('Asking price must be a positive number'),
-    purchasePrice: z.number().positive('Purchase price must be a positive number'),
-    adminCognitoId: z.string().uuid('Admin Cognito ID must be a valid UUID'),
-    producerCountry: z.string().min(1, 'Producer country cannot be empty').optional(),
-    manufactureDate: dateFormat.refine(val => !isNaN(new Date(val).getTime()), 'Invalid date format (YYYY/MM/DD or DD/MM/YYYY)'),
-    category: z.enum(teaCategoryValues, { message: 'Invalid tea category. Must be one of: ' + teaCategoryValues.join(', ') }),
-    grade: z.enum(teaGradeValues, { message: 'Invalid tea grade. Must be one of: ' + teaGradeValues.join(', ') }),
+    broker: z.enum(brokerValues, { message: "Invalid broker value. Must be one of: " + brokerValues.join(", ") }),
+    sellingMark: z.string().min(1, "Selling mark is required and cannot be empty"),
+    lotNo: z.string().min(1, "Lot number is required and cannot be empty"),
+    reprint: reprintSchema,
+    bags: z.number().int().positive("Bags must be a positive integer"),
+    netWeight: z.number().positive("Net weight must be a positive number"),
+    totalWeight: z.number().positive("Total weight must be a positive number"),
+    invoiceNo: z.string().min(1, "Invoice number is required and cannot be empty"),
+    saleCode: z.string().min(1, "Sale code is required and cannot be empty"),
+    askingPrice: z.number().positive("Asking price must be a positive number"),
+    purchasePrice: z.number().positive("Purchase price must be a positive number"),
+    producerCountry: z.string().min(1, "Producer country cannot be empty").optional(),
+    manufactureDate: dateFormat.refine((val) => !isNaN(new Date(val).getTime()), "Invalid date format (YYYY/MM/DD or DD/MM/YYYY)"),
+    category: z.enum(teaCategoryValues, { message: "Invalid tea category. Must be one of: " + teaCategoryValues.join(", ") }),
+    grade: z.enum(teaGradeValues, { message: "Invalid tea grade. Must be one of: " + teaGradeValues.join(", ") }),
 }).strict();
 
 export const updateSchema = z.object({
     broker: z.enum(brokerValues, { message: 'Invalid broker value' }).optional(),
     sellingMark: z.string().min(1, 'Selling mark must not be empty').optional(),
-    reprint: z.union([
-        z.coerce.number().int().nonnegative('Reprint must be non-negative').default(0),
-        z.coerce.boolean().transform(val => (val ? 1 : 0))
-    ]),
+    reprint: reprintSchema,
     bags: z.number().int().positive('Bags must be a positive integer').optional(),
     totalWeight: z.number().positive('Total weight must be positive').optional(),
     netWeight: z.number().positive('Net weight must be positive').optional(),
@@ -159,9 +114,6 @@ export const filtersStateSchema = z.object({
     bags: z.number().int().positive('Bags').optional(),
     totalWeight: z.number().positive('').optional(),
     netWeight: z.number().positive('').optional(),
-    reprint: z.union([
-        z.coerce.number().int().nonnegative('Reprint must be non-negative').default(0),
-        z.coerce.boolean().transform(val => (val ? 1 : 0))
-    ]),
+    reprint: reprintSchema,
     search: z.string().optional(),
 }).strict();

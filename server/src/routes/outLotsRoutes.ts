@@ -5,8 +5,7 @@ import {
     createOutLot,
     getOutLotById,
     deleteOutLots,
-    uploadOutLotsCsv,
-    exportOutLotsCsv,
+    uploadOutLotsCsv, exportOutLotsXlsx,
 } from "../controllers/outLotsContoller";
 import { authMiddleware } from "../middleware/authMiddleware";
 import multer from "multer";
@@ -31,7 +30,7 @@ const upload = multer({
 router.get("/filters", asyncHandler(getOutLotsFilterOptions));
 
 // Export outLots as CSV
-router.post("/export-csv", authMiddleware(["admin", "user"]), asyncHandler(exportOutLotsCsv));
+router.post("/export-xlsx", authMiddleware(["admin", "user"]), asyncHandler(exportOutLotsXlsx));
 
 // Get all outLots with filters and pagination
 router.get("/", asyncHandler(getOutLots));

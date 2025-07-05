@@ -96,6 +96,7 @@ const SellingPricesUpload: React.FC = () => {
             console.log(`[${time}] Reading CSV file: ${file.name}`);
             const text = await file.text();
             const lines = text.split("\n").filter((line) => line.trim());
+            console.log(`[${time}] Raw CSV content:`, text); // Log full content for debugging
             console.log(`[${time}] CSV lines parsed:`, {
                 totalLines: lines.length,
                 firstFewLines: lines.slice(0, 3),
@@ -229,9 +230,8 @@ const SellingPricesUpload: React.FC = () => {
                     );
                 }
 
-                // Validate numeric fields
+                // Validate numeric fields (excluding RP)
                 const numericFields = [
-                    { key: "RP", label: "RP" },
                     { key: "Bags", label: "Bags" },
                     { key: "Net Weight", label: "Net Weight" },
                     { key: "Total Weight", label: "Total Weight" },
@@ -248,6 +248,18 @@ const SellingPricesUpload: React.FC = () => {
                             })
                         );
                     }
+                }
+
+                // Validate reprint (RP) specifically
+                const reprint = rowData["RP"];
+                if (reprint && reprint.toLowerCase() !== "no" && (isNaN(Number(reprint)) || Number(reprint) <= 0)) {
+                    newErrors.push(
+                        t("catalog:errors.invalidReprint", {
+                            defaultValue: `Row ${rowIndex + 1}: Invalid or negative RP, must be 'No' or a positive integer (got '${reprint}')`,
+                            row: rowIndex + 1,
+                            value: reprint,
+                        })
+                    );
                 }
 
                 // Validate date format
@@ -277,16 +289,12 @@ const SellingPricesUpload: React.FC = () => {
                         rowIndex,
                     });
                 } else {
-                    // Validate that the date is actually valid
                     let year: number, month: number, day: number;
                     if (dateStr.match(/^\d{4}\/\d{2}\/\d{2}$/)) {
-                        // YYYY/MM/DD
                         [year, month, day] = dateStr.split('/').map(Number);
                     } else if (dateStr.match(/^([1-9]|[12]\d|3[01])\/([1-9]|1[0-2])\/\d{4}$/)) {
-                        // DD/MM/YYYY
                         [day, month, year] = dateStr.split('/').map(Number);
                     } else {
-                        // M/D/YYYY
                         [month, day, year] = dateStr.split('/').map(Number);
                     }
                     const formattedDate = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
@@ -308,7 +316,6 @@ const SellingPricesUpload: React.FC = () => {
                     }
                 }
 
-                // Stop after collecting a reasonable number of errors
                 if (newErrors.length >= 10) {
                     newErrors.push(
                         t("catalog:errors.tooManyErrors", {
@@ -440,11 +447,7 @@ const SellingPricesUpload: React.FC = () => {
                             className="mt-1 bg-gray-100 dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-100 rounded-sm"
                             disabled={isUploading || !isAdmin}
                         />
-                        <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                            {t("catalog:dateFormatNote", {
-                                defaultValue: "Manufactured Date must be in YYYY/MM/DD, DD/MM/YYYY, or M/D/YYYY format.",
-                            })}
-                        </p>
+
                         <a
                             href="/sample_selling_prices.csv"
                             download

@@ -50,14 +50,14 @@ export const createContactSchema = z.object({
     message: z.string().min(1, "Message is required").max(1000, "Message is too long"),
     privacyConsent: z
         .boolean()
-        .refine((val) => val === true, "Privacy policy consent is required"),
+        .refine((val) => val, "Privacy policy consent is required"),
     userCognitoId: z.string().optional().nullable(),
     // recaptchaToken: z.string().min(1, "reCAPTCHA token is required"),
 })
 
 export const getUserStockHistoryQuerySchema = z.object({
     page: z.string().transform(Number).refine((val) => val > 0, { message: "Page must be greater than 0" }).optional().default("1"),
-    limit: z.string().transform(Number).refine((val) => val > 0, { message: "Limit must be greater than 0" }).optional().default("10"),
+    limit: z.string().transform(Number).refine((val) => val > 0, { message: "Limit must be greater than 0" }).optional().default("20"),
     search: z.string().optional(),
     sortBy: z.enum(["assignedAt", "stocksId", "assignedWeight"]).optional().default("assignedAt"),
     sortOrder: z.enum(["asc", "desc"]).optional().default("desc"),

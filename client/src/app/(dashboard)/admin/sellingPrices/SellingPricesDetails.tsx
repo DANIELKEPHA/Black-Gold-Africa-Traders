@@ -8,7 +8,7 @@ import {
     useGetAuthUserQuery,
     useGetSellingPriceByIdQuery,
     useDeleteSellingPricesMutation,
-    useExportSellingPricesCsvMutation,
+    useExportSellingPricesXlsxMutation,
 } from "@/state/api";
 import { Button } from "@/components/ui/button";
 import { Loader2, Download } from "lucide-react";
@@ -27,7 +27,7 @@ const SellingPricesDetails: React.FC<SellingPricesDetailsProps> = ({ params }) =
         parseInt(params.id)
     );
     const [deleteSellingPrices, { isLoading: isDeleting }] = useDeleteSellingPricesMutation();
-    const [exportSellingPricesCsv, { isLoading: isExporting }] = useExportSellingPricesCsvMutation();
+    const [exportSellingPricesXlsx, { isLoading: isExporting }] = useExportSellingPricesXlsxMutation(); // Updated hook
     const isAdmin = authUser?.userRole === "admin";
 
     const handleDelete = async () => {
@@ -46,10 +46,10 @@ const SellingPricesDetails: React.FC<SellingPricesDetailsProps> = ({ params }) =
 
     const handleDownload = async () => {
         try {
-            await exportSellingPricesCsv({ sellingPriceIds: [parseInt(params.id)] }).unwrap();
-            toast.success(t("catalog:success.csvDownloaded", { defaultValue: "CSV downloaded successfully" }));
+            await exportSellingPricesXlsx({ sellingPriceIds: [parseInt(params.id)] }).unwrap();
+            toast.success(t("catalog:success.xlsxDownloaded", { defaultValue: "XLSX downloaded successfully" })); // Updated message
         } catch (err: any) {
-            toast.error(t("catalog:errors.csvError", { defaultValue: "Failed to export CSV" }));
+            toast.error(t("catalog:errors.xlsxError", { defaultValue: "Failed to export XLSX" })); // Updated message
         }
     };
 
@@ -99,7 +99,7 @@ const SellingPricesDetails: React.FC<SellingPricesDetailsProps> = ({ params }) =
                     </div>
                     <div>
                         <p className="font-semibold">{t("catalog:reprint", { defaultValue: "Reprint" })}:</p>
-                        <p>{sellingPrice.reprint}</p>
+                        <p>{sellingPrice.reprint ?? "No"}</p> {/* Added fallback to "No" */}
                     </div>
                     <div>
                         <p className="font-semibold">{t("catalog:bags", { defaultValue: "Bags" })}:</p>
@@ -107,19 +107,19 @@ const SellingPricesDetails: React.FC<SellingPricesDetailsProps> = ({ params }) =
                     </div>
                     <div>
                         <p className="font-semibold">{t("catalog:netWeight", { defaultValue: "Net Weight" })}:</p>
-                        <p>{sellingPrice.netWeight.toFixed(2)} kg</p>
+                        <p>{sellingPrice.netWeight?.toFixed(2)} kg</p> {/* Added null check */}
                     </div>
                     <div>
                         <p className="font-semibold">{t("catalog:totalWeight", { defaultValue: "Total Weight" })}:</p>
-                        <p>{sellingPrice.totalWeight.toFixed(2)} kg</p>
+                        <p>{sellingPrice.totalWeight?.toFixed(2)} kg</p> {/* Added null check */}
                     </div>
                     <div>
                         <p className="font-semibold">{t("catalog:askingPrice", { defaultValue: "Asking Price" })}:</p>
-                        <p>${sellingPrice.askingPrice.toFixed(2)}</p>
+                        <p>${sellingPrice.askingPrice?.toFixed(2)}</p> {/* Added null check */}
                     </div>
                     <div>
                         <p className="font-semibold">{t("catalog:purchasePrice", { defaultValue: "Purchase Price" })}:</p>
-                        <p>${sellingPrice.purchasePrice.toFixed(2)}</p>
+                        <p>${sellingPrice.purchasePrice?.toFixed(2)}</p> {/* Added null check */}
                     </div>
                     <div>
                         <p className="font-semibold">{t("catalog:producerCountry", { defaultValue: "Producer Country" })}:</p>

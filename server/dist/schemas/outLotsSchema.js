@@ -3,36 +3,9 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.querySchema = exports.csvRecordSchema = exports.createOutLotSchema = void 0;
 const zod_1 = require("zod");
 const client_1 = require("@prisma/client");
+const catalogSchemas_1 = require("./catalogSchemas");
 const teaGradeValues = Object.values(client_1.TeaGrade);
 const brokerValues = Object.values(client_1.Broker);
-const dateFormat = zod_1.z
-    .string()
-    .regex(/^(?:\d{4}\/(0?[1-9]|1[0-2])\/(0?[1-9]|[12]\d|3[01])|(0?[1-9]|[12]\d|3[01])\/(0?[1-9]|1[0-2])\/\d{4}|([1-9]|1[0-2])\/([1-9]|[12]\d|3[01])\/\d{4})$/, 'Invalid date format (expected YYYY/MM/DD, DD/MM/YYYY, or M/D/YYYY)')
-    .transform((val) => {
-    let year, month, day;
-    if (val.match(/^\d{4}\/\d{2}\/\d{2}$/)) {
-        // YYYY/MM/DD
-        [year, month, day] = val.split('/').map(Number);
-    }
-    else if (val.match(/^([1-9]|[12]\d|3[01])\/([1-9]|1[0-2])\/\d{4}$/)) {
-        // DD/MM/YYYY
-        [day, month, year] = val.split('/').map(Number);
-    }
-    else {
-        // M/D/YYYY
-        [month, day, year] = val.split('/').map(Number);
-    }
-    const formattedDate = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-    console.log(`[Schema] Transforming date: ${val} to ${formattedDate}`);
-    // Validate the date is valid
-    const date = new Date(formattedDate);
-    if (isNaN(date.getTime())) {
-        console.error(`[Schema] Invalid date: ${formattedDate}`);
-        throw new Error('Invalid date');
-    }
-    // Return in YYYY-MM-DD format for consistency
-    return formattedDate;
-});
 exports.createOutLotSchema = zod_1.z.object({
     auction: zod_1.z.string().min(1, "Auction is required"),
     lotNo: zod_1.z.string().min(1, "Lot number is required"),
@@ -44,9 +17,7 @@ exports.createOutLotSchema = zod_1.z.object({
     netWeight: zod_1.z.number().min(0, "Net weight must be non-negative"),
     totalWeight: zod_1.z.number().min(0, "Total weight must be non-negative"),
     baselinePrice: zod_1.z.number().min(0, "Baseline price must be non-negative"),
-    manufactureDate: zod_1.z.string().refine((date) => !date || !isNaN(Date.parse(date)), {
-        message: "Invalid manufacture date",
-    }),
+    manufactureDate: catalogSchemas_1.dateFormat.optional(),
     adminCognitoId: zod_1.z.string().min(1, "Admin Cognito ID is required"),
 });
 exports.csvRecordSchema = zod_1.z.object({
@@ -60,7 +31,7 @@ exports.csvRecordSchema = zod_1.z.object({
     invoiceNo: zod_1.z.string().min(1, "Invoice number is required"),
     adminCognitoId: zod_1.z.string().uuid("Admin Cognito ID must be a valid UUID"),
     baselinePrice: zod_1.z.coerce.number().min(0).optional(),
-    manufactureDate: dateFormat,
+    manufactureDate: catalogSchemas_1.dateFormat.optional(),
     grade: zod_1.z.enum(teaGradeValues, { message: "Invalid tea grade" }),
 }).strict();
 exports.querySchema = zod_1.z.object({
@@ -76,9 +47,7 @@ exports.querySchema = zod_1.z.object({
     netWeight: zod_1.z.coerce.number().min(0).optional(),
     totalWeight: zod_1.z.coerce.number().min(0).optional(),
     baselinePrice: zod_1.z.coerce.number().min(0).optional(),
-    manufactureDate: zod_1.z.string().refine((date) => !date || !isNaN(Date.parse(date)), {
-        message: "Invalid manufacture date",
-    }).optional(),
+    manufactureDate: catalogSchemas_1.dateFormat.optional(),
     search: zod_1.z.string().optional(),
     ids: zod_1.z.array(zod_1.z.number().int()).optional(),
 });
