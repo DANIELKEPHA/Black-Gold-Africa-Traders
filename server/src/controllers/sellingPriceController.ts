@@ -94,21 +94,81 @@ const buildWhereConditions = (
     }
 
     const filterMap: Record<string, (value: any) => void> = {
-        favoriteIds: (value) => { if (value?.length) conditions.id = { in: value }; },
-        lotNo: (value) => { if (value) conditions.lotNo = { equals: value }; },
-        sellingMark: (value) => { if (value) conditions.sellingMark = { equals: value }; },
-        bags: (value) => { if (value) conditions.bags = value; },
-        totalWeight: (value) => { if (value) conditions.totalWeight = value; },
-        netWeight: (value) => { if (value) conditions.netWeight = value; },
-        askingPrice: (value) => { if (value) conditions.askingPrice = value; },
-        purchasePrice: (value) => { if (value) conditions.purchasePrice = value; },
-        producerCountry: (value) => { if (value) conditions.producerCountry = { equals: value }; },
-        manufactureDate: (value) => { if (value) conditions.manufactureDate = new Date(value); },
-        saleCode: (value) => { if (value) conditions.saleCode = value; },
-        category: (value) => { if (value && value !== "any") conditions.category = value as TeaCategory; },
-        grade: (value) => { if (value && value !== "any") conditions.grade = value as TeaGrade; },
-        broker: (value) => { if (value && value !== "any") conditions.broker = value as Broker; },
-        invoiceNo: (value) => { if (value) conditions.invoiceNo = { equals: value }; },
+        favoriteIds: (value) => {
+            if (value?.length) conditions.id = { in: value };
+        },
+        lotNo: (value) => {
+            if (value) conditions.lotNo = { equals: value };
+        },
+        sellingMark: (value) => {
+            if (value) conditions.sellingMark = { equals: value };
+        },
+        bags: (value) => {
+            if (value !== undefined) {
+                const parsed = z.coerce.number().int().positive('Bags must be a positive integer').safeParse(value);
+                if (!parsed.success) {
+                    throw new Error(`Invalid bags: ${value}. Must be a positive integer`);
+                }
+                conditions.bags = parsed.data;
+            }
+        },
+        totalWeight: (value) => {
+            if (value !== undefined) {
+                const parsed = z.coerce.number().positive('Total weight must be positive').safeParse(value);
+                if (!parsed.success) {
+                    throw new Error(`Invalid totalWeight: ${value}. Must be a positive number`);
+                }
+                conditions.totalWeight = parsed.data;
+            }
+        },
+        netWeight: (value) => {
+            if (value !== undefined) {
+                const parsed = z.coerce.number().positive('Net weight must be positive').safeParse(value);
+                if (!parsed.success) {
+                    throw new Error(`Invalid netWeight: ${value}. Must be a positive number`);
+                }
+                conditions.netWeight = parsed.data;
+            }
+        },
+        askingPrice: (value) => {
+            if (value !== undefined) {
+                const parsed = z.coerce.number().positive('Asking price must be positive').safeParse(value);
+                if (!parsed.success) {
+                    throw new Error(`Invalid askingPrice: ${value}. Must be a positive number`);
+                }
+                conditions.askingPrice = parsed.data;
+            }
+        },
+        purchasePrice: (value) => {
+            if (value !== undefined) {
+                const parsed = z.coerce.number().positive('Purchase price must be positive').safeParse(value);
+                if (!parsed.success) {
+                    throw new Error(`Invalid purchasePrice: ${value}. Must be a positive number`);
+                }
+                conditions.purchasePrice = parsed.data;
+            }
+        },
+        producerCountry: (value) => {
+            if (value) conditions.producerCountry = { equals: value };
+        },
+        manufactureDate: (value) => {
+            if (value) conditions.manufactureDate = new Date(value);
+        },
+        saleCode: (value) => {
+            if (value) conditions.saleCode = value;
+        },
+        category: (value) => {
+            if (value && value !== "any") conditions.category = value as TeaCategory;
+        },
+        grade: (value) => {
+            if (value && value !== "any") conditions.grade = value as TeaGrade;
+        },
+        broker: (value) => {
+            if (value && value !== "any") conditions.broker = value as Broker;
+        },
+        invoiceNo: (value) => {
+            if (value) conditions.invoiceNo = { equals: value };
+        },
         reprint: (value) => {
             if (value !== undefined) {
                 const parsed = reprintSchema.safeParse(value);
@@ -372,18 +432,7 @@ export const createSellingPrice = async (req: Request, res: Response): Promise<v
             return;
         }
 
-        // Define the type for newSellingPrice with the admin relation
-        type SellingPriceWithAdmin = SellingPrice & {
-            admin: {
-                id: number;
-                adminCognitoId: string;
-                name: string | null;
-                email: string | null;
-                phoneNumber: string | null;
-            } | null;
-        };
-
-        const newSellingPrice: SellingPriceWithAdmin = await prisma.sellingPrice.create({
+        const newSellingPrice = await prisma.sellingPrice.create({
             data: {
                 broker: sellingPriceData.data.broker as Broker,
                 sellingMark: sellingPriceData.data.sellingMark,
@@ -413,7 +462,19 @@ export const createSellingPrice = async (req: Request, res: Response): Promise<v
                     },
                 },
             },
-        });
+        }) as Prisma.SellingPriceGetPayload<{
+            include: {
+                admin: {
+                    select: {
+                        id: true;
+                        adminCognitoId: true;
+                        name: true;
+                        email: true;
+                        phoneNumber: true;
+                    };
+                };
+            };
+        }>;
 
         const sellingPriceWithAdmin = {
             ...newSellingPrice,

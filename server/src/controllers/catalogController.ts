@@ -58,11 +58,11 @@ export const serializeCatalog = (
     lotNo: catalog.lotNo,
     sellingMark: catalog.sellingMark,
     bags: catalog.bags,
-    totalWeight: Number(catalog.totalWeight),
-    netWeight: Number(catalog.netWeight),
+    totalWeight: catalog.totalWeight,
+    netWeight: catalog.netWeight,
     invoiceNo: catalog.invoiceNo,
     saleCode: catalog.saleCode,
-    askingPrice: Number(catalog.askingPrice),
+    askingPrice: catalog.askingPrice,
     adminCognitoId: catalog.adminCognitoId,
     producerCountry: catalog.producerCountry ?? null,
     manufactureDate: catalog.manufactureDate.toISOString(),
@@ -72,7 +72,6 @@ export const serializeCatalog = (
     reprint: catalog.reprint,
     admin: catalog.admin ?? null,
 });
-
 
 // Build Where Conditions
 const buildWhereConditions = (
@@ -106,16 +105,40 @@ const buildWhereConditions = (
             if (value) conditions.sellingMark = { equals: value };
         },
         bags: (value) => {
-            if (value) conditions.bags = value;
+            if (value !== undefined) {
+                const parsed = z.coerce.number().int().positive('Bags must be a positive integer').safeParse(value);
+                if (!parsed.success) {
+                    throw new Error(`Invalid bags: ${value}. Must be a positive integer`);
+                }
+                conditions.bags = parsed.data;
+            }
         },
         totalWeight: (value) => {
-            if (value) conditions.totalWeight = value;
+            if (value !== undefined) {
+                const parsed = z.coerce.number().positive('Total weight must be positive').safeParse(value);
+                if (!parsed.success) {
+                    throw new Error(`Invalid totalWeight: ${value}. Must be a positive number`);
+                }
+                conditions.totalWeight = parsed.data;
+            }
         },
         netWeight: (value) => {
-            if (value) conditions.netWeight = value;
+            if (value !== undefined) {
+                const parsed = z.coerce.number().positive('Net weight must be positive').safeParse(value);
+                if (!parsed.success) {
+                    throw new Error(`Invalid netWeight: ${value}. Must be a positive number`);
+                }
+                conditions.netWeight = parsed.data;
+            }
         },
         askingPrice: (value) => {
-            if (value) conditions.askingPrice = value;
+            if (value !== undefined) {
+                const parsed = z.coerce.number().positive('Asking price must be positive').safeParse(value);
+                if (!parsed.success) {
+                    throw new Error(`Invalid askingPrice: ${value}. Must be a positive number`);
+                }
+                conditions.askingPrice = parsed.data;
+            }
         },
         producerCountry: (value) => {
             if (value) conditions.producerCountry = { equals: value };
@@ -319,8 +342,8 @@ export const getCatalogFilterOptions = async (req: Request, res: Response): Prom
             sellingMarks,
             invoiceNos,
             askingPrice: {
-                min: aggregates._min.askingPrice !== null ? Number(aggregates._min.askingPrice) : 0,
-                max: aggregates._max.askingPrice !== null ? Number(aggregates._max.askingPrice) : 1000,
+                min: aggregates._min.askingPrice !== null ? aggregates._min.askingPrice : 0,
+                max: aggregates._max.askingPrice !== null ? aggregates._max.askingPrice : 1000,
             },
             manufactureDate: {
                 min: aggregates._min.manufactureDate?.toISOString() ?? "2020-01-01T00:00:00Z",
