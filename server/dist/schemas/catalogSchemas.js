@@ -3,7 +3,6 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.filtersStateSchema = exports.updateSchema = exports.csvRecordSchema = exports.createCatalogSchema = exports.querySchema = exports.dateFormat = exports.reprintSchema = void 0;
 const zod_1 = require("zod");
 const client_1 = require("@prisma/client");
-const shipmentSchemas_1 = require("./shipmentSchemas");
 const teaCategoryValues = Object.values(client_1.TeaCategory);
 const teaGradeValues = Object.values(client_1.TeaGrade);
 const brokerValues = Object.values(client_1.Broker);
@@ -74,8 +73,6 @@ exports.querySchema = zod_1.z
     reprint: exports.reprintSchema,
     search: zod_1.z.string().min(1, 'Search term must not be empty').optional(),
     ids: zod_1.z.array(zod_1.z.number().int().positive('IDs must be positive integers')).optional(),
-    userCognitoId: shipmentSchemas_1.cognitoIdSchema.optional(),
-    adminCognitoId: shipmentSchemas_1.cognitoIdSchema.optional(),
 })
     .strict();
 exports.createCatalogSchema = zod_1.z.object({

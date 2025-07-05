@@ -40,6 +40,7 @@ const exceljs_1 = __importDefault(require("exceljs"));
 const sellingPricesSchema_1 = require("../schemas/sellingPricesSchema");
 const controllerUtils_1 = require("../utils/controllerUtils");
 const client_2 = require("@prisma/client");
+const catalogSchemas_1 = require("../schemas/catalogSchemas");
 const prisma = new client_2.PrismaClient();
 // Schema for CSV upload request
 const csvUploadSchema = zod_1.z.object({
@@ -117,10 +118,11 @@ const buildWhereConditions = (params, userId, role) => {
             conditions.invoiceNo = { equals: value }; },
         reprint: (value) => {
             if (value !== undefined) {
-                if (value !== "No" && isNaN(Number(value))) {
-                    throw new Error(`Invalid reprint: ${value}. Must be "No" or a number`);
+                const parsed = catalogSchemas_1.reprintSchema.safeParse(value);
+                if (!parsed.success) {
+                    throw new Error(`Invalid reprint: ${value}. Must be "No" or a positive integer`);
                 }
-                conditions.reprint = value;
+                conditions.reprint = parsed.data;
             }
         },
     };
@@ -249,7 +251,7 @@ const getSellingPrices = (req, res) => __awaiter(void 0, void 0, void 0, functio
 });
 exports.getSellingPrices = getSellingPrices;
 const getSellingPricesFilterOptions = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m, _o, _p;
+    var _a, _b, _c, _d, _e, _f;
     try {
         const [distinctValues, aggregates] = yield Promise.all([
             prisma.sellingPrice.findMany({
@@ -285,15 +287,27 @@ const getSellingPricesFilterOptions = (req, res) => __awaiter(void 0, void 0, vo
             brokers,
             sellingMarks,
             invoiceNos,
-            askingPrice: { min: (_a = Number(aggregates._min.askingPrice)) !== null && _a !== void 0 ? _a : 0, max: (_b = Number(aggregates._max.askingPrice)) !== null && _b !== void 0 ? _b : 1000 },
-            purchasePrice: { min: (_c = Number(aggregates._min.purchasePrice)) !== null && _c !== void 0 ? _c : 0, max: (_d = Number(aggregates._max.purchasePrice)) !== null && _d !== void 0 ? _d : 1000 },
-            manufactureDate: {
-                min: (_f = (_e = aggregates._min.manufactureDate) === null || _e === void 0 ? void 0 : _e.toISOString()) !== null && _f !== void 0 ? _f : "2020-01-01T00:00:00Z",
-                max: (_h = (_g = aggregates._max.manufactureDate) === null || _g === void 0 ? void 0 : _g.toISOString()) !== null && _h !== void 0 ? _h : new Date().toISOString(),
+            askingPrice: {
+                min: aggregates._min.askingPrice !== null ? Number(aggregates._min.askingPrice) : 0,
+                max: aggregates._max.askingPrice !== null ? Number(aggregates._max.askingPrice) : 1000,
             },
-            bags: { min: (_j = aggregates._min.bags) !== null && _j !== void 0 ? _j : 0, max: (_k = aggregates._max.bags) !== null && _k !== void 0 ? _k : 10000 },
-            totalWeight: { min: (_l = Number(aggregates._min.totalWeight)) !== null && _l !== void 0 ? _l : 0, max: (_m = Number(aggregates._max.totalWeight)) !== null && _m !== void 0 ? _m : 100000 },
-            netWeight: { min: (_o = Number(aggregates._min.netWeight)) !== null && _o !== void 0 ? _o : 0, max: (_p = Number(aggregates._max.netWeight)) !== null && _p !== void 0 ? _p : 1000 },
+            purchasePrice: {
+                min: aggregates._min.purchasePrice !== null ? Number(aggregates._min.purchasePrice) : 0,
+                max: aggregates._max.purchasePrice !== null ? Number(aggregates._max.purchasePrice) : 1000,
+            },
+            manufactureDate: {
+                min: (_b = (_a = aggregates._min.manufactureDate) === null || _a === void 0 ? void 0 : _a.toISOString()) !== null && _b !== void 0 ? _b : "2020-01-01T00:00:00Z",
+                max: (_d = (_c = aggregates._max.manufactureDate) === null || _c === void 0 ? void 0 : _c.toISOString()) !== null && _d !== void 0 ? _d : new Date().toISOString(),
+            },
+            bags: { min: (_e = aggregates._min.bags) !== null && _e !== void 0 ? _e : 0, max: (_f = aggregates._max.bags) !== null && _f !== void 0 ? _f : 10000 },
+            totalWeight: {
+                min: aggregates._min.totalWeight !== null ? Number(aggregates._min.totalWeight) : 0,
+                max: aggregates._max.totalWeight !== null ? Number(aggregates._max.totalWeight) : 100000,
+            },
+            netWeight: {
+                min: aggregates._min.netWeight !== null ? Number(aggregates._min.netWeight) : 0,
+                max: aggregates._max.netWeight !== null ? Number(aggregates._max.netWeight) : 1000,
+            },
         });
     }
     catch (error) {
@@ -329,7 +343,7 @@ const createSellingPrice = (req, res) => __awaiter(void 0, void 0, void 0, funct
                 invoiceNo: sellingPriceData.data.invoiceNo,
                 saleCode: sellingPriceData.data.saleCode,
                 askingPrice: sellingPriceData.data.askingPrice,
-                purchasePrice: sellingPriceData.data.purchasePrice, // Can be null
+                purchasePrice: sellingPriceData.data.purchasePrice,
                 adminCognitoId: sellingPriceData.data.adminCognitoId,
                 producerCountry: sellingPriceData.data.producerCountry,
                 manufactureDate: new Date(sellingPriceData.data.manufactureDate),

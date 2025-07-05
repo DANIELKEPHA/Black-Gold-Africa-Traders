@@ -7,7 +7,7 @@ import ExcelJS from "exceljs";
 import {
     createCatalogSchema,
     csvRecordSchema,
-    querySchema,
+    querySchema, reprintSchema,
 } from "../schemas/catalogSchemas";
 import { authenticateUser } from "../utils/controllerUtils";
 import { PrismaClient, Prisma } from "@prisma/client";
@@ -140,10 +140,11 @@ const buildWhereConditions = (
         },
         reprint: (value) => {
             if (value !== undefined) {
-                if (value !== "No" && isNaN(Number(value))) {
-                    throw new Error(`Invalid reprint: ${value}. Must be "No" or a number`);
+                const parsed = reprintSchema.safeParse(value);
+                if (!parsed.success) {
+                    throw new Error(`Invalid reprint: ${value}. Must be "No" or a positive integer`);
                 }
-                conditions.reprint = value === "No" ? value : String(value); // Convert number to string
+                conditions.reprint = parsed.data;
             }
         },
     };
@@ -327,12 +328,12 @@ export const getCatalogFilterOptions = async (req: Request, res: Response): Prom
             },
             bags: { min: aggregates._min.bags ?? 0, max: aggregates._max.bags ?? 10000 },
             totalWeight: {
-                min: aggregates._min.totalWeight !== null ? Number(aggregates._min.totalWeight) : 0,
-                max: aggregates._max.totalWeight !== null ? Number(aggregates._max.totalWeight) : 100000,
+                min: aggregates._min.totalWeight !== null ? aggregates._min.totalWeight : 0,
+                max: aggregates._max.totalWeight !== null ? aggregates._max.totalWeight : 100000,
             },
             netWeight: {
-                min: aggregates._min.netWeight !== null ? Number(aggregates._min.netWeight) : 0,
-                max: aggregates._max.netWeight !== null ? Number(aggregates._max.netWeight) : 1000,
+                min: aggregates._min.netWeight !== null ? aggregates._min.netWeight : 0,
+                max: aggregates._max.netWeight !== null ? aggregates._max.netWeight : 1000,
             },
         });
     } catch (error) {
@@ -361,18 +362,7 @@ export const createCatalog = async (req: Request, res: Response): Promise<void> 
             return;
         }
 
-        // Define the type for newCatalog with the admin relation
-        type CatalogWithAdmin = Catalog & {
-            admin: {
-                id: number;
-                adminCognitoId: string;
-                name: string | null;
-                email: string | null;
-                phoneNumber: string | null;
-            } | null;
-        };
-
-        const newCatalog: CatalogWithAdmin = await prisma.catalog.create({
+        const newCatalog = await prisma.catalog.create({
             data: {
                 broker: catalogData.data.broker as Broker,
                 sellingMark: catalogData.data.sellingMark,
@@ -401,9 +391,20 @@ export const createCatalog = async (req: Request, res: Response): Promise<void> 
                     },
                 },
             },
-        });
+        }) as Prisma.CatalogGetPayload<{
+            include: {
+                admin: {
+                    select: {
+                        id: true;
+                        adminCognitoId: true;
+                        name: true;
+                        email: true;
+                        phoneNumber: true;
+                    };
+                };
+            };
+        }>;
 
-        // Normalize admin property for serializeCatalog
         const catalogWithAdmin = {
             ...newCatalog,
             admin: newCatalog.admin ?? undefined,
@@ -800,12 +801,13 @@ export async function uploadCatalogsCsv(req: Request, res: Response): Promise<vo
                     totalWeight: record.totalWeight ? Number(record.totalWeight) : undefined,
                     netWeight: record.netWeight ? Number(record.netWeight) : undefined,
                     askingPrice: record.askingPrice ? Number(record.askingPrice) : undefined,
-                    reprint: record.reprint !== undefined ? String(record.reprint) : undefined,
+                    reprint: record.reprint,
                     saleCode: record.saleCode,
                     manufactureDate: record.manufactureDate,
                     category: record.category,
                     grade: record.grade,
                     broker: record.broker,
+                    adminCognitoId: authenticatedUser.userId,
                 };
 
                 if (parsedRecord.reprint && parsedRecord.reprint !== "No" && isNaN(Number(parsedRecord.reprint))) {

@@ -7,6 +7,7 @@ import ExcelJS from "exceljs";
 import { createSellingPriceSchema, csvRecordSchema, querySchema } from "../schemas/sellingPricesSchema";
 import { authenticateUser } from "../utils/controllerUtils";
 import { PrismaClient, Prisma } from "@prisma/client";
+import {reprintSchema} from "../schemas/catalogSchemas";
 
 const prisma = new PrismaClient();
 
@@ -110,10 +111,11 @@ const buildWhereConditions = (
         invoiceNo: (value) => { if (value) conditions.invoiceNo = { equals: value }; },
         reprint: (value) => {
             if (value !== undefined) {
-                if (value !== "No" && isNaN(Number(value))) {
-                    throw new Error(`Invalid reprint: ${value}. Must be "No" or a number`);
+                const parsed = reprintSchema.safeParse(value);
+                if (!parsed.success) {
+                    throw new Error(`Invalid reprint: ${value}. Must be "No" or a positive integer`);
                 }
-                conditions.reprint = value === "No" ? value : String(value); // Convert number to string
+                conditions.reprint = parsed.data;
             }
         },
     };

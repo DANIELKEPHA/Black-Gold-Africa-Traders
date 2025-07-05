@@ -142,10 +142,11 @@ const buildWhereConditions = (params, userId, role) => {
         },
         reprint: (value) => {
             if (value !== undefined) {
-                if (value !== "No" && isNaN(Number(value))) {
-                    throw new Error(`Invalid reprint: ${value}. Must be "No" or a number`);
+                const parsed = catalogSchemas_1.reprintSchema.safeParse(value);
+                if (!parsed.success) {
+                    throw new Error(`Invalid reprint: ${value}. Must be "No" or a positive integer`);
                 }
-                conditions.reprint = value;
+                conditions.reprint = parsed.data;
             }
         },
     };
@@ -248,7 +249,7 @@ const getCatalogs = (req, res) => __awaiter(void 0, void 0, void 0, function* ()
 });
 exports.getCatalogs = getCatalogs;
 const getCatalogFilterOptions = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m;
+    var _a, _b, _c, _d, _e, _f;
     try {
         const [distinctValues, aggregates] = yield Promise.all([
             prisma.catalog.findMany({
@@ -284,14 +285,23 @@ const getCatalogFilterOptions = (req, res) => __awaiter(void 0, void 0, void 0, 
             brokers,
             sellingMarks,
             invoiceNos,
-            askingPrice: { min: (_a = Number(aggregates._min.askingPrice)) !== null && _a !== void 0 ? _a : 0, max: (_b = Number(aggregates._max.askingPrice)) !== null && _b !== void 0 ? _b : 1000 },
-            manufactureDate: {
-                min: (_d = (_c = aggregates._min.manufactureDate) === null || _c === void 0 ? void 0 : _c.toISOString()) !== null && _d !== void 0 ? _d : "2020-01-01T00:00:00Z",
-                max: (_f = (_e = aggregates._max.manufactureDate) === null || _e === void 0 ? void 0 : _e.toISOString()) !== null && _f !== void 0 ? _f : new Date().toISOString(),
+            askingPrice: {
+                min: aggregates._min.askingPrice !== null ? Number(aggregates._min.askingPrice) : 0,
+                max: aggregates._max.askingPrice !== null ? Number(aggregates._max.askingPrice) : 1000,
             },
-            bags: { min: (_g = aggregates._min.bags) !== null && _g !== void 0 ? _g : 0, max: (_h = aggregates._max.bags) !== null && _h !== void 0 ? _h : 10000 },
-            totalWeight: { min: (_j = Number(aggregates._min.totalWeight)) !== null && _j !== void 0 ? _j : 0, max: (_k = Number(aggregates._max.totalWeight)) !== null && _k !== void 0 ? _k : 100000 },
-            netWeight: { min: (_l = Number(aggregates._min.netWeight)) !== null && _l !== void 0 ? _l : 0, max: (_m = Number(aggregates._max.netWeight)) !== null && _m !== void 0 ? _m : 1000 },
+            manufactureDate: {
+                min: (_b = (_a = aggregates._min.manufactureDate) === null || _a === void 0 ? void 0 : _a.toISOString()) !== null && _b !== void 0 ? _b : "2020-01-01T00:00:00Z",
+                max: (_d = (_c = aggregates._max.manufactureDate) === null || _c === void 0 ? void 0 : _c.toISOString()) !== null && _d !== void 0 ? _d : new Date().toISOString(),
+            },
+            bags: { min: (_e = aggregates._min.bags) !== null && _e !== void 0 ? _e : 0, max: (_f = aggregates._max.bags) !== null && _f !== void 0 ? _f : 10000 },
+            totalWeight: {
+                min: aggregates._min.totalWeight !== null ? aggregates._min.totalWeight : 0,
+                max: aggregates._max.totalWeight !== null ? aggregates._max.totalWeight : 100000,
+            },
+            netWeight: {
+                min: aggregates._min.netWeight !== null ? aggregates._min.netWeight : 0,
+                max: aggregates._max.netWeight !== null ? aggregates._max.netWeight : 1000,
+            },
         });
     }
     catch (error) {
@@ -345,7 +355,6 @@ const createCatalog = (req, res) => __awaiter(void 0, void 0, void 0, function* 
                 },
             },
         });
-        // Ensure admin is typed correctly for serializeCatalog
         const catalogWithAdmin = Object.assign(Object.assign({}, newCatalog), { admin: (_b = newCatalog.admin) !== null && _b !== void 0 ? _b : undefined });
         res.status(201).json({ data: (0, exports.serializeCatalog)(catalogWithAdmin) });
     }
@@ -703,7 +712,7 @@ function uploadCatalogsCsv(req, res) {
                         if (!record.lotNo || !record.saleCode) {
                             throw new Error("Missing required fields: lotNo or saleCode");
                         }
-                        const parsedRecord = Object.assign(Object.assign({}, record), { bags: record.bags ? Number(record.bags) : undefined, totalWeight: record.totalWeight ? Number(record.totalWeight) : undefined, netWeight: record.netWeight ? Number(record.netWeight) : undefined, askingPrice: record.askingPrice ? Number(record.askingPrice) : undefined, reprint: record.reprint !== undefined ? String(record.reprint) : undefined, saleCode: record.saleCode, manufactureDate: record.manufactureDate, category: record.category, grade: record.grade, broker: record.broker });
+                        const parsedRecord = Object.assign(Object.assign({}, record), { bags: record.bags ? Number(record.bags) : undefined, totalWeight: record.totalWeight ? Number(record.totalWeight) : undefined, netWeight: record.netWeight ? Number(record.netWeight) : undefined, askingPrice: record.askingPrice ? Number(record.askingPrice) : undefined, reprint: record.reprint, saleCode: record.saleCode, manufactureDate: record.manufactureDate, category: record.category, grade: record.grade, broker: record.broker, adminCognitoId: authenticatedUser.userId });
                         if (parsedRecord.reprint && parsedRecord.reprint !== "No" && isNaN(Number(parsedRecord.reprint))) {
                             throw new Error(`Invalid reprint value: ${parsedRecord.reprint}. Must be "No" or a number`);
                         }

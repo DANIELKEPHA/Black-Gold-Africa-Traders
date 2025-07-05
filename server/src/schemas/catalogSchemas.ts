@@ -73,8 +73,6 @@ export const querySchema = z
         reprint: reprintSchema,
         search: z.string().min(1, 'Search term must not be empty').optional(),
         ids: z.array(z.number().int().positive('IDs must be positive integers')).optional(),
-        userCognitoId: cognitoIdSchema.optional(),
-        adminCognitoId: cognitoIdSchema.optional(),
     })
     .strict();
 
