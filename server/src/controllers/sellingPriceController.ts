@@ -113,7 +113,7 @@ const buildWhereConditions = (
                 if (value !== "No" && isNaN(Number(value))) {
                     throw new Error(`Invalid reprint: ${value}. Must be "No" or a number`);
                 }
-                conditions.reprint = value;
+                conditions.reprint = value === "No" ? value : String(value); // Convert number to string
             }
         },
     };
@@ -321,15 +321,27 @@ export const getSellingPricesFilterOptions = async (req: Request, res: Response)
             brokers,
             sellingMarks,
             invoiceNos,
-            askingPrice: { min: Number(aggregates._min.askingPrice) ?? 0, max: Number(aggregates._max.askingPrice) ?? 1000 },
-            purchasePrice: { min: Number(aggregates._min.purchasePrice) ?? 0, max: Number(aggregates._max.purchasePrice) ?? 1000 },
+            askingPrice: {
+                min: aggregates._min.askingPrice !== null ? Number(aggregates._min.askingPrice) : 0,
+                max: aggregates._max.askingPrice !== null ? Number(aggregates._max.askingPrice) : 1000,
+            },
+            purchasePrice: {
+                min: aggregates._min.purchasePrice !== null ? Number(aggregates._min.purchasePrice) : 0,
+                max: aggregates._max.purchasePrice !== null ? Number(aggregates._max.purchasePrice) : 1000,
+            },
             manufactureDate: {
                 min: aggregates._min.manufactureDate?.toISOString() ?? "2020-01-01T00:00:00Z",
                 max: aggregates._max.manufactureDate?.toISOString() ?? new Date().toISOString(),
             },
             bags: { min: aggregates._min.bags ?? 0, max: aggregates._max.bags ?? 10000 },
-            totalWeight: { min: Number(aggregates._min.totalWeight) ?? 0, max: Number(aggregates._max.totalWeight) ?? 100000 },
-            netWeight: { min: Number(aggregates._min.netWeight) ?? 0, max: Number(aggregates._max.netWeight) ?? 1000 },
+            totalWeight: {
+                min: aggregates._min.totalWeight !== null ? Number(aggregates._min.totalWeight) : 0,
+                max: aggregates._max.totalWeight !== null ? Number(aggregates._max.totalWeight) : 100000,
+            },
+            netWeight: {
+                min: aggregates._min.netWeight !== null ? Number(aggregates._min.netWeight) : 0,
+                max: aggregates._max.netWeight !== null ? Number(aggregates._max.netWeight) : 1000,
+            },
         });
     } catch (error) {
         res.status(500).json({
@@ -350,7 +362,7 @@ export const createSellingPrice = async (req: Request, res: Response): Promise<v
         const sellingPriceData = createSellingPriceSchema.safeParse({
             ...req.body,
             adminCognitoId: authenticatedUser.userId,
-            purchasePrice: req.body.purchasePrice || null, // Optional field
+            purchasePrice: req.body.purchasePrice || null,
         });
 
         if (!sellingPriceData.success) {
@@ -358,7 +370,18 @@ export const createSellingPrice = async (req: Request, res: Response): Promise<v
             return;
         }
 
-        const newSellingPrice = await prisma.sellingPrice.create({
+        // Define the type for newSellingPrice with the admin relation
+        type SellingPriceWithAdmin = SellingPrice & {
+            admin: {
+                id: number;
+                adminCognitoId: string;
+                name: string | null;
+                email: string | null;
+                phoneNumber: string | null;
+            } | null;
+        };
+
+        const newSellingPrice: SellingPriceWithAdmin = await prisma.sellingPrice.create({
             data: {
                 broker: sellingPriceData.data.broker as Broker,
                 sellingMark: sellingPriceData.data.sellingMark,
@@ -370,7 +393,7 @@ export const createSellingPrice = async (req: Request, res: Response): Promise<v
                 invoiceNo: sellingPriceData.data.invoiceNo,
                 saleCode: sellingPriceData.data.saleCode,
                 askingPrice: sellingPriceData.data.askingPrice,
-                purchasePrice: sellingPriceData.data.purchasePrice, // Can be null
+                purchasePrice: sellingPriceData.data.purchasePrice,
                 adminCognitoId: sellingPriceData.data.adminCognitoId,
                 producerCountry: sellingPriceData.data.producerCountry,
                 manufactureDate: new Date(sellingPriceData.data.manufactureDate),

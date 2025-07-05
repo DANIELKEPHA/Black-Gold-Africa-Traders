@@ -143,7 +143,7 @@ const buildWhereConditions = (
                 if (value !== "No" && isNaN(Number(value))) {
                     throw new Error(`Invalid reprint: ${value}. Must be "No" or a number`);
                 }
-                conditions.reprint = value;
+                conditions.reprint = value === "No" ? value : String(value); // Convert number to string
             }
         },
     };
@@ -317,14 +317,23 @@ export const getCatalogFilterOptions = async (req: Request, res: Response): Prom
             brokers,
             sellingMarks,
             invoiceNos,
-            askingPrice: { min: Number(aggregates._min.askingPrice) ?? 0, max: Number(aggregates._max.askingPrice) ?? 1000 },
+            askingPrice: {
+                min: aggregates._min.askingPrice !== null ? Number(aggregates._min.askingPrice) : 0,
+                max: aggregates._max.askingPrice !== null ? Number(aggregates._max.askingPrice) : 1000,
+            },
             manufactureDate: {
                 min: aggregates._min.manufactureDate?.toISOString() ?? "2020-01-01T00:00:00Z",
                 max: aggregates._max.manufactureDate?.toISOString() ?? new Date().toISOString(),
             },
             bags: { min: aggregates._min.bags ?? 0, max: aggregates._max.bags ?? 10000 },
-            totalWeight: { min: Number(aggregates._min.totalWeight) ?? 0, max: Number(aggregates._max.totalWeight) ?? 100000 },
-            netWeight: { min: Number(aggregates._min.netWeight) ?? 0, max: Number(aggregates._max.netWeight) ?? 1000 },
+            totalWeight: {
+                min: aggregates._min.totalWeight !== null ? Number(aggregates._min.totalWeight) : 0,
+                max: aggregates._max.totalWeight !== null ? Number(aggregates._max.totalWeight) : 100000,
+            },
+            netWeight: {
+                min: aggregates._min.netWeight !== null ? Number(aggregates._min.netWeight) : 0,
+                max: aggregates._max.netWeight !== null ? Number(aggregates._max.netWeight) : 1000,
+            },
         });
     } catch (error) {
         res.status(500).json({
@@ -352,7 +361,18 @@ export const createCatalog = async (req: Request, res: Response): Promise<void> 
             return;
         }
 
-        const newCatalog = await prisma.catalog.create({
+        // Define the type for newCatalog with the admin relation
+        type CatalogWithAdmin = Catalog & {
+            admin: {
+                id: number;
+                adminCognitoId: string;
+                name: string | null;
+                email: string | null;
+                phoneNumber: string | null;
+            } | null;
+        };
+
+        const newCatalog: CatalogWithAdmin = await prisma.catalog.create({
             data: {
                 broker: catalogData.data.broker as Broker,
                 sellingMark: catalogData.data.sellingMark,
@@ -383,7 +403,7 @@ export const createCatalog = async (req: Request, res: Response): Promise<void> 
             },
         });
 
-        // Ensure admin is typed correctly for serializeCatalog
+        // Normalize admin property for serializeCatalog
         const catalogWithAdmin = {
             ...newCatalog,
             admin: newCatalog.admin ?? undefined,
