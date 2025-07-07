@@ -733,10 +733,6 @@ export async function uploadSellingPricesCsv(req: Request, res: Response): Promi
             return;
         }
 
-        const reprintSchema = z.union([
-            z.literal("No"),
-            z.string().regex(/^[1-9]\d*$/, { message: "Reprint must be 'No' or a positive integer" }),
-        ]).optional();
         const csvRecordSchema = z.object({
             broker: z.enum(Array.from(brokers) as [string, ...string[]], { message: "Invalid broker value" }),
             sellingMark: z.string().min(1, "Selling mark is required"),
@@ -764,7 +760,7 @@ export async function uploadSellingPricesCsv(req: Request, res: Response): Promi
                     netWeight: record.netWeight ? Number(record.netWeight) : undefined,
                     askingPrice: record.askingPrice ? Number(record.askingPrice) : undefined,
                     purchasePrice: record.purchasePrice ? Number(record.purchasePrice) : undefined,
-                    reprint: record.reprint !== undefined && record.reprint.trim().toLowerCase() !== "no" ? record.reprint : "No",
+                    reprint: record.reprint, // Pass raw reprint value to schema for validation
                     manufactureDate: record.manufactureDate,
                 };
 
@@ -779,7 +775,7 @@ export async function uploadSellingPricesCsv(req: Request, res: Response): Promi
                         broker: data.broker as Broker,
                         sellingMark: data.sellingMark,
                         lotNo: data.lotNo,
-                        reprint: data.reprint === undefined || data.reprint.trim().toLowerCase() === "no" ? "No" : data.reprint,
+                        reprint: data.reprint, // Use validated reprint value
                         bags: data.bags,
                         totalWeight: data.totalWeight,
                         netWeight: data.netWeight,

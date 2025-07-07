@@ -658,15 +658,11 @@ function uploadSellingPricesCsv(req, res) {
                 res.status(400).json({ message: "Invalid CSV format", details: error instanceof Error ? error.message : String(error) });
                 return;
             }
-            const reprintSchema = zod_1.z.union([
-                zod_1.z.literal("No"),
-                zod_1.z.string().regex(/^[1-9]\d*$/, { message: "Reprint must be 'No' or a positive integer" }),
-            ]).optional();
             const csvRecordSchema = zod_1.z.object({
                 broker: zod_1.z.enum(Array.from(brokers), { message: "Invalid broker value" }),
                 sellingMark: zod_1.z.string().min(1, "Selling mark is required"),
                 lotNo: zod_1.z.string().min(1, "Lot number is required"),
-                reprint: reprintSchema,
+                reprint: catalogSchemas_1.reprintSchema,
                 bags: zod_1.z.number().int().positive("Bags must be a positive integer"),
                 netWeight: zod_1.z.number().positive("Net weight must be a positive number"),
                 totalWeight: zod_1.z.number().positive("Total weight must be a positive number"),
@@ -681,7 +677,7 @@ function uploadSellingPricesCsv(req, res) {
             }).strict();
             const validatedRecords = records.map(({ record, rowIndex }) => {
                 try {
-                    const parsedRecord = Object.assign(Object.assign({}, record), { bags: record.bags ? Number(record.bags) : undefined, totalWeight: record.totalWeight ? Number(record.totalWeight) : undefined, netWeight: record.netWeight ? Number(record.netWeight) : undefined, askingPrice: record.askingPrice ? Number(record.askingPrice) : undefined, purchasePrice: record.purchasePrice ? Number(record.purchasePrice) : undefined, reprint: record.reprint !== undefined && record.reprint.trim().toLowerCase() !== "no" ? record.reprint : "No", manufactureDate: record.manufactureDate });
+                    const parsedRecord = Object.assign(Object.assign({}, record), { bags: record.bags ? Number(record.bags) : undefined, totalWeight: record.totalWeight ? Number(record.totalWeight) : undefined, netWeight: record.netWeight ? Number(record.netWeight) : undefined, askingPrice: record.askingPrice ? Number(record.askingPrice) : undefined, purchasePrice: record.purchasePrice ? Number(record.purchasePrice) : undefined, reprint: record.reprint, manufactureDate: record.manufactureDate });
                     const parsed = csvRecordSchema.safeParse(parsedRecord);
                     if (!parsed.success) {
                         throw new Error(parsed.error.errors.map(err => err.message).join(", "));
@@ -692,7 +688,7 @@ function uploadSellingPricesCsv(req, res) {
                             broker: data.broker,
                             sellingMark: data.sellingMark,
                             lotNo: data.lotNo,
-                            reprint: data.reprint === undefined || data.reprint.trim().toLowerCase() === "no" ? "No" : data.reprint,
+                            reprint: data.reprint, // Use validated reprint value
                             bags: data.bags,
                             totalWeight: data.totalWeight,
                             netWeight: data.netWeight,
