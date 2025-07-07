@@ -6,7 +6,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
 import { Toaster, toast } from "sonner";
 import { Download, Upload, Loader2, UserPlus } from "lucide-react";
-import { useExportStocksCsvMutation, useGetAuthUserQuery } from "@/state/api";
+import { useExportStocksXlsxMutation, useGetAuthUserQuery } from "@/state/api";
 import { useRouter } from "next/navigation";
 import { StocksResponse } from "@/state";
 import AssignStockModal, { mapStocksResponseToStock } from "./AssignStockModal";
@@ -28,33 +28,35 @@ const StocksActions: React.FC<StocksActionsProps> = ({
     const router = useRouter();
     const { data: authUser } = useGetAuthUserQuery();
     const isAdmin = authUser?.userRole === "admin";
-    const [exportStocksCsv, { isLoading: isExporting }] = useExportStocksCsvMutation();
+    const [exportStocksXlsx, { isLoading: isExporting }] = useExportStocksXlsxMutation();
     const [isModalOpen, setIsModalOpen] = useState(false);
 
     if (!isAdmin) return null;
 
     const handleDownload = async () => {
         try {
-            const ids = selectedItems.length > 0 ? selectedItems : stocksData.map((item) => item.id);
+            const ids = selectedItems.length > 0
+                ? selectedItems
+                : stocksData.map((item) => item.id);
+
             if (ids.length === 0) {
                 toast.error(t("stocks:errors.noItems", { defaultValue: "No stocks available to export" }));
                 return;
             }
+
             console.log(
-                `[${new Date().toLocaleString("en-US", { timeZone: "Africa/Nairobi" })})] Exporting stocks with IDs, ID:`,
+                `[${new Date().toLocaleString("en-US", { timeZone: "Africa/Nairobi" })}] Exporting stocks with IDs:`,
                 ids,
             );
-            await exportStocksCsv({
-                stockIds: ids.join(","),
-            }).unwrap();
-            toast.success(t("stocksActions:success.csvDownloaded", { defaultValue: "CSV downloaded successfully" }));
-            toast.success("CSV file downloaded successfully");
+
+            await exportStocksXlsx({ stockIds: ids }).unwrap();
+            toast.success(t("stocksActions:success.xlsxDownloaded", { defaultValue: "XLSX downloaded successfully" }));
         } catch (err: any) {
             console.error(
-                `[${new Date().toLocaleString("en-US", { timeZone: "Africa/Nairobi" })})] Export error, error:`,
+                `[${new Date().toLocaleString("en-US", { timeZone: "Africa/Nairobi" })}] Export error:`,
                 err,
             );
-            toast.error(t("stocks:errors.csvError", { defaultValue: "Failed to export CSV" }));
+            toast.error(t("stocks:errors.xlsxError", { defaultValue: "Failed to export XLSX" }));
         }
     };
 
@@ -81,7 +83,7 @@ const StocksActions: React.FC<StocksActionsProps> = ({
                     <div className="flex items-center">
                         <Checkbox
                             id="select-all"
-                            checked={stocksData?.length > 0 && selectedItems.length === stocksData.length}
+                            checked={stocksData.length > 0 && selectedItems.length === stocksData.length}
                             onCheckedChange={handleSelectAll}
                             aria-label={t("stocks:actions.selectAll", { defaultValue: "Select All" })}
                             className="border-gray-300 dark:border-gray-600"
@@ -144,7 +146,7 @@ const StocksActions: React.FC<StocksActionsProps> = ({
                 stockIds={selectedItems}
                 stocksData={stocksData
                     .filter((stock) => selectedItems.includes(stock.id))
-                    .map(mapStocksResponseToStock)} // Transform to Stock[]
+                    .map(mapStocksResponseToStock)}
             />
             <Toaster />
         </>

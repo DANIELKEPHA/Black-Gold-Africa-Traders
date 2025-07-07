@@ -578,7 +578,6 @@ function uploadSellingPricesCsv(req, res) {
         let skippedCount = 0;
         let replacedCount = 0;
         const time = new Date().toLocaleString("en-US", { timeZone: "Africa/Nairobi" });
-        // console.log(`[${time}] Starting CSV upload:`, { file: req.file?.originalname, size: req.file?.size });
         try {
             if (!req.file) {
                 console.error(`[${time}] No CSV file provided`);
@@ -613,30 +612,51 @@ function uploadSellingPricesCsv(req, res) {
             if (csvBuffer.toString("utf8", 0, 3) === "\uFEFF") {
                 csvBuffer = csvBuffer.slice(3);
             }
+            // Define required schema fields for validation
+            const requiredSchemaFields = new Set(Object.values(fieldNameMapping));
             const parser = new csv_parse_1.Parser({
-                columns: (header) => header.map((field) => normalizeFieldName(field) || field),
+                columns: (header) => {
+                    // Normalize and map headers
+                    const mappedHeaders = header.map((field) => {
+                        const normalized = normalizeFieldName(field);
+                        return fieldNameMapping[normalized] || normalized; // Use mapped name or fallback to normalized
+                    });
+                    // Validate that all required schema fields are present
+                    const missingFields = Array.from(requiredSchemaFields).filter((field) => !mappedHeaders.includes(field));
+                    if (missingFields.length > 0) {
+                        throw new Error(`Missing required CSV columns: ${missingFields.join(", ")}`);
+                    }
+                    return mappedHeaders;
+                },
                 skip_empty_lines: true,
                 trim: true,
             });
             const stream = stream_1.Readable.from(csvBuffer);
             const records = [];
             let rowIndex = 0;
+            // Pre-collect and validate records
             try {
-                // Pre-collect and validate records
-                for (var _f = true, _g = __asyncValues(stream.pipe(parser)), _h; _h = yield _g.next(), _a = _h.done, !_a; _f = true) {
-                    _c = _h.value;
-                    _f = false;
-                    const record = _c;
-                    rowIndex++;
-                    records.push({ record, rowIndex });
+                try {
+                    for (var _f = true, _g = __asyncValues(stream.pipe(parser)), _h; _h = yield _g.next(), _a = _h.done, !_a; _f = true) {
+                        _c = _h.value;
+                        _f = false;
+                        const record = _c;
+                        rowIndex++;
+                        records.push({ record, rowIndex });
+                    }
+                }
+                catch (e_1_1) { e_1 = { error: e_1_1 }; }
+                finally {
+                    try {
+                        if (!_f && !_a && (_b = _g.return)) yield _b.call(_g);
+                    }
+                    finally { if (e_1) throw e_1.error; }
                 }
             }
-            catch (e_1_1) { e_1 = { error: e_1_1 }; }
-            finally {
-                try {
-                    if (!_f && !_a && (_b = _g.return)) yield _b.call(_g);
-                }
-                finally { if (e_1) throw e_1.error; }
+            catch (error) {
+                console.error(`[${time}] CSV parsing error:`, error);
+                res.status(400).json({ message: "Invalid CSV format", details: error instanceof Error ? error.message : String(error) });
+                return;
             }
             const reprintSchema = zod_1.z.union([
                 zod_1.z.literal("No"),
@@ -693,7 +713,7 @@ function uploadSellingPricesCsv(req, res) {
                     return null;
                 }
             }).filter(Boolean);
-            const BATCH_SIZE = 500; // Increased batch size for better performance
+            const BATCH_SIZE = 500;
             const processBatch = (batch) => __awaiter(this, void 0, void 0, function* () {
                 try {
                     const timeBatch = new Date().toLocaleString("en-US", { timeZone: "Africa/Nairobi" });
@@ -741,7 +761,7 @@ function uploadSellingPricesCsv(req, res) {
                             batchCreated += createResult.count;
                         }
                         return { batchCreated, batchSkipped, batchReplaced };
-                    }), { timeout: 30000 }); // Reduced timeout
+                    }), { timeout: 30000 });
                     createdCount += result.batchCreated;
                     skippedCount += result.batchSkipped;
                     replacedCount += result.batchReplaced;
@@ -755,7 +775,6 @@ function uploadSellingPricesCsv(req, res) {
                 batches.push(validatedRecords.slice(i, i + BATCH_SIZE));
             }
             yield Promise.all(batches.map(batch => processBatch(batch)));
-            // console.log(`[${time}] Processed ${rowIndex - 1} rows, ${createdCount + skippedCount + replacedCount} records, ${errors.length} errors`);
             if (createdCount + skippedCount + replacedCount === 0) {
                 console.error(`[${time}] No valid selling prices processed`);
                 res.status(400).json({ success: 0, errors });

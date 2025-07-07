@@ -8,23 +8,18 @@ const teaGradeValues = Object.values(client_1.TeaGrade);
 const brokerValues = Object.values(client_1.Broker);
 // Create a reusable reprint schema that matches your Prisma model (String type)
 exports.reprintSchema = zod_1.z.preprocess((val) => {
-    if (val === "No" || val === null)
+    if (val === "No" || val === null || val === "")
         return "No";
-    if (typeof val === "number")
-        return String(val);
-    if (val === "No")
+    const str = String(val);
+    const num = Number(str);
+    if (isNaN(num) || num <= 0)
         return "No";
-    if (val === "")
-        return undefined;
-    const num = Number(val);
-    if (isNaN(num))
-        return undefined;
-    return String(num);
+    return str;
 }, zod_1.z.union([
-    zod_1.z.string().regex(/^[1-9]\d*$/, {
-        message: "Reprint must be 'No' or a positive integer (got a negative or zero value)",
-    }),
     zod_1.z.literal("No"),
+    zod_1.z.string().regex(/^[1-9]\d*$/, {
+        message: "Reprint must be 'No' or a positive integer",
+    }),
 ]).optional().describe("Either 'No' or a positive integer string"));
 exports.dateFormat = zod_1.z
     .string()

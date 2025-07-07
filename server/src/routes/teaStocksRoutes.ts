@@ -4,7 +4,7 @@ import {
     createStock,
     updateStock,
     getStockHistory,
-    exportStocksCsv,
+    exportStocksXlsx,
     toggleFavorite,
     deleteStocks,
     assignStock,
@@ -165,10 +165,10 @@ router.post(
  * @access Authenticated (Admin or User)
  */
 router.post(
-    "/export-csv",
+    "/export-xlsx",
     authMiddleware(["admin", "user"]),
     validateQuery(getStockQuerySchema),
-    asyncHandler(exportStocksCsv)
+    asyncHandler(exportStocksXlsx)
 );
 
 /**

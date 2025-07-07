@@ -8,18 +8,16 @@ const brokerValues = Object.values(Broker) as [string, ...string[]];
 
 // Create a reusable reprint schema that matches your Prisma model (String type)
 export const reprintSchema = z.preprocess((val) => {
-    if (val === "No" || val === null) return "No";
-    if (typeof val === "number") return String(val);
-    if (val === "No") return "No";
-    if (val === "") return undefined;
-    const num = Number(val);
-    if (isNaN(num)) return undefined;
-    return String(num);
+    if (val === "No" || val === null || val === "") return "No";
+    const str = String(val);
+    const num = Number(str);
+    if (isNaN(num) || num <= 0) return "No";
+    return str;
 }, z.union([
-    z.string().regex(/^[1-9]\d*$/, {
-        message: "Reprint must be 'No' or a positive integer (got a negative or zero value)",
-    }),
     z.literal("No"),
+    z.string().regex(/^[1-9]\d*$/, {
+        message: "Reprint must be 'No' or a positive integer",
+    }),
 ]).optional().describe("Either 'No' or a positive integer string"));
 
 export const dateFormat = z

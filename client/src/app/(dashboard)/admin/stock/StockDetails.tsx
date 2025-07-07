@@ -8,7 +8,7 @@ import {
     useGetAuthUserQuery,
     useGetStockByLotNoQuery,
     useDeleteStocksMutation,
-    useExportStocksCsvMutation,
+    useExportStocksXlsxMutation,
 } from "@/state/api";
 import { Button } from "@/components/ui/button";
 import { Loader2, Download } from "lucide-react";
@@ -25,7 +25,7 @@ const StockDetails: React.FC<StockDetailsProps> = ({ params }) => {
     const { data: authUser, isLoading: isAuthLoading } = useGetAuthUserQuery();
     const { data: stock, isLoading: isStockLoading, error } = useGetStockByLotNoQuery(params.id);
     const [deleteStocks, { isLoading: isDeleting }] = useDeleteStocksMutation();
-    const [exportStocksCsv, { isLoading: isExporting }] = useExportStocksCsvMutation();
+    const [exportStocksXlsx, { isLoading: isExporting }] = useExportStocksXlsxMutation();
     const isAdmin = authUser?.userRole === "admin";
 
     const handleDelete = async () => {
@@ -44,14 +44,14 @@ const StockDetails: React.FC<StockDetailsProps> = ({ params }) => {
 
     const handleDownload = async () => {
         try {
-            await exportStocksCsv({ stockIds: String(params.id) }).unwrap(); // convert to string
-            toast.success(t("stocks:success.csvDownloaded", { defaultValue: "CSV downloaded successfully" }));
+            const stockIds = params.id && !isNaN(Number(params.id)) ? [Number(params.id)] : undefined;
+            await exportStocksXlsx({ stockIds }).unwrap();
+            toast.success(t("stocks:success.xlsxDownloaded", { defaultValue: "XLSX downloaded successfully" }));
         } catch (err: any) {
-            toast.error(t("stocks:errors.csvError", { defaultValue: "Failed to export CSV" }));
+            console.error("Export error:", err);
+            toast.error(t("stocks:errors.xlsxError", { defaultValue: "Failed to export XLSX" }));
         }
     };
-
-
 
     if (isAuthLoading || isStockLoading) return <Loading />;
     if (error || !stock)

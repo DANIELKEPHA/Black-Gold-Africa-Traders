@@ -110,7 +110,7 @@ const buildWhereConditions = (
                 if (!parsed.success) {
                     throw new Error(`Invalid bags: ${value}. Must be a positive integer`);
                 }
-                conditions.bags = parsed.data;
+                conditions.bags = { equals: parsed.data };
             }
         },
         totalWeight: (value) => {
@@ -119,7 +119,7 @@ const buildWhereConditions = (
                 if (!parsed.success) {
                     throw new Error(`Invalid totalWeight: ${value}. Must be a positive number`);
                 }
-                conditions.totalWeight = parsed.data;
+                conditions.totalWeight = { equals: parsed.data };
             }
         },
         netWeight: (value) => {
@@ -128,7 +128,7 @@ const buildWhereConditions = (
                 if (!parsed.success) {
                     throw new Error(`Invalid netWeight: ${value}. Must be a positive number`);
                 }
-                conditions.netWeight = parsed.data;
+                conditions.netWeight = { equals: parsed.data };
             }
         },
         askingPrice: (value) => {
@@ -137,7 +137,7 @@ const buildWhereConditions = (
                 if (!parsed.success) {
                     throw new Error(`Invalid askingPrice: ${value}. Must be a positive number`);
                 }
-                conditions.askingPrice = parsed.data;
+                conditions.askingPrice = { equals: parsed.data };
             }
         },
         producerCountry: (value) => {
@@ -167,7 +167,7 @@ const buildWhereConditions = (
                 if (!parsed.success) {
                     throw new Error(`Invalid reprint: ${value}. Must be "No" or a positive integer`);
                 }
-                conditions.reprint = parsed.data;
+                conditions.reprint = parsed.data ?? null;
             }
         },
     };

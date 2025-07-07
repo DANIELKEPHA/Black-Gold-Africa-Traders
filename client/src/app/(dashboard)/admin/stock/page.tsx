@@ -9,7 +9,6 @@ import { useAppDispatch, useAppSelector } from "@/state/redux";
 import { Broker, TeaGrade } from "@/state/enums";
 import FiltersBar from "@/app/(dashboard)/admin/stock/FiltersBar";
 import Stocks from "@/app/(dashboard)/admin/stock/Stocks";
-import Catalog from "@/app/(dashboard)/admin/catalog/Catalog";
 
 const AdminStocksPage = () => {
     const searchParams = useSearchParams();

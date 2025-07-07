@@ -52,11 +52,11 @@ const serializeCatalog = (catalog) => {
         lotNo: catalog.lotNo,
         sellingMark: catalog.sellingMark,
         bags: catalog.bags,
-        totalWeight: Number(catalog.totalWeight),
-        netWeight: Number(catalog.netWeight),
+        totalWeight: catalog.totalWeight,
+        netWeight: catalog.netWeight,
         invoiceNo: catalog.invoiceNo,
         saleCode: catalog.saleCode,
-        askingPrice: Number(catalog.askingPrice),
+        askingPrice: catalog.askingPrice,
         adminCognitoId: catalog.adminCognitoId,
         producerCountry: (_a = catalog.producerCountry) !== null && _a !== void 0 ? _a : null,
         manufactureDate: catalog.manufactureDate.toISOString(),
@@ -97,20 +97,40 @@ const buildWhereConditions = (params, userId, role) => {
                 conditions.sellingMark = { equals: value };
         },
         bags: (value) => {
-            if (value)
-                conditions.bags = value;
+            if (value !== undefined) {
+                const parsed = zod_1.z.coerce.number().int().positive('Bags must be a positive integer').safeParse(value);
+                if (!parsed.success) {
+                    throw new Error(`Invalid bags: ${value}. Must be a positive integer`);
+                }
+                conditions.bags = { equals: parsed.data };
+            }
         },
         totalWeight: (value) => {
-            if (value)
-                conditions.totalWeight = value;
+            if (value !== undefined) {
+                const parsed = zod_1.z.coerce.number().positive('Total weight must be positive').safeParse(value);
+                if (!parsed.success) {
+                    throw new Error(`Invalid totalWeight: ${value}. Must be a positive number`);
+                }
+                conditions.totalWeight = { equals: parsed.data };
+            }
         },
         netWeight: (value) => {
-            if (value)
-                conditions.netWeight = value;
+            if (value !== undefined) {
+                const parsed = zod_1.z.coerce.number().positive('Net weight must be positive').safeParse(value);
+                if (!parsed.success) {
+                    throw new Error(`Invalid netWeight: ${value}. Must be a positive number`);
+                }
+                conditions.netWeight = { equals: parsed.data };
+            }
         },
         askingPrice: (value) => {
-            if (value)
-                conditions.askingPrice = value;
+            if (value !== undefined) {
+                const parsed = zod_1.z.coerce.number().positive('Asking price must be positive').safeParse(value);
+                if (!parsed.success) {
+                    throw new Error(`Invalid askingPrice: ${value}. Must be a positive number`);
+                }
+                conditions.askingPrice = { equals: parsed.data };
+            }
         },
         producerCountry: (value) => {
             if (value)
@@ -141,12 +161,13 @@ const buildWhereConditions = (params, userId, role) => {
                 conditions.invoiceNo = { equals: value };
         },
         reprint: (value) => {
+            var _a;
             if (value !== undefined) {
                 const parsed = catalogSchemas_1.reprintSchema.safeParse(value);
                 if (!parsed.success) {
                     throw new Error(`Invalid reprint: ${value}. Must be "No" or a positive integer`);
                 }
-                conditions.reprint = parsed.data;
+                conditions.reprint = (_a = parsed.data) !== null && _a !== void 0 ? _a : null;
             }
         },
     };
@@ -286,8 +307,8 @@ const getCatalogFilterOptions = (req, res) => __awaiter(void 0, void 0, void 0, 
             sellingMarks,
             invoiceNos,
             askingPrice: {
-                min: aggregates._min.askingPrice !== null ? Number(aggregates._min.askingPrice) : 0,
-                max: aggregates._max.askingPrice !== null ? Number(aggregates._max.askingPrice) : 1000,
+                min: aggregates._min.askingPrice !== null ? aggregates._min.askingPrice : 0,
+                max: aggregates._max.askingPrice !== null ? aggregates._max.askingPrice : 1000,
             },
             manufactureDate: {
                 min: (_b = (_a = aggregates._min.manufactureDate) === null || _a === void 0 ? void 0 : _a.toISOString()) !== null && _b !== void 0 ? _b : "2020-01-01T00:00:00Z",

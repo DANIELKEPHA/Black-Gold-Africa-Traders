@@ -19,6 +19,7 @@ import { createObjectCsvStringifier } from "csv-writer";
 import { retryTransaction } from "../utils/database";
 import {authenticateUser, logError, sendErrorResponse} from "../utils/controllerUtils";
 import {UserDetails} from "../types";
+import ExcelJS from "exceljs";
 
 const prisma = new PrismaClient({
     log: ["query", "info", "warn", "error"],
@@ -1195,7 +1196,7 @@ export const uploadStocksCsv = async (req: Request, res: Response): Promise<void
     }
 };
 
-export const exportStocksCsv = async (req: Request, res: Response): Promise<void> => {
+export const exportStocksXlsx = async (req: Request, res: Response): Promise<void> => {
     try {
         const parsedQuery = getStockQuerySchema.safeParse(req.query);
         if (!parsedQuery.success) {
@@ -1215,12 +1216,6 @@ export const exportStocksCsv = async (req: Request, res: Response): Promise<void
             onlyFavorites,
         } = parsedQuery.data;
 
-        const maxRecords = 10000;
-        if (limit > maxRecords) {
-            res.status(400).json({ message: `Export limit cannot exceed ${maxRecords} records` });
-            return;
-        }
-
         const authenticatedUser = authenticateUser(req, res);
         if (!authenticatedUser) {
             res.status(401).json({ message: "Unauthorized: No valid token provided" });
@@ -1231,33 +1226,19 @@ export const exportStocksCsv = async (req: Request, res: Response): Promise<void
         const userId = authenticatedUser.userId;
 
         const where: Prisma.StocksWhereInput = {};
-        if (minWeight !== undefined) {
-            where.weight = { gte: minWeight };
-        }
-        if (batchNumber) {
-            where.batchNumber = batchNumber;
-        }
-        if (lotNo) {
-            where.lotNo = lotNo;
-        }
-        if (grade) {
-            where.grade = grade as TeaGrade;
-        }
-        if (broker) {
-            where.broker = broker as Broker;
-        }
+        if (minWeight !== undefined) where.weight = { gte: minWeight };
+        if (batchNumber) where.batchNumber = batchNumber;
+        if (lotNo) where.lotNo = lotNo;
+        if (grade) where.grade = grade as TeaGrade;
+        if (broker) where.broker = broker as Broker;
         if (search) {
             where.OR = [
                 { lotNo: { contains: search, mode: "insensitive" } },
                 { mark: { contains: search, mode: "insensitive" } },
             ];
         }
-        if (onlyFavorites) {
-            where.favorites = { some: { userCognitoId: userId } };
-        }
-        if (!isAdmin) {
-            where.assignments = { some: { userCognitoId: userId } };
-        }
+        if (onlyFavorites) where.favorites = { some: { userCognitoId: userId } };
+        if (!isAdmin) where.assignments = { some: { userCognitoId: userId } };
 
         const stocks = await prisma.stocks.findMany({
             where,
@@ -1275,48 +1256,112 @@ export const exportStocksCsv = async (req: Request, res: Response): Promise<void
             return;
         }
 
-        const csvStringifier = createObjectCsvStringifier({
-            header: [
-                { id: "lotNo", title: "Lot Number" },
-                { id: "mark", title: "Mark" },
-                { id: "bags", title: "Bags" },
-                { id: "weight", title: "Weight" },
-                { id: "purchaseValue", title: "Purchase Value" },
-                { id: "grade", title: "Grade" },
-                { id: "batchNumber", title: "Batch Number" },
-                { id: "assignedWeight", title: "Assigned Weight" },
-            ],
+        const workbook = new ExcelJS.Workbook();
+        const worksheet = workbook.addWorksheet("Tea Stocks");
+
+        worksheet.addRow(["Black Gold Africa Traders Ltd - Stocks"]);
+        worksheet.mergeCells("A1:Q1");
+        worksheet.getCell("A1").font = { name: "Calibri", size: 16, bold: true, color: { argb: "FFFFFF" } };
+        worksheet.getCell("A1").fill = {
+            type: "pattern",
+            pattern: "solid",
+            fgColor: { argb: "1E88E5" },
+        };
+        worksheet.getCell("A1").alignment = { horizontal: "center", vertical: "middle" };
+        worksheet.getRow(1).height = 30;
+        worksheet.addRow([]);
+
+        const headers = [
+            "Sale Code",
+            "Broker",
+            "Lot Number",
+            "Mark",
+            "Grade",
+            "Invoice No",
+            "Bags",
+            "Weight",
+            "Purchase Value",
+            "Total Purchase Value",
+            "Aging Days",
+            "Penalty",
+            "BGT Commission",
+            "Maersk Fee",
+            "Commission",
+            "Net Price",
+            "Total",
+        ];
+        const headerRow = worksheet.addRow(headers);
+        headerRow.eachCell((cell) => {
+            cell.fill = {
+                type: "pattern",
+                pattern: "solid",
+                fgColor: { argb: "D3D3D3" },
+            };
+            cell.font = { name: "Calibri", size: 11, bold: true };
+            cell.border = {
+                top: { style: "thin" },
+                left: { style: "thin" },
+                bottom: { style: "thin" },
+                right: { style: "thin" },
+            };
+            cell.alignment = { horizontal: "center" };
         });
 
-        const csvContent = csvStringifier.getHeaderString() +
-            csvStringifier.stringifyRecords(
-                stocks.map((stock) => ({
-                    lotNo: stock.lotNo || "N/A",
-                    mark: stock.mark || "N/A",
-                    bags: stock.bags ?? "N/A",
-                    weight: stock.weight ?? "N/A",
-                    purchaseValue: stock.purchaseValue ?? "N/A",
-                    grade: stock.grade || "N/A",
-                    batchNumber: stock.batchNumber || "N/A",
-                    assignedWeight: isAdmin
-                        ? stock.assignments.map((assignment) => `${assignment.userCognitoId}: ${assignment.assignedWeight}`).join("; ") || "N/A"
-                        : stock.assignments.find((a) => a.userCognitoId === userId)?.assignedWeight ?? "N/A",
-                })),
-            );
+        stocks.forEach((stock) => {
+            worksheet.addRow([
+                stock.saleCode || "N/A",
+                stock.broker || "N/A",
+                stock.lotNo || "N/A",
+                stock.mark || "N/A",
+                stock.grade || "N/A",
+                stock.invoiceNo || "N/A",
+                stock.bags ?? "N/A",
+                Number(stock.weight) ?? "N/A",
+                Number(stock.purchaseValue) ?? "N/A",
+                Number(stock.totalPurchaseValue) ?? "N/A",
+                stock.agingDays ?? "N/A",
+                Number(stock.penalty) ?? "N/A",
+                Number(stock.bgtCommission) ?? "N/A",
+                Number(stock.maerskFee) ?? "N/A",
+                Number(stock.commission) ?? "N/A",
+                Number(stock.netPrice) ?? "N/A",
+                Number(stock.total) ?? "N/A",
+            ]);
+        });
 
-        res.setHeader("Content-Type", "text/csv");
-        res.setHeader(
-            "Content-Disposition",
-            `attachment; filename=stocks_${formatDate(new Date())}.csv`,
-        );
-        res.status(200).send(csvContent);
+        worksheet.eachRow((row, rowNumber) => {
+            if (rowNumber > 2) {
+                row.eachCell((cell) => {
+                    cell.border = {
+                        top: { style: "thin" },
+                        left: { style: "thin" },
+                        bottom: { style: "thin" },
+                        right: { style: "thin" },
+                    };
+                    cell.alignment = { horizontal: "left" };
+                });
+            }
+        });
+
+        // Adjusted column widths for remaining fields
+        [14, 14, 14, 14, 12, 14, 10, 12, 14, 16, 12, 12, 14, 14, 14, 14, 14].forEach((w, i) => worksheet.getColumn(i + 1).width = w);
+
+        const lastRow = worksheet.addRow([]);
+        lastRow.getCell(1).value = `Generated from bgatltd.com on ${new Date().toLocaleString("en-KE", { timeZone: "Africa/Nairobi" })}`;
+        lastRow.getCell(1).font = { name: "Calibri", size: 8, italic: true };
+        lastRow.getCell(1).alignment = { horizontal: "center" };
+        worksheet.mergeCells(`A${lastRow.number}:Q${lastRow.number}`);
+
+        worksheet.views = [{ state: "frozen", ySplit: 3 }];
+        worksheet.protect("bgatltd2025", { selectLockedCells: false, selectUnlockedCells: false });
+
+        res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+        res.setHeader("Content-Disposition", `attachment; filename=stocks_${new Date().toISOString().split("T")[0]}.xlsx`);
+        await workbook.xlsx.write(res);
+        res.end();
     } catch (error) {
         const message = error instanceof Error ? error.message : "Unknown error";
-        logWithTimestamp(`Error exporting stocks CSV:`, error);
-        if (error instanceof z.ZodError) {
-            res.status(400).json({ message: "Invalid query parameters", details: error.errors });
-            return;
-        }
+        console.error("Export XLSX error:", error);
         res.status(500).json({ message: "Internal server error", details: message });
     } finally {
         await prisma.$disconnect();

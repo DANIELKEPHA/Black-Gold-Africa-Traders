@@ -98,7 +98,7 @@ router.post("/upload", (0, authMiddleware_1.authMiddleware)(["admin"]), upload.s
  * @desc Export stock records as CSV based on query parameters (lotNo, onlyFavorites, filters)
  * @access Authenticated (Admin or User)
  */
-router.post("/export-csv", (0, authMiddleware_1.authMiddleware)(["admin", "user"]), validateQuery(teaStockSchemas_1.getStockQuerySchema), (0, asyncHandler_1.asyncHandler)(teaStocksController_1.exportStocksCsv));
+router.post("/export-xlsx", (0, authMiddleware_1.authMiddleware)(["admin", "user"]), validateQuery(teaStockSchemas_1.getStockQuerySchema), (0, asyncHandler_1.asyncHandler)(teaStocksController_1.exportStocksXlsx));
 /**
  * @route DELETE /stocks
  * @desc Delete multiple stock records by IDs

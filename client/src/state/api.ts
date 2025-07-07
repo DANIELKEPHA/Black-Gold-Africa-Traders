@@ -336,26 +336,47 @@ export const api = createApi({
             errors: { row: number; message: string }[]
         }, { file: File; duplicateAction?: 'skip' | 'replace' }>({
             query: ({ file, duplicateAction }) => {
+                const time = new Date().toLocaleString("en-US", { timeZone: "Africa/Nairobi" });
+                if (!(file instanceof File)) {
+                    console.error(`[${time}] Invalid file object`);
+                    throw new Error("Invalid file object");
+                }
                 const formData = new FormData();
                 formData.append("file", file);
-                if (duplicateAction) formData.append("duplicateAction", duplicateAction);
+                if (duplicateAction && ["skip", "replace"].includes(duplicateAction)) {
+                    formData.append("duplicateAction", duplicateAction);
+                }
+                console.log(`[${time}] Preparing createCatalogFromCsv request:`, {
+                    fileName: file.name,
+                    size: file.size,
+                    duplicateAction,
+                });
                 return {
                     url: "/catalogs/upload",
                     method: "POST",
                     body: formData,
+                    responseHandler: async (response) => {
+                        if (!response.ok) {
+                            const errorData = await response.json();
+                            console.error(`[${time}] Server error response:`, errorData);
+                            throw new Error(errorData.message || "Failed to upload CSV");
+                        }
+                        return response.json();
+                    },
                 };
             },
             invalidatesTags: [{ type: "Catalog", id: "LIST" }],
             async onQueryStarted({ file, duplicateAction }, { queryFulfilled }) {
+                const time = new Date().toLocaleString("en-US", { timeZone: "Africa/Nairobi" });
                 try {
                     const { data } = await queryFulfilled;
-                    // console.log(`[${new Date().toLocaleString("en-US", { timeZone: "Africa/Nairobi" })}] createCatalogFromCsv: Successfully uploaded ${data.success.created} catalog(s), skipped ${data.success.skipped}, replaced ${data.success.replaced}`);
+                    console.log(`[${time}] createCatalogFromCsv success:`, data);
                     await withToast(queryFulfilled, {
                         success: `Successfully uploaded ${data.success.created} catalog(s)!`,
                         error: "Failed to upload CSV file.",
                     });
                 } catch (error: any) {
-                    console.error(`[${new Date().toLocaleString("en-US", { timeZone: "Africa/Nairobi" })}] createCatalogFromCsv error:`, {
+                    console.error(`[${time}] createCatalogFromCsv error:`, {
                         status: error?.error?.status,
                         message: error?.error?.data?.message,
                         details: error?.error?.data?.details,
@@ -590,45 +611,88 @@ export const api = createApi({
             }),
             invalidatesTags: [{ type: "SellingPrices", id: "LIST" }],
         }),
-        uploadSellingPricesCsv: builder.mutation<{
-            count: any;
-            success: { created: number; skipped: number; replaced: number };
-            errors: { row: number; message: string }[];
-        }, { file: File; duplicateAction?: "skip" | "replace" }>({
+
+        uploadSellingPricesCsv: builder.mutation({
             query: ({ file, duplicateAction }) => {
                 const time = new Date().toLocaleString("en-US", { timeZone: "Africa/Nairobi" });
+
+                if (!(file instanceof File)) {
+                    console.error(`[${time}] Invalid file object:`, { file });
+                    throw new Error("Invalid file object");
+                }
+
                 const formData = new FormData();
                 formData.append("file", file);
-                if (duplicateAction) formData.append("duplicateAction", duplicateAction);
-                // console.log(`[${time}] Preparing uploadSellingPricesCsv request:`, {
-                //     fileName: file.name,
-                //     size: file.size,
-                //     duplicateAction,
-                // });
+
+                if (duplicateAction && ["skip", "replace"].includes(duplicateAction)) {
+                    formData.append("duplicateAction", duplicateAction);
+                } else if (duplicateAction) {
+                    console.warn(`[${time}] Invalid duplicateAction value:`, duplicateAction);
+                }
+
+                console.log(`[${time}] Preparing uploadSellingPricesCsv request:`, {
+                    fileName: file.name,
+                    fileSize: file.size,
+                    fileType: file.type,
+                    duplicateAction,
+                });
+
                 return {
                     url: "/sellingPrices/upload",
                     method: "POST",
                     body: formData,
-                    headers: {}, // Let browser set Content-Type for FormData
+                    responseHandler: async (response) => {
+                        const responseText = await response.text();
+                        let errorData = null;
+
+                        try {
+                            errorData = JSON.parse(responseText);
+                        } catch (e) {
+                            console.error(`[${time}] Failed to parse response as JSON:`, responseText);
+                        }
+
+                        if (!response.ok) {
+                            console.error(`[${time}] Server error response:`, {
+                                status: response.status,
+                                statusText: response.statusText,
+                                data: errorData || responseText,
+                            });
+                            throw new Error(errorData?.message || "Failed to upload CSV");
+                        }
+
+                        console.log(`[${time}] Server response:`, errorData);
+                        return errorData;
+                    },
                 };
             },
+
             invalidatesTags: [{ type: "SellingPrices", id: "LIST" }],
+
             async onQueryStarted(_, { queryFulfilled }) {
                 const time = new Date().toLocaleString("en-US", { timeZone: "Africa/Nairobi" });
+
                 try {
                     const { data } = await queryFulfilled;
-                    // console.log(`[${time}] uploadSellingPricesCsv success:`, data);
+
+                    console.log(`[${time}] Upload success:`, {
+                        created: data.success.created,
+                        skipped: data.success.skipped,
+                        replaced: data.success.replaced,
+                        errors: data.errors,
+                    });
+
                     await withToast(queryFulfilled, {
                         success: "Selling prices uploaded successfully!",
                         error: "Failed to upload selling prices.",
                     });
-                } catch (error: any) {
-                    console.error(`[${time}] uploadSellingPricesCsv error:`, {
-                        status: error?.error?.status,
-                        message: error?.error?.data?.message,
-                        details: error?.error?.data?.details,
-                        originalError: error,
-                    });
+                } catch (error) {
+                    if (error instanceof Error) {
+                        console.error(`[${time}] Upload error:`, {
+                            message: error.message,
+                        });
+                    } else {
+                        console.error(`[${time}] Upload error: Unknown error`, error);
+                    }
                 }
             },
         }),
@@ -1070,30 +1134,29 @@ export const api = createApi({
                 });
             },
         }),
-        exportStocksCsv: builder.mutation<
+
+        exportStocksXlsx: builder.mutation<
             { success: boolean },
-            { stockIds?: string | number[] } & Partial<StockFilters>
+            { stockIds?: number[] } & Omit<Partial<StockFilters>, 'stockIds'>
         >({
             query: ({ stockIds, ...filters }) => {
                 const params = cleanParams({
                     stockId: filters.stockId,
-
-                    minTotalWeight: filters.minTotalWeight,
+                    lotNo: filters.lotNo,
                     batchNumber: filters.batchNumber,
                     broker: filters.broker === "any" ? undefined : filters.broker,
+                    grade: filters.grade === "any" ? undefined : filters.grade,
+                    category: filters.category === "any" ? undefined : filters.category,
+                    minTotalWeight: filters.minTotalWeight,
                     search: filters.search,
                     onlyFavorites: filters.onlyFavorites,
-                    category: filters.category === "any" ? undefined : filters.category,
-                    grade: filters.grade === "any" ? undefined : filters.grade,
-                    lotNo: filters.lotNo,
-                    stockIds: Array.isArray(stockIds) ? stockIds.join(",") : stockIds,
+                    stockIds: stockIds?.join(","),
+                    page: 1,
+                    limit: 10000,
                 });
-                console.log(
-                    `[${new Date().toLocaleString("en-US", { timeZone: "Africa/Nairobi" })}] Sending export request with params:`,
-                    params
-                );
+
                 return {
-                    url: "/stocks/export-csv",
+                    url: "/stocks/export-xlsx",
                     method: "POST",
                     body: params,
                     responseHandler: async (response: Response) => {
@@ -1101,6 +1164,18 @@ export const api = createApi({
                             const errorText = await response.text();
                             throw new Error(`Export failed: ${response.status} ${response.statusText} - ${errorText}`);
                         }
+                        const blob = await response.blob();
+                        if (!blob || blob.type !== "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet") {
+                            throw new Error("Unexpected response format or empty XLSX");
+                        }
+                        const url = window.URL.createObjectURL(blob);
+                        const link = document.createElement("a");
+                        link.href = url;
+                        link.download = `stocks_${new Date().toISOString().split("T")[0]}.xlsx`;
+                        document.body.appendChild(link);
+                        link.click();
+                        document.body.removeChild(link);
+                        window.URL.revokeObjectURL(url);
                         return { success: true };
                     },
                     cache: "no-cache",
@@ -1108,50 +1183,11 @@ export const api = createApi({
             },
             async onQueryStarted(arg, { queryFulfilled }) {
                 const time = new Date().toLocaleString("en-US", { timeZone: "Africa/Nairobi" });
-                // console.log(`[${time}] Starting CSV download query:`, arg);
                 try {
-                    const session = await fetchAuthSession({ forceRefresh: true });
-                    const token = session.tokens?.idToken?.toString();
-                    const params = cleanParams({
-                        minTotalWeight: arg.minTotalWeight,
-                        batchNumber: arg.batchNumber,
-                        broker: arg.broker === "any" ? undefined : arg.broker,
-                        search: arg.search,
-                        onlyFavorites: arg.onlyFavorites,
-                        category: arg.category === "any" ? undefined : arg.category,
-                        grade: arg.grade === "any" ? undefined : arg.grade,
-                        lotNo: arg.lotNo,
-                        stockIds: Array.isArray(arg.stockIds)
-                            ? arg.stockIds.join(",")
-                            : arg.stockIds,
-                    });
-                    const response = await fetch("NEXT_PUBLIC_API_BASE_URL/stocks/export-csv", {
-                        method: "POST",
-                        headers: {
-                            "Content-Type": "application/json",
-                            ...(token ? { Authorization: `Bearer ${token}` } : {}),
-                        },
-                        body: JSON.stringify(params),
-                    });
-                    if (!response.ok) {
-                        const errorText = await response.text();
-                        throw new Error(`Fetch failed: ${response.status} ${response.statusText} - ${errorText}`);
-                    }
-                    const blob = await response.blob();
-                    if (!blob || blob.type !== "text/csv") {
-                        throw new Error("Unexpected response format or empty CSV");
-                    }
-                    const url = window.URL.createObjectURL(blob);
-                    const link = document.createElement("a");
-                    link.href = url;
-                    link.download = `stocks_${new Date().toISOString().split("T")[0]}.csv`;
-                    document.body.appendChild(link);
-                    link.click();
-                    document.body.removeChild(link);
-                    window.URL.revokeObjectURL(url);
                     await queryFulfilled;
+                    // console.log(`[${time}] XLSX export successful`);
                 } catch (error) {
-                    console.error(`[${time}] CSV download failed:`, error);
+                    console.error(`[${time}] XLSX download failed:`, error);
                     throw error;
                 }
             },
@@ -1159,6 +1195,7 @@ export const api = createApi({
                 maxRetries: 0,
             },
         }),
+
         getStocksFilterOptions: builder.query<FilterOptions, void>({
             query: () => "/stocks/filters",
             providesTags: ["Stocks"],
@@ -1466,7 +1503,7 @@ export const {
     useUpdateStockMutation,
     useDeleteStocksMutation,
     useUploadStocksCsvMutation,
-    useExportStocksCsvMutation,
+    useExportStocksXlsxMutation,
     useGetStocksFilterOptionsQuery,
     useBulkAssignStocksMutation,
     useAssignStockMutation,

@@ -94,81 +94,21 @@ const buildWhereConditions = (
     }
 
     const filterMap: Record<string, (value: any) => void> = {
-        favoriteIds: (value) => {
-            if (value?.length) conditions.id = { in: value };
-        },
-        lotNo: (value) => {
-            if (value) conditions.lotNo = { equals: value };
-        },
-        sellingMark: (value) => {
-            if (value) conditions.sellingMark = { equals: value };
-        },
-        bags: (value) => {
-            if (value !== undefined) {
-                const parsed = z.coerce.number().int().positive('Bags must be a positive integer').safeParse(value);
-                if (!parsed.success) {
-                    throw new Error(`Invalid bags: ${value}. Must be a positive integer`);
-                }
-                conditions.bags = parsed.data;
-            }
-        },
-        totalWeight: (value) => {
-            if (value !== undefined) {
-                const parsed = z.coerce.number().positive('Total weight must be positive').safeParse(value);
-                if (!parsed.success) {
-                    throw new Error(`Invalid totalWeight: ${value}. Must be a positive number`);
-                }
-                conditions.totalWeight = parsed.data;
-            }
-        },
-        netWeight: (value) => {
-            if (value !== undefined) {
-                const parsed = z.coerce.number().positive('Net weight must be positive').safeParse(value);
-                if (!parsed.success) {
-                    throw new Error(`Invalid netWeight: ${value}. Must be a positive number`);
-                }
-                conditions.netWeight = parsed.data;
-            }
-        },
-        askingPrice: (value) => {
-            if (value !== undefined) {
-                const parsed = z.coerce.number().positive('Asking price must be positive').safeParse(value);
-                if (!parsed.success) {
-                    throw new Error(`Invalid askingPrice: ${value}. Must be a positive number`);
-                }
-                conditions.askingPrice = parsed.data;
-            }
-        },
-        purchasePrice: (value) => {
-            if (value !== undefined) {
-                const parsed = z.coerce.number().positive('Purchase price must be positive').safeParse(value);
-                if (!parsed.success) {
-                    throw new Error(`Invalid purchasePrice: ${value}. Must be a positive number`);
-                }
-                conditions.purchasePrice = parsed.data;
-            }
-        },
-        producerCountry: (value) => {
-            if (value) conditions.producerCountry = { equals: value };
-        },
-        manufactureDate: (value) => {
-            if (value) conditions.manufactureDate = new Date(value);
-        },
-        saleCode: (value) => {
-            if (value) conditions.saleCode = value;
-        },
-        category: (value) => {
-            if (value && value !== "any") conditions.category = value as TeaCategory;
-        },
-        grade: (value) => {
-            if (value && value !== "any") conditions.grade = value as TeaGrade;
-        },
-        broker: (value) => {
-            if (value && value !== "any") conditions.broker = value as Broker;
-        },
-        invoiceNo: (value) => {
-            if (value) conditions.invoiceNo = { equals: value };
-        },
+        favoriteIds: (value) => { if (value?.length) conditions.id = { in: value }; },
+        lotNo: (value) => { if (value) conditions.lotNo = { equals: value }; },
+        sellingMark: (value) => { if (value) conditions.sellingMark = { equals: value }; },
+        bags: (value) => { if (value) conditions.bags = value; },
+        totalWeight: (value) => { if (value) conditions.totalWeight = value; },
+        netWeight: (value) => { if (value) conditions.netWeight = value; },
+        askingPrice: (value) => { if (value) conditions.askingPrice = value; },
+        purchasePrice: (value) => { if (value) conditions.purchasePrice = value; },
+        producerCountry: (value) => { if (value) conditions.producerCountry = { equals: value }; },
+        manufactureDate: (value) => { if (value) conditions.manufactureDate = new Date(value); },
+        saleCode: (value) => { if (value) conditions.saleCode = value; },
+        category: (value) => { if (value && value !== "any") conditions.category = value as TeaCategory; },
+        grade: (value) => { if (value && value !== "any") conditions.grade = value as TeaGrade; },
+        broker: (value) => { if (value && value !== "any") conditions.broker = value as Broker; },
+        invoiceNo: (value) => { if (value) conditions.invoiceNo = { equals: value }; },
         reprint: (value) => {
             if (value !== undefined) {
                 const parsed = reprintSchema.safeParse(value);
@@ -432,7 +372,18 @@ export const createSellingPrice = async (req: Request, res: Response): Promise<v
             return;
         }
 
-        const newSellingPrice = await prisma.sellingPrice.create({
+        // Define the type for newSellingPrice with the admin relation
+        type SellingPriceWithAdmin = SellingPrice & {
+            admin: {
+                id: number;
+                adminCognitoId: string;
+                name: string | null;
+                email: string | null;
+                phoneNumber: string | null;
+            } | null;
+        };
+
+        const newSellingPrice: SellingPriceWithAdmin = await prisma.sellingPrice.create({
             data: {
                 broker: sellingPriceData.data.broker as Broker,
                 sellingMark: sellingPriceData.data.sellingMark,
@@ -462,19 +413,7 @@ export const createSellingPrice = async (req: Request, res: Response): Promise<v
                     },
                 },
             },
-        }) as Prisma.SellingPriceGetPayload<{
-            include: {
-                admin: {
-                    select: {
-                        id: true;
-                        adminCognitoId: true;
-                        name: true;
-                        email: true;
-                        phoneNumber: true;
-                    };
-                };
-            };
-        }>;
+        });
 
         const sellingPriceWithAdmin = {
             ...newSellingPrice,
@@ -712,8 +651,7 @@ export async function uploadSellingPricesCsv(req: Request, res: Response): Promi
     let skippedCount = 0;
     let replacedCount = 0;
 
-     const time = new Date().toLocaleString("en-US", { timeZone: "Africa/Nairobi" });
-    // console.log(`[${time}] Starting CSV upload:`, { file: req.file?.originalname, size: req.file?.size });
+    const time = new Date().toLocaleString("en-US", { timeZone: "Africa/Nairobi" });
 
     try {
         if (!req.file) {
@@ -755,8 +693,26 @@ export async function uploadSellingPricesCsv(req: Request, res: Response): Promi
             csvBuffer = csvBuffer.slice(3);
         }
 
+        // Define required schema fields for validation
+        const requiredSchemaFields = new Set(Object.values(fieldNameMapping));
         const parser = new Parser({
-            columns: (header: string[]) => header.map((field: string) => normalizeFieldName(field) || field),
+            columns: (header: string[]) => {
+                // Normalize and map headers
+                const mappedHeaders = header.map((field: string) => {
+                    const normalized = normalizeFieldName(field);
+                    return fieldNameMapping[normalized] || normalized; // Use mapped name or fallback to normalized
+                });
+
+                // Validate that all required schema fields are present
+                const missingFields = Array.from(requiredSchemaFields).filter(
+                    (field) => !mappedHeaders.includes(field)
+                );
+                if (missingFields.length > 0) {
+                    throw new Error(`Missing required CSV columns: ${missingFields.join(", ")}`);
+                }
+
+                return mappedHeaders;
+            },
             skip_empty_lines: true,
             trim: true,
         });
@@ -766,9 +722,15 @@ export async function uploadSellingPricesCsv(req: Request, res: Response): Promi
         let rowIndex = 0;
 
         // Pre-collect and validate records
-        for await (const record of stream.pipe(parser)) {
-            rowIndex++;
-            records.push({ record, rowIndex });
+        try {
+            for await (const record of stream.pipe(parser)) {
+                rowIndex++;
+                records.push({ record, rowIndex });
+            }
+        } catch (error) {
+            console.error(`[${time}] CSV parsing error:`, error);
+            res.status(400).json({ message: "Invalid CSV format", details: error instanceof Error ? error.message : String(error) });
+            return;
         }
 
         const reprintSchema = z.union([
@@ -838,7 +800,7 @@ export async function uploadSellingPricesCsv(req: Request, res: Response): Promi
             }
         }).filter(Boolean) as Array<{ sellingPrice: Prisma.SellingPriceCreateInput; rowIndex: number }>;
 
-        const BATCH_SIZE = 500; // Increased batch size for better performance
+        const BATCH_SIZE = 500;
         const processBatch = async (batch: Array<{ sellingPrice: Prisma.SellingPriceCreateInput; rowIndex: number }>) => {
             try {
                 const timeBatch = new Date().toLocaleString("en-US", { timeZone: "Africa/Nairobi" });
@@ -887,7 +849,7 @@ export async function uploadSellingPricesCsv(req: Request, res: Response): Promi
                     }
 
                     return { batchCreated, batchSkipped, batchReplaced };
-                }, { timeout: 30000 }); // Reduced timeout
+                }, { timeout: 30000 });
 
                 createdCount += result.batchCreated;
                 skippedCount += result.batchSkipped;
@@ -903,8 +865,6 @@ export async function uploadSellingPricesCsv(req: Request, res: Response): Promi
         }
 
         await Promise.all(batches.map(batch => processBatch(batch)));
-
-        // console.log(`[${time}] Processed ${rowIndex - 1} rows, ${createdCount + skippedCount + replacedCount} records, ${errors.length} errors`);
 
         if (createdCount + skippedCount + replacedCount === 0) {
             console.error(`[${time}] No valid selling prices processed`);
