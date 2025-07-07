@@ -645,6 +645,7 @@ const teaCategories = new Set(Object.values(TeaCategory));
 const teaGrades = new Set(Object.values(TeaGrade));
 const brokers = new Set(Object.values(Broker));
 
+
 export async function uploadSellingPricesCsv(req: Request, res: Response): Promise<void> {
     const errors: Array<{ row: number; message: string }> = [];
     let createdCount = 0;
@@ -654,6 +655,13 @@ export async function uploadSellingPricesCsv(req: Request, res: Response): Promi
     const time = new Date().toLocaleString("en-US", { timeZone: "Africa/Nairobi" });
 
     try {
+        // Log request initiation
+        console.log(`[${time}] Starting CSV upload:`, {
+            fileName: req.file?.originalname,
+            fileSize: req.file?.size,
+            duplicateAction: req.body.duplicateAction,
+        });
+
         if (!req.file) {
             console.error(`[${time}] No CSV file provided`);
             res.status(400).json({ message: "CSV file required" });
@@ -682,7 +690,9 @@ export async function uploadSellingPricesCsv(req: Request, res: Response): Promi
 
         const parsedParams = csvUploadSchema.safeParse(req.body);
         if (!parsedParams.success) {
-            console.error(`[${time}] Invalid duplicateAction`);
+            console.error(`[${time}] Invalid duplicateAction:`, {
+                errors: parsedParams.error.errors,
+            });
             res.status(400).json({ message: "Invalid duplicateAction", details: parsedParams.error.errors });
             return;
         }
@@ -693,28 +703,34 @@ export async function uploadSellingPricesCsv(req: Request, res: Response): Promi
             csvBuffer = csvBuffer.slice(3);
         }
 
+        // Log raw CSV content (first 1000 characters to avoid flooding logs)
+        console.log(`[${time}] Raw CSV content (truncated):`, csvBuffer.toString("utf8").slice(0, 1000));
+
         // Define required schema fields for validation
         const requiredSchemaFields = new Set(Object.values(fieldNameMapping));
+
         const parser = new Parser({
             columns: (header: string[]) => {
-                // Normalize and map headers
+                // Log parsed headers
+                console.log(`[${time}] CSV headers:`, header);
                 const mappedHeaders = header.map((field: string) => {
                     const normalized = normalizeFieldName(field);
-                    return fieldNameMapping[normalized] || normalized; // Use mapped name or fallback to normalized
+                    return fieldNameMapping[normalized] || normalized;
                 });
-
-                // Validate that all required schema fields are present
+                // Log mapped headers
+                console.log(`[${time}] Mapped headers:`, mappedHeaders);
                 const missingFields = Array.from(requiredSchemaFields).filter(
                     (field) => !mappedHeaders.includes(field)
                 );
                 if (missingFields.length > 0) {
+                    console.error(`[${time}] Missing required CSV columns:`, missingFields);
                     throw new Error(`Missing required CSV columns: ${missingFields.join(", ")}`);
                 }
-
                 return mappedHeaders;
             },
             skip_empty_lines: true,
             trim: true,
+            cast: false, // Disable automatic type casting
         });
 
         const stream = Readable.from(csvBuffer);
@@ -725,13 +741,20 @@ export async function uploadSellingPricesCsv(req: Request, res: Response): Promi
         try {
             for await (const record of stream.pipe(parser)) {
                 rowIndex++;
+                // Log raw parsed record
+                console.log(`[${time}] Raw parsed record for row ${rowIndex}:`, record);
                 records.push({ record, rowIndex });
             }
         } catch (error) {
-            console.error(`[${time}] CSV parsing error:`, error);
+            console.error(`[${time}] CSV parsing error:`, {
+                message: error instanceof Error ? error.message : String(error),
+            });
             res.status(400).json({ message: "Invalid CSV format", details: error instanceof Error ? error.message : String(error) });
             return;
         }
+
+        // Log total records parsed
+        console.log(`[${time}] Total records parsed: ${records.length}`);
 
         const csvRecordSchema = z.object({
             broker: z.enum(Array.from(brokers) as [string, ...string[]], { message: "Invalid broker value" }),
@@ -752,6 +775,9 @@ export async function uploadSellingPricesCsv(req: Request, res: Response): Promi
         }).strict();
 
         const validatedRecords = records.map(({ record, rowIndex }) => {
+            // Log raw record before processing
+            console.log(`[${time}] Processing record for row ${rowIndex}:`, record);
+
             try {
                 const parsedRecord = {
                     ...record,
@@ -760,14 +786,25 @@ export async function uploadSellingPricesCsv(req: Request, res: Response): Promi
                     netWeight: record.netWeight ? Number(record.netWeight) : undefined,
                     askingPrice: record.askingPrice ? Number(record.askingPrice) : undefined,
                     purchasePrice: record.purchasePrice ? Number(record.purchasePrice) : undefined,
-                    reprint: record.reprint, // Pass raw reprint value to schema for validation
+                    reprint: String(record.reprint ?? ""), // Ensure reprint is a string
                     manufactureDate: record.manufactureDate,
                 };
 
+                // Log parsed record before validation
+                console.log(`[${time}] Parsed record for row ${rowIndex}:`, parsedRecord);
+
                 const parsed = csvRecordSchema.safeParse(parsedRecord);
                 if (!parsed.success) {
+                    console.error(`[${time}] Validation failed for row ${rowIndex}:`, {
+                        reprintValue: parsedRecord.reprint,
+                        record: parsedRecord,
+                        errors: parsed.error.errors,
+                    });
                     throw new Error(parsed.error.errors.map(err => err.message).join(", "));
                 }
+
+                // Log successful validation
+                console.log(`[${time}] Validation successful for row ${rowIndex}:`, parsed.data);
 
                 const data = parsed.data;
                 return {
@@ -775,7 +812,7 @@ export async function uploadSellingPricesCsv(req: Request, res: Response): Promi
                         broker: data.broker as Broker,
                         sellingMark: data.sellingMark,
                         lotNo: data.lotNo,
-                        reprint: data.reprint, // Use validated reprint value
+                        reprint: data.reprint,
                         bags: data.bags,
                         totalWeight: data.totalWeight,
                         netWeight: data.netWeight,
@@ -791,15 +828,23 @@ export async function uploadSellingPricesCsv(req: Request, res: Response): Promi
                     rowIndex,
                 };
             } catch (error) {
+                console.error(`[${time}] Error processing row ${rowIndex}:`, {
+                    message: error instanceof Error ? error.message : String(error),
+                    reprintValue: record.reprint,
+                });
                 errors.push({ row: rowIndex, message: error instanceof Error ? error.message : String(error) });
                 return null;
             }
         }).filter(Boolean) as Array<{ sellingPrice: Prisma.SellingPriceCreateInput; rowIndex: number }>;
 
+        // Log validated records
+        console.log(`[${time}] Total validated records: ${validatedRecords.length}`);
+
         const BATCH_SIZE = 500;
         const processBatch = async (batch: Array<{ sellingPrice: Prisma.SellingPriceCreateInput; rowIndex: number }>) => {
             try {
                 const timeBatch = new Date().toLocaleString("en-US", { timeZone: "Africa/Nairobi" });
+                console.log(`[${timeBatch}] Processing batch of ${batch.length} records`);
                 const result = await prisma.$transaction(async (tx) => {
                     let batchCreated = 0;
                     let batchSkipped = 0;
@@ -807,25 +852,32 @@ export async function uploadSellingPricesCsv(req: Request, res: Response): Promi
 
                     if (duplicateAction === "skip") {
                         const lotNos = batch.map(item => item.sellingPrice.lotNo);
+                        console.log(`[${timeBatch}] Checking for existing lotNos:`, lotNos);
                         const existing = await tx.sellingPrice.findMany({
                             where: { lotNo: { in: lotNos } },
                             select: { lotNo: true },
                         });
                         const existingLotNos = new Set(existing.map(item => item.lotNo));
+                        console.log(`[${timeBatch}] Existing lotNos:`, Array.from(existingLotNos));
 
                         const toCreate = batch.filter(item => !existingLotNos.has(item.sellingPrice.lotNo));
                         batchSkipped += batch.length - toCreate.length;
+                        console.log(`[${timeBatch}] Records to create: ${toCreate.length}, Skipped: ${batchSkipped}`);
 
                         if (toCreate.length > 0) {
+                            console.log(`[${timeBatch}] Creating ${toCreate.length} records`);
                             const createResult = await tx.sellingPrice.createMany({
                                 data: toCreate.map(item => item.sellingPrice),
                                 skipDuplicates: true,
                             });
                             batchCreated += createResult.count;
+                            console.log(`[${timeBatch}] Created ${batchCreated} records in batch`);
                         }
                     } else if (duplicateAction === "replace") {
+                        console.log(`[${timeBatch}] Replacing records`);
                         await Promise.all(batch.map(async ({ sellingPrice, rowIndex }) => {
                             try {
+                                console.log(`[${timeBatch}] Upserting record for lotNo: ${sellingPrice.lotNo}, reprint: ${sellingPrice.reprint}`);
                                 await tx.sellingPrice.upsert({
                                     where: { lotNo: sellingPrice.lotNo },
                                     update: { ...sellingPrice, updatedAt: new Date() },
@@ -833,15 +885,23 @@ export async function uploadSellingPricesCsv(req: Request, res: Response): Promi
                                 });
                                 batchReplaced++;
                             } catch (error) {
+                                console.error(`[${timeBatch}] Error upserting row ${rowIndex}:`, {
+                                    message: error instanceof Error ? error.message : String(error),
+                                    lotNo: sellingPrice.lotNo,
+                                    reprint: sellingPrice.reprint,
+                                });
                                 errors.push({ row: rowIndex, message: error instanceof Error ? error.message : String(error) });
                             }
                         }));
+                        console.log(`[${timeBatch}] Replaced ${batchReplaced} records in batch`);
                     } else {
+                        console.log(`[${timeBatch}] Creating records without duplicate check`);
                         const createResult = await tx.sellingPrice.createMany({
                             data: batch.map(item => item.sellingPrice),
                             skipDuplicates: true,
                         });
                         batchCreated += createResult.count;
+                        console.log(`[${timeBatch}] Created ${batchCreated} records in batch`);
                     }
 
                     return { batchCreated, batchSkipped, batchReplaced };
@@ -850,11 +910,14 @@ export async function uploadSellingPricesCsv(req: Request, res: Response): Promi
                 createdCount += result.batchCreated;
                 skippedCount += result.batchSkipped;
                 replacedCount += result.batchReplaced;
+                console.log(`[${timeBatch}] Batch processed:`, { batchCreated: result.batchCreated, batchSkipped: result.batchSkipped, batchReplaced: result.batchReplaced });
             } catch (error) {
                 console.error(`[${time}] Batch failed:`, { message: error instanceof Error ? error.message : String(error) });
             }
         };
 
+        // Log before processing batches
+        console.log(`[${time}] Total batches to process: ${Math.ceil(validatedRecords.length / BATCH_SIZE)}`);
         const batches = [];
         for (let i = 0; i < validatedRecords.length; i += BATCH_SIZE) {
             batches.push(validatedRecords.slice(i, i + BATCH_SIZE));
@@ -862,21 +925,22 @@ export async function uploadSellingPricesCsv(req: Request, res: Response): Promi
 
         await Promise.all(batches.map(batch => processBatch(batch)));
 
+        // Log final counts before response
+        console.log(`[${time}] Upload completed:`, {
+            createdCount,
+            skippedCount,
+            replacedCount,
+            totalProcessed: createdCount + skippedCount + replacedCount,
+            errors: errors.length,
+        });
+
         if (createdCount + skippedCount + replacedCount === 0) {
             console.error(`[${time}] No valid selling prices processed`);
-            res.status(400).json({ success: 0, errors });
+            res.status(400).json({ success: { created: 0, skipped: 0, replaced: 0 }, errors });
             return;
         }
 
-        if (errors.length > 0) {
-            res.status(207).json({
-                success: { created: createdCount, skipped: skippedCount, replaced: replacedCount },
-                errors,
-            });
-            return;
-        }
-
-        res.status(201).json({
+        res.status(errors.length > 0 ? 207 : 201).json({
             success: { created: createdCount, skipped: skippedCount, replaced: replacedCount },
             errors,
         });

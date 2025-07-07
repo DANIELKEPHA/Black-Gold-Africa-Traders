@@ -572,13 +572,19 @@ const brokers = new Set(Object.values(client_1.Broker));
 function uploadSellingPricesCsv(req, res) {
     return __awaiter(this, void 0, void 0, function* () {
         var _a, e_1, _b, _c;
-        var _d, _e;
+        var _d, _e, _f, _g;
         const errors = [];
         let createdCount = 0;
         let skippedCount = 0;
         let replacedCount = 0;
         const time = new Date().toLocaleString("en-US", { timeZone: "Africa/Nairobi" });
         try {
+            // Log request initiation
+            console.log(`[${time}] Starting CSV upload:`, {
+                fileName: (_d = req.file) === null || _d === void 0 ? void 0 : _d.originalname,
+                fileSize: (_e = req.file) === null || _e === void 0 ? void 0 : _e.size,
+                duplicateAction: req.body.duplicateAction,
+            });
             if (!req.file) {
                 console.error(`[${time}] No CSV file provided`);
                 res.status(400).json({ message: "CSV file required" });
@@ -603,7 +609,9 @@ function uploadSellingPricesCsv(req, res) {
             }
             const parsedParams = csvUploadSchema.safeParse(req.body);
             if (!parsedParams.success) {
-                console.error(`[${time}] Invalid duplicateAction`);
+                console.error(`[${time}] Invalid duplicateAction:`, {
+                    errors: parsedParams.error.errors,
+                });
                 res.status(400).json({ message: "Invalid duplicateAction", details: parsedParams.error.errors });
                 return;
             }
@@ -612,24 +620,30 @@ function uploadSellingPricesCsv(req, res) {
             if (csvBuffer.toString("utf8", 0, 3) === "\uFEFF") {
                 csvBuffer = csvBuffer.slice(3);
             }
+            // Log raw CSV content (first 1000 characters to avoid flooding logs)
+            console.log(`[${time}] Raw CSV content (truncated):`, csvBuffer.toString("utf8").slice(0, 1000));
             // Define required schema fields for validation
             const requiredSchemaFields = new Set(Object.values(fieldNameMapping));
             const parser = new csv_parse_1.Parser({
                 columns: (header) => {
-                    // Normalize and map headers
+                    // Log parsed headers
+                    console.log(`[${time}] CSV headers:`, header);
                     const mappedHeaders = header.map((field) => {
                         const normalized = normalizeFieldName(field);
-                        return fieldNameMapping[normalized] || normalized; // Use mapped name or fallback to normalized
+                        return fieldNameMapping[normalized] || normalized;
                     });
-                    // Validate that all required schema fields are present
+                    // Log mapped headers
+                    console.log(`[${time}] Mapped headers:`, mappedHeaders);
                     const missingFields = Array.from(requiredSchemaFields).filter((field) => !mappedHeaders.includes(field));
                     if (missingFields.length > 0) {
+                        console.error(`[${time}] Missing required CSV columns:`, missingFields);
                         throw new Error(`Missing required CSV columns: ${missingFields.join(", ")}`);
                     }
                     return mappedHeaders;
                 },
                 skip_empty_lines: true,
                 trim: true,
+                cast: false, // Disable automatic type casting
             });
             const stream = stream_1.Readable.from(csvBuffer);
             const records = [];
@@ -637,27 +651,33 @@ function uploadSellingPricesCsv(req, res) {
             // Pre-collect and validate records
             try {
                 try {
-                    for (var _f = true, _g = __asyncValues(stream.pipe(parser)), _h; _h = yield _g.next(), _a = _h.done, !_a; _f = true) {
-                        _c = _h.value;
-                        _f = false;
+                    for (var _h = true, _j = __asyncValues(stream.pipe(parser)), _k; _k = yield _j.next(), _a = _k.done, !_a; _h = true) {
+                        _c = _k.value;
+                        _h = false;
                         const record = _c;
                         rowIndex++;
+                        // Log raw parsed record
+                        console.log(`[${time}] Raw parsed record for row ${rowIndex}:`, record);
                         records.push({ record, rowIndex });
                     }
                 }
                 catch (e_1_1) { e_1 = { error: e_1_1 }; }
                 finally {
                     try {
-                        if (!_f && !_a && (_b = _g.return)) yield _b.call(_g);
+                        if (!_h && !_a && (_b = _j.return)) yield _b.call(_j);
                     }
                     finally { if (e_1) throw e_1.error; }
                 }
             }
             catch (error) {
-                console.error(`[${time}] CSV parsing error:`, error);
+                console.error(`[${time}] CSV parsing error:`, {
+                    message: error instanceof Error ? error.message : String(error),
+                });
                 res.status(400).json({ message: "Invalid CSV format", details: error instanceof Error ? error.message : String(error) });
                 return;
             }
+            // Log total records parsed
+            console.log(`[${time}] Total records parsed: ${records.length}`);
             const csvRecordSchema = zod_1.z.object({
                 broker: zod_1.z.enum(Array.from(brokers), { message: "Invalid broker value" }),
                 sellingMark: zod_1.z.string().min(1, "Selling mark is required"),
@@ -676,19 +696,31 @@ function uploadSellingPricesCsv(req, res) {
                 grade: zod_1.z.enum(Array.from(teaGrades), { message: "Invalid tea grade" }),
             }).strict();
             const validatedRecords = records.map(({ record, rowIndex }) => {
+                var _a;
+                // Log raw record before processing
+                console.log(`[${time}] Processing record for row ${rowIndex}:`, record);
                 try {
-                    const parsedRecord = Object.assign(Object.assign({}, record), { bags: record.bags ? Number(record.bags) : undefined, totalWeight: record.totalWeight ? Number(record.totalWeight) : undefined, netWeight: record.netWeight ? Number(record.netWeight) : undefined, askingPrice: record.askingPrice ? Number(record.askingPrice) : undefined, purchasePrice: record.purchasePrice ? Number(record.purchasePrice) : undefined, reprint: record.reprint, manufactureDate: record.manufactureDate });
+                    const parsedRecord = Object.assign(Object.assign({}, record), { bags: record.bags ? Number(record.bags) : undefined, totalWeight: record.totalWeight ? Number(record.totalWeight) : undefined, netWeight: record.netWeight ? Number(record.netWeight) : undefined, askingPrice: record.askingPrice ? Number(record.askingPrice) : undefined, purchasePrice: record.purchasePrice ? Number(record.purchasePrice) : undefined, reprint: String((_a = record.reprint) !== null && _a !== void 0 ? _a : ""), manufactureDate: record.manufactureDate });
+                    // Log parsed record before validation
+                    console.log(`[${time}] Parsed record for row ${rowIndex}:`, parsedRecord);
                     const parsed = csvRecordSchema.safeParse(parsedRecord);
                     if (!parsed.success) {
+                        console.error(`[${time}] Validation failed for row ${rowIndex}:`, {
+                            reprintValue: parsedRecord.reprint,
+                            record: parsedRecord,
+                            errors: parsed.error.errors,
+                        });
                         throw new Error(parsed.error.errors.map(err => err.message).join(", "));
                     }
+                    // Log successful validation
+                    console.log(`[${time}] Validation successful for row ${rowIndex}:`, parsed.data);
                     const data = parsed.data;
                     return {
                         sellingPrice: {
                             broker: data.broker,
                             sellingMark: data.sellingMark,
                             lotNo: data.lotNo,
-                            reprint: data.reprint, // Use validated reprint value
+                            reprint: data.reprint,
                             bags: data.bags,
                             totalWeight: data.totalWeight,
                             netWeight: data.netWeight,
@@ -705,38 +737,52 @@ function uploadSellingPricesCsv(req, res) {
                     };
                 }
                 catch (error) {
+                    console.error(`[${time}] Error processing row ${rowIndex}:`, {
+                        message: error instanceof Error ? error.message : String(error),
+                        reprintValue: record.reprint,
+                    });
                     errors.push({ row: rowIndex, message: error instanceof Error ? error.message : String(error) });
                     return null;
                 }
             }).filter(Boolean);
+            // Log validated records
+            console.log(`[${time}] Total validated records: ${validatedRecords.length}`);
             const BATCH_SIZE = 500;
             const processBatch = (batch) => __awaiter(this, void 0, void 0, function* () {
                 try {
                     const timeBatch = new Date().toLocaleString("en-US", { timeZone: "Africa/Nairobi" });
+                    console.log(`[${timeBatch}] Processing batch of ${batch.length} records`);
                     const result = yield prisma.$transaction((tx) => __awaiter(this, void 0, void 0, function* () {
                         let batchCreated = 0;
                         let batchSkipped = 0;
                         let batchReplaced = 0;
                         if (duplicateAction === "skip") {
                             const lotNos = batch.map(item => item.sellingPrice.lotNo);
+                            console.log(`[${timeBatch}] Checking for existing lotNos:`, lotNos);
                             const existing = yield tx.sellingPrice.findMany({
                                 where: { lotNo: { in: lotNos } },
                                 select: { lotNo: true },
                             });
                             const existingLotNos = new Set(existing.map(item => item.lotNo));
+                            console.log(`[${timeBatch}] Existing lotNos:`, Array.from(existingLotNos));
                             const toCreate = batch.filter(item => !existingLotNos.has(item.sellingPrice.lotNo));
                             batchSkipped += batch.length - toCreate.length;
+                            console.log(`[${timeBatch}] Records to create: ${toCreate.length}, Skipped: ${batchSkipped}`);
                             if (toCreate.length > 0) {
+                                console.log(`[${timeBatch}] Creating ${toCreate.length} records`);
                                 const createResult = yield tx.sellingPrice.createMany({
                                     data: toCreate.map(item => item.sellingPrice),
                                     skipDuplicates: true,
                                 });
                                 batchCreated += createResult.count;
+                                console.log(`[${timeBatch}] Created ${batchCreated} records in batch`);
                             }
                         }
                         else if (duplicateAction === "replace") {
+                            console.log(`[${timeBatch}] Replacing records`);
                             yield Promise.all(batch.map((_a) => __awaiter(this, [_a], void 0, function* ({ sellingPrice, rowIndex }) {
                                 try {
+                                    console.log(`[${timeBatch}] Upserting record for lotNo: ${sellingPrice.lotNo}, reprint: ${sellingPrice.reprint}`);
                                     yield tx.sellingPrice.upsert({
                                         where: { lotNo: sellingPrice.lotNo },
                                         update: Object.assign(Object.assign({}, sellingPrice), { updatedAt: new Date() }),
@@ -745,45 +791,57 @@ function uploadSellingPricesCsv(req, res) {
                                     batchReplaced++;
                                 }
                                 catch (error) {
+                                    console.error(`[${timeBatch}] Error upserting row ${rowIndex}:`, {
+                                        message: error instanceof Error ? error.message : String(error),
+                                        lotNo: sellingPrice.lotNo,
+                                        reprint: sellingPrice.reprint,
+                                    });
                                     errors.push({ row: rowIndex, message: error instanceof Error ? error.message : String(error) });
                                 }
                             })));
+                            console.log(`[${timeBatch}] Replaced ${batchReplaced} records in batch`);
                         }
                         else {
+                            console.log(`[${timeBatch}] Creating records without duplicate check`);
                             const createResult = yield tx.sellingPrice.createMany({
                                 data: batch.map(item => item.sellingPrice),
                                 skipDuplicates: true,
                             });
                             batchCreated += createResult.count;
+                            console.log(`[${timeBatch}] Created ${batchCreated} records in batch`);
                         }
                         return { batchCreated, batchSkipped, batchReplaced };
                     }), { timeout: 30000 });
                     createdCount += result.batchCreated;
                     skippedCount += result.batchSkipped;
                     replacedCount += result.batchReplaced;
+                    console.log(`[${timeBatch}] Batch processed:`, { batchCreated: result.batchCreated, batchSkipped: result.batchSkipped, batchReplaced: result.batchReplaced });
                 }
                 catch (error) {
                     console.error(`[${time}] Batch failed:`, { message: error instanceof Error ? error.message : String(error) });
                 }
             });
+            // Log before processing batches
+            console.log(`[${time}] Total batches to process: ${Math.ceil(validatedRecords.length / BATCH_SIZE)}`);
             const batches = [];
             for (let i = 0; i < validatedRecords.length; i += BATCH_SIZE) {
                 batches.push(validatedRecords.slice(i, i + BATCH_SIZE));
             }
             yield Promise.all(batches.map(batch => processBatch(batch)));
+            // Log final counts before response
+            console.log(`[${time}] Upload completed:`, {
+                createdCount,
+                skippedCount,
+                replacedCount,
+                totalProcessed: createdCount + skippedCount + replacedCount,
+                errors: errors.length,
+            });
             if (createdCount + skippedCount + replacedCount === 0) {
                 console.error(`[${time}] No valid selling prices processed`);
-                res.status(400).json({ success: 0, errors });
+                res.status(400).json({ success: { created: 0, skipped: 0, replaced: 0 }, errors });
                 return;
             }
-            if (errors.length > 0) {
-                res.status(207).json({
-                    success: { created: createdCount, skipped: skippedCount, replaced: replacedCount },
-                    errors,
-                });
-                return;
-            }
-            res.status(201).json({
+            res.status(errors.length > 0 ? 207 : 201).json({
                 success: { created: createdCount, skipped: skippedCount, replaced: replacedCount },
                 errors,
             });
@@ -791,8 +849,8 @@ function uploadSellingPricesCsv(req, res) {
         catch (error) {
             console.error(`[${time}] Upload selling prices error:`, {
                 message: error instanceof Error ? error.message : String(error),
-                file: (_d = req.file) === null || _d === void 0 ? void 0 : _d.originalname,
-                size: (_e = req.file) === null || _e === void 0 ? void 0 : _e.size,
+                file: (_f = req.file) === null || _f === void 0 ? void 0 : _f.originalname,
+                size: (_g = req.file) === null || _g === void 0 ? void 0 : _g.size,
             });
             if (error instanceof client_2.Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
                 res.status(409).json({ message: "Duplicate lotNo", details: error.meta });
