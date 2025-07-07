@@ -379,7 +379,9 @@ const SellingPricesUpload: React.FC = () => {
         try {
             const response = await uploadSellingPricesCsv({ file, duplicateAction }).unwrap();
             if (response.success.created === 0 && response.errors.length > 0) {
-                setErrors(response.errors.map((e) => `Row ${e.row}: ${e.message}`));
+                setErrors(
+                    response.errors.map((e: { row: number; message: string }) => `Row ${e.row}: ${e.message}`)
+                );
                 toast.error(
                     t("catalog:errors.csvUploadFailed", {
                         defaultValue: "Failed to upload CSV",
