@@ -127,7 +127,8 @@ export const Broker: {
   TBEA: 'TBEA',
   UNTB: 'UNTB',
   VENS: 'VENS',
-  TTBL: 'TTBL'
+  TTBL: 'TTBL',
+  UIBD: 'UIBD'
 };
 
 export type Broker = (typeof Broker)[keyof typeof Broker]
@@ -5298,7 +5299,7 @@ export namespace Prisma {
     invoiceNo: string
     saleCode: string
     category: $Enums.TeaCategory
-    reprint: string
+    reprint: string | null
     bags: number
     netWeight: number
     totalWeight: number
@@ -5446,7 +5447,7 @@ export namespace Prisma {
       invoiceNo: string
       saleCode: string
       category: $Enums.TeaCategory
-      reprint: string
+      reprint: string | null
       bags: number
       netWeight: number
       totalWeight: number
@@ -6617,7 +6618,7 @@ export namespace Prisma {
     invoiceNo: string
     saleCode: string
     category: $Enums.TeaCategory
-    reprint: string
+    reprint: string | null
     bags: number
     netWeight: number
     totalWeight: number
@@ -6770,7 +6771,7 @@ export namespace Prisma {
       invoiceNo: string
       saleCode: string
       category: $Enums.TeaCategory
-      reprint: string
+      reprint: string | null
       bags: number
       netWeight: number
       totalWeight: number
@@ -20278,7 +20279,7 @@ export namespace Prisma {
     invoiceNo?: StringFilter<"Catalog"> | string
     saleCode?: StringFilter<"Catalog"> | string
     category?: EnumTeaCategoryFilter<"Catalog"> | $Enums.TeaCategory
-    reprint?: StringFilter<"Catalog"> | string
+    reprint?: StringNullableFilter<"Catalog"> | string | null
     bags?: IntFilter<"Catalog"> | number
     netWeight?: FloatFilter<"Catalog"> | number
     totalWeight?: FloatFilter<"Catalog"> | number
@@ -20301,7 +20302,7 @@ export namespace Prisma {
     invoiceNo?: SortOrder
     saleCode?: SortOrder
     category?: SortOrder
-    reprint?: SortOrder
+    reprint?: SortOrderInput | SortOrder
     bags?: SortOrder
     netWeight?: SortOrder
     totalWeight?: SortOrder
@@ -20327,7 +20328,7 @@ export namespace Prisma {
     invoiceNo?: StringFilter<"Catalog"> | string
     saleCode?: StringFilter<"Catalog"> | string
     category?: EnumTeaCategoryFilter<"Catalog"> | $Enums.TeaCategory
-    reprint?: StringFilter<"Catalog"> | string
+    reprint?: StringNullableFilter<"Catalog"> | string | null
     bags?: IntFilter<"Catalog"> | number
     netWeight?: FloatFilter<"Catalog"> | number
     totalWeight?: FloatFilter<"Catalog"> | number
@@ -20350,7 +20351,7 @@ export namespace Prisma {
     invoiceNo?: SortOrder
     saleCode?: SortOrder
     category?: SortOrder
-    reprint?: SortOrder
+    reprint?: SortOrderInput | SortOrder
     bags?: SortOrder
     netWeight?: SortOrder
     totalWeight?: SortOrder
@@ -20380,7 +20381,7 @@ export namespace Prisma {
     invoiceNo?: StringWithAggregatesFilter<"Catalog"> | string
     saleCode?: StringWithAggregatesFilter<"Catalog"> | string
     category?: EnumTeaCategoryWithAggregatesFilter<"Catalog"> | $Enums.TeaCategory
-    reprint?: StringWithAggregatesFilter<"Catalog"> | string
+    reprint?: StringNullableWithAggregatesFilter<"Catalog"> | string | null
     bags?: IntWithAggregatesFilter<"Catalog"> | number
     netWeight?: FloatWithAggregatesFilter<"Catalog"> | number
     totalWeight?: FloatWithAggregatesFilter<"Catalog"> | number
@@ -20405,7 +20406,7 @@ export namespace Prisma {
     invoiceNo?: StringFilter<"SellingPrice"> | string
     saleCode?: StringFilter<"SellingPrice"> | string
     category?: EnumTeaCategoryFilter<"SellingPrice"> | $Enums.TeaCategory
-    reprint?: StringFilter<"SellingPrice"> | string
+    reprint?: StringNullableFilter<"SellingPrice"> | string | null
     bags?: IntFilter<"SellingPrice"> | number
     netWeight?: FloatFilter<"SellingPrice"> | number
     totalWeight?: FloatFilter<"SellingPrice"> | number
@@ -20429,7 +20430,7 @@ export namespace Prisma {
     invoiceNo?: SortOrder
     saleCode?: SortOrder
     category?: SortOrder
-    reprint?: SortOrder
+    reprint?: SortOrderInput | SortOrder
     bags?: SortOrder
     netWeight?: SortOrder
     totalWeight?: SortOrder
@@ -20456,7 +20457,7 @@ export namespace Prisma {
     invoiceNo?: StringFilter<"SellingPrice"> | string
     saleCode?: StringFilter<"SellingPrice"> | string
     category?: EnumTeaCategoryFilter<"SellingPrice"> | $Enums.TeaCategory
-    reprint?: StringFilter<"SellingPrice"> | string
+    reprint?: StringNullableFilter<"SellingPrice"> | string | null
     bags?: IntFilter<"SellingPrice"> | number
     netWeight?: FloatFilter<"SellingPrice"> | number
     totalWeight?: FloatFilter<"SellingPrice"> | number
@@ -20480,7 +20481,7 @@ export namespace Prisma {
     invoiceNo?: SortOrder
     saleCode?: SortOrder
     category?: SortOrder
-    reprint?: SortOrder
+    reprint?: SortOrderInput | SortOrder
     bags?: SortOrder
     netWeight?: SortOrder
     totalWeight?: SortOrder
@@ -20511,7 +20512,7 @@ export namespace Prisma {
     invoiceNo?: StringWithAggregatesFilter<"SellingPrice"> | string
     saleCode?: StringWithAggregatesFilter<"SellingPrice"> | string
     category?: EnumTeaCategoryWithAggregatesFilter<"SellingPrice"> | $Enums.TeaCategory
-    reprint?: StringWithAggregatesFilter<"SellingPrice"> | string
+    reprint?: StringNullableWithAggregatesFilter<"SellingPrice"> | string | null
     bags?: IntWithAggregatesFilter<"SellingPrice"> | number
     netWeight?: FloatWithAggregatesFilter<"SellingPrice"> | number
     totalWeight?: FloatWithAggregatesFilter<"SellingPrice"> | number
@@ -21542,7 +21543,7 @@ export namespace Prisma {
     invoiceNo: string
     saleCode: string
     category: $Enums.TeaCategory
-    reprint: string
+    reprint?: string | null
     bags: number
     netWeight: number
     totalWeight: number
@@ -21564,7 +21565,7 @@ export namespace Prisma {
     invoiceNo: string
     saleCode: string
     category: $Enums.TeaCategory
-    reprint: string
+    reprint?: string | null
     bags: number
     netWeight: number
     totalWeight: number
@@ -21585,7 +21586,7 @@ export namespace Prisma {
     invoiceNo?: StringFieldUpdateOperationsInput | string
     saleCode?: StringFieldUpdateOperationsInput | string
     category?: EnumTeaCategoryFieldUpdateOperationsInput | $Enums.TeaCategory
-    reprint?: StringFieldUpdateOperationsInput | string
+    reprint?: NullableStringFieldUpdateOperationsInput | string | null
     bags?: IntFieldUpdateOperationsInput | number
     netWeight?: FloatFieldUpdateOperationsInput | number
     totalWeight?: FloatFieldUpdateOperationsInput | number
@@ -21607,7 +21608,7 @@ export namespace Prisma {
     invoiceNo?: StringFieldUpdateOperationsInput | string
     saleCode?: StringFieldUpdateOperationsInput | string
     category?: EnumTeaCategoryFieldUpdateOperationsInput | $Enums.TeaCategory
-    reprint?: StringFieldUpdateOperationsInput | string
+    reprint?: NullableStringFieldUpdateOperationsInput | string | null
     bags?: IntFieldUpdateOperationsInput | number
     netWeight?: FloatFieldUpdateOperationsInput | number
     totalWeight?: FloatFieldUpdateOperationsInput | number
@@ -21629,7 +21630,7 @@ export namespace Prisma {
     invoiceNo: string
     saleCode: string
     category: $Enums.TeaCategory
-    reprint: string
+    reprint?: string | null
     bags: number
     netWeight: number
     totalWeight: number
@@ -21650,7 +21651,7 @@ export namespace Prisma {
     invoiceNo?: StringFieldUpdateOperationsInput | string
     saleCode?: StringFieldUpdateOperationsInput | string
     category?: EnumTeaCategoryFieldUpdateOperationsInput | $Enums.TeaCategory
-    reprint?: StringFieldUpdateOperationsInput | string
+    reprint?: NullableStringFieldUpdateOperationsInput | string | null
     bags?: IntFieldUpdateOperationsInput | number
     netWeight?: FloatFieldUpdateOperationsInput | number
     totalWeight?: FloatFieldUpdateOperationsInput | number
@@ -21671,7 +21672,7 @@ export namespace Prisma {
     invoiceNo?: StringFieldUpdateOperationsInput | string
     saleCode?: StringFieldUpdateOperationsInput | string
     category?: EnumTeaCategoryFieldUpdateOperationsInput | $Enums.TeaCategory
-    reprint?: StringFieldUpdateOperationsInput | string
+    reprint?: NullableStringFieldUpdateOperationsInput | string | null
     bags?: IntFieldUpdateOperationsInput | number
     netWeight?: FloatFieldUpdateOperationsInput | number
     totalWeight?: FloatFieldUpdateOperationsInput | number
@@ -21692,7 +21693,7 @@ export namespace Prisma {
     invoiceNo: string
     saleCode: string
     category: $Enums.TeaCategory
-    reprint: string
+    reprint?: string | null
     bags: number
     netWeight: number
     totalWeight: number
@@ -21715,7 +21716,7 @@ export namespace Prisma {
     invoiceNo: string
     saleCode: string
     category: $Enums.TeaCategory
-    reprint: string
+    reprint?: string | null
     bags: number
     netWeight: number
     totalWeight: number
@@ -21737,7 +21738,7 @@ export namespace Prisma {
     invoiceNo?: StringFieldUpdateOperationsInput | string
     saleCode?: StringFieldUpdateOperationsInput | string
     category?: EnumTeaCategoryFieldUpdateOperationsInput | $Enums.TeaCategory
-    reprint?: StringFieldUpdateOperationsInput | string
+    reprint?: NullableStringFieldUpdateOperationsInput | string | null
     bags?: IntFieldUpdateOperationsInput | number
     netWeight?: FloatFieldUpdateOperationsInput | number
     totalWeight?: FloatFieldUpdateOperationsInput | number
@@ -21760,7 +21761,7 @@ export namespace Prisma {
     invoiceNo?: StringFieldUpdateOperationsInput | string
     saleCode?: StringFieldUpdateOperationsInput | string
     category?: EnumTeaCategoryFieldUpdateOperationsInput | $Enums.TeaCategory
-    reprint?: StringFieldUpdateOperationsInput | string
+    reprint?: NullableStringFieldUpdateOperationsInput | string | null
     bags?: IntFieldUpdateOperationsInput | number
     netWeight?: FloatFieldUpdateOperationsInput | number
     totalWeight?: FloatFieldUpdateOperationsInput | number
@@ -21783,7 +21784,7 @@ export namespace Prisma {
     invoiceNo: string
     saleCode: string
     category: $Enums.TeaCategory
-    reprint: string
+    reprint?: string | null
     bags: number
     netWeight: number
     totalWeight: number
@@ -21805,7 +21806,7 @@ export namespace Prisma {
     invoiceNo?: StringFieldUpdateOperationsInput | string
     saleCode?: StringFieldUpdateOperationsInput | string
     category?: EnumTeaCategoryFieldUpdateOperationsInput | $Enums.TeaCategory
-    reprint?: StringFieldUpdateOperationsInput | string
+    reprint?: NullableStringFieldUpdateOperationsInput | string | null
     bags?: IntFieldUpdateOperationsInput | number
     netWeight?: FloatFieldUpdateOperationsInput | number
     totalWeight?: FloatFieldUpdateOperationsInput | number
@@ -21827,7 +21828,7 @@ export namespace Prisma {
     invoiceNo?: StringFieldUpdateOperationsInput | string
     saleCode?: StringFieldUpdateOperationsInput | string
     category?: EnumTeaCategoryFieldUpdateOperationsInput | $Enums.TeaCategory
-    reprint?: StringFieldUpdateOperationsInput | string
+    reprint?: NullableStringFieldUpdateOperationsInput | string | null
     bags?: IntFieldUpdateOperationsInput | number
     netWeight?: FloatFieldUpdateOperationsInput | number
     totalWeight?: FloatFieldUpdateOperationsInput | number
@@ -25622,7 +25623,7 @@ export namespace Prisma {
     invoiceNo: string
     saleCode: string
     category: $Enums.TeaCategory
-    reprint: string
+    reprint?: string | null
     bags: number
     netWeight: number
     totalWeight: number
@@ -25643,7 +25644,7 @@ export namespace Prisma {
     invoiceNo: string
     saleCode: string
     category: $Enums.TeaCategory
-    reprint: string
+    reprint?: string | null
     bags: number
     netWeight: number
     totalWeight: number
@@ -25740,7 +25741,7 @@ export namespace Prisma {
     invoiceNo: string
     saleCode: string
     category: $Enums.TeaCategory
-    reprint: string
+    reprint?: string | null
     bags: number
     netWeight: number
     totalWeight: number
@@ -25762,7 +25763,7 @@ export namespace Prisma {
     invoiceNo: string
     saleCode: string
     category: $Enums.TeaCategory
-    reprint: string
+    reprint?: string | null
     bags: number
     netWeight: number
     totalWeight: number
@@ -25978,7 +25979,7 @@ export namespace Prisma {
     invoiceNo?: StringFilter<"Catalog"> | string
     saleCode?: StringFilter<"Catalog"> | string
     category?: EnumTeaCategoryFilter<"Catalog"> | $Enums.TeaCategory
-    reprint?: StringFilter<"Catalog"> | string
+    reprint?: StringNullableFilter<"Catalog"> | string | null
     bags?: IntFilter<"Catalog"> | number
     netWeight?: FloatFilter<"Catalog"> | number
     totalWeight?: FloatFilter<"Catalog"> | number
@@ -26064,7 +26065,7 @@ export namespace Prisma {
     invoiceNo?: StringFilter<"SellingPrice"> | string
     saleCode?: StringFilter<"SellingPrice"> | string
     category?: EnumTeaCategoryFilter<"SellingPrice"> | $Enums.TeaCategory
-    reprint?: StringFilter<"SellingPrice"> | string
+    reprint?: StringNullableFilter<"SellingPrice"> | string | null
     bags?: IntFilter<"SellingPrice"> | number
     netWeight?: FloatFilter<"SellingPrice"> | number
     totalWeight?: FloatFilter<"SellingPrice"> | number
@@ -28652,7 +28653,7 @@ export namespace Prisma {
     invoiceNo: string
     saleCode: string
     category: $Enums.TeaCategory
-    reprint: string
+    reprint?: string | null
     bags: number
     netWeight: number
     totalWeight: number
@@ -28698,7 +28699,7 @@ export namespace Prisma {
     invoiceNo: string
     saleCode: string
     category: $Enums.TeaCategory
-    reprint: string
+    reprint?: string | null
     bags: number
     netWeight: number
     totalWeight: number
@@ -28776,7 +28777,7 @@ export namespace Prisma {
     invoiceNo?: StringFieldUpdateOperationsInput | string
     saleCode?: StringFieldUpdateOperationsInput | string
     category?: EnumTeaCategoryFieldUpdateOperationsInput | $Enums.TeaCategory
-    reprint?: StringFieldUpdateOperationsInput | string
+    reprint?: NullableStringFieldUpdateOperationsInput | string | null
     bags?: IntFieldUpdateOperationsInput | number
     netWeight?: FloatFieldUpdateOperationsInput | number
     totalWeight?: FloatFieldUpdateOperationsInput | number
@@ -28797,7 +28798,7 @@ export namespace Prisma {
     invoiceNo?: StringFieldUpdateOperationsInput | string
     saleCode?: StringFieldUpdateOperationsInput | string
     category?: EnumTeaCategoryFieldUpdateOperationsInput | $Enums.TeaCategory
-    reprint?: StringFieldUpdateOperationsInput | string
+    reprint?: NullableStringFieldUpdateOperationsInput | string | null
     bags?: IntFieldUpdateOperationsInput | number
     netWeight?: FloatFieldUpdateOperationsInput | number
     totalWeight?: FloatFieldUpdateOperationsInput | number
@@ -28818,7 +28819,7 @@ export namespace Prisma {
     invoiceNo?: StringFieldUpdateOperationsInput | string
     saleCode?: StringFieldUpdateOperationsInput | string
     category?: EnumTeaCategoryFieldUpdateOperationsInput | $Enums.TeaCategory
-    reprint?: StringFieldUpdateOperationsInput | string
+    reprint?: NullableStringFieldUpdateOperationsInput | string | null
     bags?: IntFieldUpdateOperationsInput | number
     netWeight?: FloatFieldUpdateOperationsInput | number
     totalWeight?: FloatFieldUpdateOperationsInput | number
@@ -28920,7 +28921,7 @@ export namespace Prisma {
     invoiceNo?: StringFieldUpdateOperationsInput | string
     saleCode?: StringFieldUpdateOperationsInput | string
     category?: EnumTeaCategoryFieldUpdateOperationsInput | $Enums.TeaCategory
-    reprint?: StringFieldUpdateOperationsInput | string
+    reprint?: NullableStringFieldUpdateOperationsInput | string | null
     bags?: IntFieldUpdateOperationsInput | number
     netWeight?: FloatFieldUpdateOperationsInput | number
     totalWeight?: FloatFieldUpdateOperationsInput | number
@@ -28942,7 +28943,7 @@ export namespace Prisma {
     invoiceNo?: StringFieldUpdateOperationsInput | string
     saleCode?: StringFieldUpdateOperationsInput | string
     category?: EnumTeaCategoryFieldUpdateOperationsInput | $Enums.TeaCategory
-    reprint?: StringFieldUpdateOperationsInput | string
+    reprint?: NullableStringFieldUpdateOperationsInput | string | null
     bags?: IntFieldUpdateOperationsInput | number
     netWeight?: FloatFieldUpdateOperationsInput | number
     totalWeight?: FloatFieldUpdateOperationsInput | number
@@ -28964,7 +28965,7 @@ export namespace Prisma {
     invoiceNo?: StringFieldUpdateOperationsInput | string
     saleCode?: StringFieldUpdateOperationsInput | string
     category?: EnumTeaCategoryFieldUpdateOperationsInput | $Enums.TeaCategory
-    reprint?: StringFieldUpdateOperationsInput | string
+    reprint?: NullableStringFieldUpdateOperationsInput | string | null
     bags?: IntFieldUpdateOperationsInput | number
     netWeight?: FloatFieldUpdateOperationsInput | number
     totalWeight?: FloatFieldUpdateOperationsInput | number

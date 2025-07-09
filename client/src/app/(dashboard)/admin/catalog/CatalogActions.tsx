@@ -41,7 +41,7 @@ const CatalogActions: React.FC<CatalogActionsProps> = ({
                 toast.error(t("catalog:errors.noItems", { defaultValue: "No catalogs available to export" }));
                 return;
             }
-            console.log(`[${new Date().toLocaleString('en-US', { timeZone: 'Africa/Nairobi' })}] Exporting catalogs${isSelectAll ? ' (all)' : ''}:`, ids || 'all');
+            // console.log(`[${new Date().toLocaleString('en-US', { timeZone: 'Africa/Nairobi' })}] Exporting catalogs${isSelectAll ? ' (all)' : ''}:`, ids || 'all');
             await exportCatalogsCsv({
                 catalogIds: ids,
             }).unwrap();

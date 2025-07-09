@@ -12,6 +12,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { AlertCircle } from "lucide-react";
+import {Broker, TeaGrade} from "@/state/enums";
 
 const OutLotsUpload: React.FC = () => {
     const { t } = useTranslation(["catalog", "general"]);
@@ -37,34 +38,28 @@ const OutLotsUpload: React.FC = () => {
         "Manufacture Date",
     ];
 
-    const validBrokers = [
-        "AMBR", "ANJL", "ATBL", "ATLS", "BICL", "BTBL", "CENT", "COMK", "CTBL", "PRME",
-        "PTBL", "TBEA", "UNTB", "VENS", "TTBL",
-    ];
-    const validGrades = [
-        "PD", "PD2", "DUST1", "DUST2", "PF1", "BP1", "FNGS", "FNGS1", "FNGS2", "BMF",
-        "BMF1", "BMFD", "BP", "BP2", "DUST", "PF2", "PF", "BOP", "BOPF",
-    ];
+    const validBrokers = Object.values(Broker) as string[];
+    const validGrades = Object.values(TeaGrade) as string[];
 
     const validateCsv = async (file: File): Promise<boolean> => {
         const time = new Date().toLocaleString("en-US", { timeZone: "Africa/Nairobi" });
-        console.log(`[${time}] Starting validateCsv:`, {
-            filename: file.name,
-            size: file.size,
-            type: file.type,
-        });
+        // console.log(`[${time}] Starting validateCsv:`, {
+        //     filename: file.name,
+        //     size: file.size,
+        //     type: file.type,
+        // });
 
         setErrors([]);
         const newErrors: string[] = [];
 
         try {
-            console.log(`[${time}] Reading CSV file: ${file.name}`);
+            // console.log(`[${time}] Reading CSV file: ${file.name}`);
             const text = await file.text();
             const lines = text.split("\n").filter((line) => line.trim());
-            console.log(`[${time}] CSV lines parsed:`, {
-                totalLines: lines.length,
-                firstFewLines: lines.slice(0, 3),
-            });
+            // console.log(`[${time}] CSV lines parsed:`, {
+            //     totalLines: lines.length,
+            //     firstFewLines: lines.slice(0, 3),
+            // });
 
             if (lines.length < 2) {
                 newErrors.push(
@@ -78,7 +73,7 @@ const OutLotsUpload: React.FC = () => {
             }
 
             const headers = lines[0].split(",").map((h) => h.trim());
-            console.log(`[${time}] CSV headers:`, headers);
+            // console.log(`[${time}] CSV headers:`, headers);
 
             const missingHeaders = requiredHeaders.filter((h) => !headers.includes(h));
             if (missingHeaders.length > 0) {
@@ -94,16 +89,16 @@ const OutLotsUpload: React.FC = () => {
 
             let firstRow: string[] | undefined;
             let rowIndex = 1;
-            console.log(`[${time}] Searching for first valid data row`);
+            // console.log(`[${time}] Searching for first valid data row`);
             while (rowIndex < lines.length && !firstRow) {
                 const row = lines[rowIndex].split(",").map((v) => v.trim());
-                console.log(`[${time}] Row ${rowIndex}:`, { rawRow: row });
+                // console.log(`[${time}] Row ${rowIndex}:`, { rawRow: row });
 
                 if (row.length >= headers.length && row.some((v) => v)) {
                     firstRow = row;
-                    console.log(`[${time}] Found first valid data row at index ${rowIndex}:`, firstRow);
+                    // console.log(`[${time}] Found first valid data row at index ${rowIndex}:`, firstRow);
                 } else {
-                    console.log(`[${time}] Skipping row ${rowIndex}: Insufficient or empty values`);
+                    // console.log(`[${time}] Skipping row ${rowIndex}: Insufficient or empty values`);
                 }
                 rowIndex++;
             }
@@ -138,7 +133,7 @@ const OutLotsUpload: React.FC = () => {
                 (acc, h, i) => ({ ...acc, [h]: firstRow![i] || "" }),
                 {}
             );
-            console.log(`[${time}] First valid data row parsed:`, rowData);
+            // console.log(`[${time}] First valid data row parsed:`, rowData);
 
             if (!rowData["Auction"]) {
                 newErrors.push(
@@ -163,10 +158,13 @@ const OutLotsUpload: React.FC = () => {
             } else if (!validBrokers.includes(rowData["Broker"])) {
                 newErrors.push(
                     t("catalog:errors.invalidBroker", {
-                        defaultValue: `Invalid Broker in first row: must be one of ${validBrokers.join(", ")}`,
+                        value: rowData["Broker"],
+                        valid: validBrokers.join(", "),
+                        defaultValue: `Invalid broker: ${rowData["Broker"]}. Valid options: ${validBrokers.join(", ")}`,
                     })
                 );
             }
+
             if (!rowData["Selling Mark"]) {
                 newErrors.push(
                     t("catalog:errors.missingSellingMark", {
@@ -222,7 +220,7 @@ const OutLotsUpload: React.FC = () => {
                 return false;
             }
 
-            console.log(`[${time}] CSV validation successful for file: ${file.name}`);
+            // console.log(`[${time}] CSV validation successful for file: ${file.name}`);
             return true;
         } catch (error) {
             newErrors.push(
@@ -301,7 +299,7 @@ const OutLotsUpload: React.FC = () => {
             <Toaster />
             <div className="max-w-md mx-auto bg-white dark:bg-gray-800 rounded-sm shadow-xl p-8">
                 <h2 className="text-2xl font-bold text-blue-700 dark:text-blue-200 mb-6">
-                    {t("catalog:uploadOutLots", { defaultValue: "Upload SellingPrice CSV" })}
+                    {t("catalog:uploadOutLots", { defaultValue: "Upload OutLots CSV" })}
                 </h2>
                 <div className="space-y-4">
                     <div>

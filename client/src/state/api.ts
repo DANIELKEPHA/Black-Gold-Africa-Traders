@@ -273,9 +273,9 @@ export const api = createApi({
 
         // Catalog Endpoints
         getCatalog: builder.query<{ data: CatalogResponse[]; meta: { page: number; limit: number; total: number; totalPages: number } }, Partial<FiltersState> & { page?: number; limit?: number }>({
-            query: (filters) => ({
-                url: "/catalogs",
-                params: cleanParams({
+            query: (filters) => {
+                // console.log(`[${new Date().toLocaleString("en-US", { timeZone: "Africa/Nairobi" })}] getCatalog raw filters:`, filters);
+                const cleanedFilters = cleanParams({
                     lotNo: filters.lotNo,
                     sellingMark: filters.sellingMark,
                     grade: filters.grade,
@@ -287,14 +287,20 @@ export const api = createApi({
                     netWeight: filters.netWeight,
                     totalWeight: filters.totalWeight,
                     askingPrice: filters.askingPrice,
-                    country: filters.country,
+                    producerCountry: filters.producerCountry,
                     manufactureDate: filters.manufactureDate,
                     broker: filters.broker,
                     search: filters.search,
-                    page: filters.page,
-                    limit: filters.limit,
-                }),
-            }),
+                    page: filters.page || 1,
+                    limit: filters.limit || 100,
+                });
+                // console.log(`[${new Date().toLocaleString("en-US", { timeZone: "Africa/Nairobi" })}] getCatalog query params:`, cleanedFilters);
+                return {
+                    url: "/catalogs",
+                    params: cleanedFilters,
+                    headers: { 'Cache-Control': 'no-cache' }
+                };
+            },
             providesTags: (result) =>
                 result?.data
                     ? [
@@ -305,7 +311,11 @@ export const api = createApi({
             async onQueryStarted(filters, { queryFulfilled }) {
                 try {
                     const { data } = await queryFulfilled;
-                    // console.log(`[${new Date().toLocaleString("en-US", { timeZone: "Africa/Nairobi" })}] getCatalog: ${JSON.stringify(data.meta)}`);
+                    // console.log(`[${new Date().toLocaleString("en-US", { timeZone: "Africa/Nairobi" })}] getCatalog response:`, {
+                    //     total: data.meta.total,
+                    //     returned: data.data.length,
+                    //     reprintValues: data.data.map(c => c.reprint)
+                    // });
                 } catch (error: any) {
                     console.error(`[${new Date().toLocaleString("en-US", { timeZone: "Africa/Nairobi" })}] getCatalog error:`, {
                         status: error?.error?.status,
@@ -316,6 +326,7 @@ export const api = createApi({
                 }
             },
         }),
+
         getCatalogById: builder.query<CatalogResponse, number>({
             query: (id) => `/catalogs/${id}`,
             providesTags: (result, error, id): TagDescription<"Catalog">[] => [{ type: "Catalog", id }],
@@ -403,7 +414,7 @@ export const api = createApi({
                     netWeight: filters.netWeight,
                     totalWeight: filters.totalWeight,
                     askingPrice: filters.askingPrice,
-                    producerCountry: filters.country,
+                    producerCountry: filters.producerCountry,
                     manufactureDate: filters.manufactureDate,
                     broker: filters.broker,
                     catalogIds: catalogIds?.join(","),
@@ -590,11 +601,16 @@ export const api = createApi({
                 });
             },
         }),
-        deleteSellingPrices: builder.mutation<{ message: string; associations: { id: number; lotNo: string }[] }, { ids: number[] }>({
-            query: ({ ids }) => ({
+
+        deleteSellingPrices: builder.mutation<
+            { message: string; associations: { id: number; lotNo: string }[]; deletedCount: number },
+            { ids: number[]; signal?: AbortSignal }
+        >({
+            query: ({ ids, signal }) => ({
                 url: "/sellingPrices",
                 method: "DELETE",
                 body: { ids },
+                signal,
             }),
             invalidatesTags: [{ type: "SellingPrices", id: "LIST" }],
             async onQueryStarted(_, { queryFulfilled }) {
@@ -604,12 +620,31 @@ export const api = createApi({
                 });
             },
         }),
-        deleteAllSellingPrices: builder.mutation<void, void>({
-            query: () => ({
+
+        deleteAllSellingPrices: builder.mutation<
+            { message: string; associations: { id: number; lotNo: string }[]; deletedCount: number },
+            { confirm: boolean; signal?: AbortSignal }
+        >({
+            query: ({ confirm, signal }) => ({
                 url: "/sellingPrices/deleteAll",
                 method: "DELETE",
+                body: { confirm },
+                signal,
             }),
             invalidatesTags: [{ type: "SellingPrices", id: "LIST" }],
+            async onQueryStarted(_, { queryFulfilled }) {
+                const time = new Date().toLocaleString("en-US", { timeZone: "Africa/Nairobi" });
+                try {
+                    const { data } = await queryFulfilled;
+                    console.log(`[${time}] deleteAllSellingPrices success:`, { deletedCount: data.deletedCount });
+                } catch (error: any) {
+                    console.error(`[${time}] deleteAllSellingPrices error:`, {
+                        status: error?.error?.status,
+                        message: error?.error?.data?.message,
+                        details: error?.error?.data?.details,
+                    });
+                }
+            },
         }),
 
         uploadSellingPricesCsv: builder.mutation({
@@ -730,7 +765,7 @@ export const api = createApi({
                     totalWeight: filters.totalWeight,
                     askingPrice: filters.askingPrice,
                     purchasePrice: filters.purchasePrice,
-                    producerCountry: filters.country,
+                    producerCountry: filters.producerCountry,
                     manufactureDate: filters.manufactureDate,
                     broker: filters.broker,
                     sellingPriceIds: sellingPriceIds?.join(","),

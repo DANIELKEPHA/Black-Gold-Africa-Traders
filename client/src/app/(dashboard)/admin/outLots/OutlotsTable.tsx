@@ -8,30 +8,22 @@ import { useGetAuthUserQuery } from "@/state/api";
 import { OutLotsResponse } from "@/state";
 
 export interface OutLotsTableProps {
-    OutLotsData: OutLotsResponse[];
+    outLotsData: OutLotsResponse[];
     selectedItems: number[];
     handleSelectItem: (id: number) => void;
+    selectAllAcrossPages: boolean;
+    handleSelectAll: () => void;
 }
 
 const OutLotsTable: React.FC<OutLotsTableProps> = ({
-                                                       OutLotsData,
+                                                       outLotsData,
                                                        selectedItems,
                                                        handleSelectItem,
+                                                       selectAllAcrossPages,
+                                                       handleSelectAll,
                                                    }) => {
     const { t } = useTranslation(["catalog", "general"]);
     const { data: authUser } = useGetAuthUserQuery();
-
-    const handleSelectAll = () => {
-        if (selectedItems.length === OutLotsData.length && OutLotsData.length > 0) {
-            handleSelectItem(0); // Deselect all
-        } else {
-            OutLotsData.forEach((outLot) => {
-                if (!selectedItems.includes(outLot.id)) {
-                    handleSelectItem(outLot.id);
-                }
-            });
-        }
-    };
 
     return (
         <Table className="rounded-sm overflow-hidden border border-gray-200 dark:border-gray-700">
@@ -39,8 +31,11 @@ const OutLotsTable: React.FC<OutLotsTableProps> = ({
                 <TableRow className="bg-gray-50 dark:bg-gray-800">
                     <TableHead className="w-[50px]">
                         <Checkbox
-                            checked={selectedItems.length === OutLotsData.length && OutLotsData.length > 0}
-                            onChange={handleSelectAll}
+                            checked={selectAllAcrossPages || (outLotsData.length > 0 && selectedItems.length === outLotsData.length)}
+                            onCheckedChange={() => {
+                                // console.log("[OutLotsTable] Select all checkbox toggled");
+                                handleSelectAll();
+                            }}
                             aria-label={t("catalog:actions.selectAll", { defaultValue: "Select all" })}
                             className="border-gray-300 dark:border-gray-600"
                         />
@@ -61,8 +56,8 @@ const OutLotsTable: React.FC<OutLotsTableProps> = ({
                 </TableRow>
             </TableHeader>
             <TableBody>
-                {OutLotsData.length > 0 ? (
-                    OutLotsData.map((outLot) => (
+                {outLotsData.length > 0 ? (
+                    outLotsData.map((outLot) => (
                         <TableRow
                             key={outLot.id}
                             className={`${
@@ -74,7 +69,10 @@ const OutLotsTable: React.FC<OutLotsTableProps> = ({
                             <TableCell onClick={(e) => e.stopPropagation()}>
                                 <Checkbox
                                     checked={selectedItems.includes(outLot.id)}
-                                    onChange={() => handleSelectItem(outLot.id)}
+                                    onCheckedChange={() => {
+                                        // console.log("[OutLotsTable] Checkbox toggled for outlot id:", outLot.id);
+                                        handleSelectItem(outLot.id);
+                                    }}
                                     aria-label={t("catalog:actions.selectItem", {
                                         defaultValue: "Select item {{lotNo}}",
                                         lotNo: outLot.lotNo,
@@ -83,13 +81,13 @@ const OutLotsTable: React.FC<OutLotsTableProps> = ({
                                 />
                             </TableCell>
                             <TableCell className="text-gray-800 dark:text-gray-200">{outLot.lotNo}</TableCell>
-                            <TableCell className="text-gray-800 dark:text-gray-200">{outLot.auction}</TableCell>
+                            <TableCell className="text-gray-800 dark:text-gray-200">{outLot.auction ?? "N/A"}</TableCell>
                             <TableCell className="text-gray-800 dark:text-gray-200">
-                                {formatBrokerName(outLot.broker)}
+                                {formatBrokerName(outLot.broker) ?? "N/A"}
                             </TableCell>
-                            <TableCell className="text-gray-800 dark:text-gray-200">{outLot.sellingMark}</TableCell>
-                            <TableCell className="text-gray-800 dark:text-gray-200">{outLot.grade}</TableCell>
-                            <TableCell className="text-gray-800 dark:text-gray-200">{outLot.invoiceNo}</TableCell>
+                            <TableCell className="text-gray-800 dark:text-gray-200">{outLot.sellingMark ?? "N/A"}</TableCell>
+                            <TableCell className="text-gray-800 dark:text-gray-200">{outLot.grade ?? "N/A"}</TableCell>
+                            <TableCell className="text-gray-800 dark:text-gray-200">{outLot.invoiceNo ?? "N/A"}</TableCell>
                             <TableCell className="text-gray-800 dark:text-gray-200">{outLot.bags}</TableCell>
                             <TableCell className="text-gray-800 dark:text-gray-200">
                                 {(outLot.totalWeight - outLot.netWeight).toFixed(2)} kg
@@ -101,14 +99,20 @@ const OutLotsTable: React.FC<OutLotsTableProps> = ({
                                 ${outLot.baselinePrice.toFixed(2)}
                             </TableCell>
                             <TableCell className="text-gray-800 dark:text-gray-200">
-                                {new Date(outLot.manufactureDate).toISOString().slice(0, 10)}
+                                {outLot.manufactureDate
+                                    ? new Date(outLot.manufactureDate).toLocaleDateString("en-US", {
+                                        day: "2-digit",
+                                        month: "2-digit",
+                                        year: "numeric",
+                                    })
+                                    : "N/A"}
                             </TableCell>
                         </TableRow>
                     ))
                 ) : (
                     <TableRow>
                         <TableCell colSpan={12} className="text-center py-4 text-gray-500 dark:text-gray-400">
-                            {t("catalog:noOutLots", { defaultValue: "No outLots found" })}
+                            {t("catalog:noOutLots", { defaultValue: "No outlots found" })}
                         </TableCell>
                     </TableRow>
                 )}

@@ -25,83 +25,106 @@ const OutLotsDetails: React.FC<OutLotsDetailsProps> = ({ params }) => {
 
     const handleDownload = async () => {
         try {
+            if (!outLot) {
+                toast.error(
+                    t("catalog:errors.noOutLot", { defaultValue: "No outlot data available" })
+                );
+                return;
+            }
+            console.log("[OutLotsDetails] Exporting outlot with ID:", outLot.id);
             await exportOutLots({
-                outLotIds: [parseInt(params.id)], // Always export the specific outLot
+                outLotIds: [outLot.id],
             }).unwrap();
-
             toast.success(
                 t("catalog:success.xlsxDownloaded", { defaultValue: "XLSX downloaded successfully" })
             );
         } catch (err: any) {
+            console.error("[OutLotsDetails] Export error:", err);
             toast.error(
+                err?.data?.message ||
                 t("catalog:errors.xlsxError", { defaultValue: "Failed to export XLSX" })
             );
         }
     };
 
     if (isAuthLoading || isOutLotLoading) return <Loading />;
-    if (error || !outLot)
+    if (error || !outLot) {
+        console.error("[OutLotsDetails] Error loading outlot, ID:", params.id, { error });
         return (
             <div className="text-red-500 p-4">
                 {t("catalog:errors.error", { defaultValue: "Error loading outlot" })}
             </div>
         );
+    }
 
     return (
         <div className="min-h-screen bg-gradient-to-br from-blue-50 via-blue-100 to-blue-200 dark:from-blue-900 dark:via-blue-800 dark:to-blue-700 py-12 px-4 sm:px-6 lg:px-8">
             <Toaster />
             <div className="max-w-3xl mx-auto bg-white dark:bg-gray-800 rounded-sm shadow-xl p-8">
                 <h2 className="text-2xl font-bold text-blue-700 dark:text-blue-200 mb-6">
-                    {t("catalog:outLotDetails", { defaultValue: "OutLot Details" })}
+                    {t("catalog:outLotDetails", { defaultValue: "Outlot Details" })}
                 </h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                         <p className="font-semibold">{t("catalog:lotNo", { defaultValue: "Lot Number" })}:</p>
-                        <p>{outLot.lotNo}</p>
+                        <p>{outLot.lotNo ?? "N/A"}</p>
                     </div>
                     <div>
                         <p className="font-semibold">{t("catalog:auction", { defaultValue: "Auction" })}:</p>
-                        <p>{outLot.auction}</p>
+                        <p>{outLot.auction ?? "N/A"}</p>
                     </div>
                     <div>
                         <p className="font-semibold">{t("catalog:broker", { defaultValue: "Broker" })}:</p>
-                        <p>{outLot.broker}</p>
+                        <p>{formatBrokerName(outLot.broker) ?? "N/A"}</p>
                     </div>
                     <div>
                         <p className="font-semibold">{t("catalog:sellingMark", { defaultValue: "Selling Mark" })}:</p>
-                        <p>{outLot.sellingMark}</p>
+                        <p>{outLot.sellingMark ?? "N/A"}</p>
                     </div>
                     <div>
                         <p className="font-semibold">{t("catalog:grade", { defaultValue: "Grade" })}:</p>
-                        <p>{outLot.grade}</p>
+                        <p>{outLot.grade ?? "N/A"}</p>
                     </div>
                     <div>
                         <p className="font-semibold">{t("catalog:invoiceNo", { defaultValue: "Invoice Number" })}:</p>
-                        <p>{outLot.invoiceNo}</p>
+                        <p>{outLot.invoiceNo ?? "N/A"}</p>
                     </div>
                     <div>
                         <p className="font-semibold">{t("catalog:bags", { defaultValue: "Bags" })}:</p>
-                        <p>{outLot.bags}</p>
+                        <p>{outLot.bags ?? "N/A"}</p>
                     </div>
                     <div>
                         <p className="font-semibold">{t("catalog:netWeight", { defaultValue: "Net Weight" })}:</p>
-                        <p>{outLot.netWeight.toFixed(2)} kg</p>
+                        <p>{outLot.netWeight?.toFixed(2) ?? "N/A"} kg</p>
                     </div>
                     <div>
                         <p className="font-semibold">{t("catalog:tareWeight", { defaultValue: "Tare Weight" })}:</p>
-                        <p>{(outLot.totalWeight - outLot.netWeight).toFixed(2)} kg</p>
+                        <p>
+                            {outLot.totalWeight && outLot.netWeight
+                                ? (outLot.totalWeight - outLot.netWeight).toFixed(2)
+                                : "N/A"}{" "}
+                            kg
+                        </p>
                     </div>
                     <div>
                         <p className="font-semibold">{t("catalog:totalWeight", { defaultValue: "Total Weight" })}:</p>
-                        <p>{outLot.totalWeight.toFixed(2)} kg</p>
+                        <p>{outLot.totalWeight?.toFixed(2) ?? "N/A"} kg</p>
                     </div>
                     <div>
                         <p className="font-semibold">{t("catalog:baselinePrice", { defaultValue: "Baseline Price" })}:</p>
-                        <p>${outLot.baselinePrice.toFixed(2)}</p>
+                        <p>${outLot.baselinePrice?.toFixed(2) ?? "N/A"}</p>
                     </div>
                     <div>
                         <p className="font-semibold">{t("catalog:manufactureDate", { defaultValue: "Manufacture Date" })}:</p>
-                        <p>{new Date(outLot.manufactureDate).toISOString().slice(0, 10)}</p>
+                        <p>
+                            {outLot.manufactureDate
+                                ? new Date(outLot.manufactureDate).toLocaleDateString("en-US", {
+                                    day: "2-digit",
+                                    month: "2-digit",
+                                    year: "numeric",
+                                })
+                                : "N/A"}
+                        </p>
                     </div>
                 </div>
                 <div className="mt-6 flex justify-between">

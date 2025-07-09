@@ -161,13 +161,14 @@ const buildWhereConditions = (params, userId, role) => {
                 conditions.invoiceNo = { equals: value };
         },
         reprint: (value) => {
-            var _a;
             if (value !== undefined) {
                 const parsed = catalogSchemas_1.reprintSchema.safeParse(value);
                 if (!parsed.success) {
-                    throw new Error(`Invalid reprint: ${value}. Must be "No" or a positive integer`);
+                    throw new Error(`Invalid reprint: ${value}. Must be 'No', a positive integer string, or null`);
                 }
-                conditions.reprint = (_a = parsed.data) !== null && _a !== void 0 ? _a : null;
+                if (parsed.data !== null) {
+                    conditions.reprint = parsed.data;
+                }
             }
         },
     };
@@ -204,11 +205,26 @@ const getCatalogs = (req, res) => __awaiter(void 0, void 0, void 0, function* ()
         else if (!Array.isArray(rawIds)) {
             rawIds = rawIds ? [rawIds] : undefined;
         }
+        // console.log(`[${new Date().toLocaleString("en-US", { timeZone: "Africa/Nairobi" })}] getCatalogs raw query:`, req.query);
         const params = catalogSchemas_1.querySchema.safeParse(Object.assign(Object.assign({}, req.query), { ids: rawIds ? rawIds.map((id) => Number(id)) : undefined }));
         if (!params.success) {
+            console.error(`[${new Date().toLocaleString("en-US", { timeZone: "Africa/Nairobi" })}] getCatalogs validation error:`, {
+                errors: params.error.issues.map(issue => ({
+                    path: issue.path.join('.'),
+                    message: issue.message,
+                    code: issue.code,
+                    received: 'received' in issue ? issue.received : req.query[issue.path[0]] || 'undefined', // Safe access
+                })),
+                query: req.query,
+            });
             return res.status(400).json({
                 message: "Invalid query parameters",
-                details: params.error.errors,
+                details: params.error.issues.map(issue => ({
+                    path: issue.path.join('.'),
+                    message: issue.message,
+                    code: issue.code,
+                    received: 'received' in issue ? issue.received : req.query[issue.path[0]] || 'undefined', // Safe access
+                })),
             });
         }
         const { ids, lotNo, sellingMark, bags, totalWeight, netWeight, askingPrice, producerCountry, manufactureDate, saleCode, category, grade, broker, invoiceNo, reprint, page = 1, limit = 100, } = params.data;
@@ -228,7 +244,10 @@ const getCatalogs = (req, res) => __awaiter(void 0, void 0, void 0, function* ()
             broker,
             invoiceNo,
             reprint,
+            sortBy: "",
+            sortOrder: "asc"
         });
+        // console.log(`[${new Date().toLocaleString("en-US", { timeZone: "Africa/Nairobi" })}] getCatalogs where conditions:`, where);
         const skip = (page - 1) * limit;
         const take = limit;
         const [catalogs, total] = yield Promise.all([
@@ -251,6 +270,12 @@ const getCatalogs = (req, res) => __awaiter(void 0, void 0, void 0, function* ()
             prisma.catalog.count({ where }),
         ]);
         const totalPages = Math.ceil(total / limit);
+        // console.log(`[${new Date().toLocaleString("en-US", { timeZone: "Africa/Nairobi" })}] getCatalogs response:`, {
+        //     total,
+        //     totalPages,
+        //     returned: catalogs.length,
+        //     reprintValues: catalogs.map(c => c.reprint)
+        // });
         // Normalize admin property for serializeCatalog
         const normalizedCatalogs = catalogs.map((catalog) => {
             var _a;
@@ -262,6 +287,7 @@ const getCatalogs = (req, res) => __awaiter(void 0, void 0, void 0, function* ()
         });
     }
     catch (error) {
+        console.error(`[${new Date().toLocaleString("en-US", { timeZone: "Africa/Nairobi" })}] getCatalogs error:`, error);
         return res.status(500).json({
             message: "Internal server error",
             details: error instanceof Error ? error.message : String(error),
@@ -628,7 +654,7 @@ function uploadCatalogsCsv(req, res) {
             const { duplicateAction } = parsedParams.data;
             let rowIndex = 1;
             let batch = [];
-            const BATCH_SIZE = 50;
+            const BATCH_SIZE = 200;
             const MAX_CONCURRENT_BATCHES = 2;
             let csvBuffer = req.file.buffer;
             if (csvBuffer.toString("utf8", 0, 3) === "\uFEFF") {
@@ -733,7 +759,7 @@ function uploadCatalogsCsv(req, res) {
                         if (!record.lotNo || !record.saleCode) {
                             throw new Error("Missing required fields: lotNo or saleCode");
                         }
-                        const parsedRecord = Object.assign(Object.assign({}, record), { bags: record.bags ? Number(record.bags) : undefined, totalWeight: record.totalWeight ? Number(record.totalWeight) : undefined, netWeight: record.netWeight ? Number(record.netWeight) : undefined, askingPrice: record.askingPrice ? Number(record.askingPrice) : undefined, reprint: record.reprint, saleCode: record.saleCode, manufactureDate: record.manufactureDate, category: record.category, grade: record.grade, broker: record.broker, adminCognitoId: authenticatedUser.userId });
+                        const parsedRecord = Object.assign(Object.assign({}, record), { bags: record.bags ? Number(record.bags) : undefined, totalWeight: record.totalWeight ? Number(record.totalWeight) : undefined, netWeight: record.netWeight ? Number(record.netWeight) : undefined, askingPrice: record.askingPrice ? Number(record.askingPrice) : undefined, reprint: record.reprint, saleCode: record.saleCode, manufactureDate: record.manufactureDate, category: record.category, grade: record.grade, broker: record.broker });
                         if (parsedRecord.reprint && parsedRecord.reprint !== "No" && isNaN(Number(parsedRecord.reprint))) {
                             throw new Error(`Invalid reprint value: ${parsedRecord.reprint}. Must be "No" or a number`);
                         }

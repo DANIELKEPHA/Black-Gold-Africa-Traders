@@ -18,7 +18,7 @@ import {
 import { useTranslation } from "react-i18next";
 import { Toaster } from "sonner";
 import { FiltersState, toggleFiltersFullOpen, setViewMode } from "@/state";
-import {UseSellingPricesFilters} from "@/app/(dashboard)/admin/sellingPrices/UseSellingPricesFilters";
+import {useSellingPricesFilters} from "@/app/(dashboard)/admin/sellingPrices/UseSellingPricesFilters";
 
 // Define an interface for filter field objects
 interface FilterField {
@@ -36,7 +36,6 @@ const FiltersBar: React.FC = () => {
     const isFiltersFullOpen = useSelector((state: any) => state.global.isFiltersFullOpen);
     const viewMode = useSelector((state: any) => state.global.viewMode);
     const {
-        filters,
         localFilters,
         errors,
         filterOptions,
@@ -44,29 +43,7 @@ const FiltersBar: React.FC = () => {
         handleFilterChange,
         handleSubmit,
         handleReset,
-    } = UseSellingPricesFilters({
-        translationNamespaces: ["catalog"], // or ["sellingPrices"] if separate namespace
-        filterOptions: {
-            producerCountries: ["Kenya", "Uganda"],
-            grades: ["BP1", "PF1"],
-            categories: ["m1", "m2"],
-            brokers: ["LIM", "EMSL"],
-            saleCodes: ["26", "27"],
-            // Optional range filters:
-            bags: { min: 0, max: 500 },
-            netWeight: { min: 0, max: 10000 },
-            askingPrice: { min: 0, max: 1000 },
-            manufactureDate: { min: "2024-01-01", max: "2025-12-31" },
-        },
-        // optional validator override:
-        validateFilter: (key, value, t) => {
-            if (key === "askingPrice" && parseFloat(value) < 10) {
-                return t("catalog:errors.askingPriceTooLow", { defaultValue: "Too low" });
-            }
-            return undefined;
-        },
-    });
-
+    } = useSellingPricesFilters();
 
     const compactFilterFields: FilterField[] = [
         { key: "category", placeholder: "categoryPlaceholder", options: filterOptions?.categories },

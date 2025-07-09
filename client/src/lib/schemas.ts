@@ -11,23 +11,16 @@ export const settingsSchema = z.object({
     phoneNumber: z.string().min(10, "Phone number must be at least 10 digits"),
 });
 
-const reprintSchema = z.preprocess((val) => {
-    // Handle case where val is already processed
-    if (val === 'No' || val === null) return 'No';
-
-    // Handle number inputs (convert to string)
-    if (typeof val === 'number') return String(val);
-
-    // Handle string inputs
-    if (val === 'No') return 'No';
-    if (val === '') return undefined;
-
-    const num = Number(val);
-    return isNaN(num) ? undefined : String(num);
-}, z.union([
-    z.string().regex(/^[1-9]\d*$/, 'Reprint number must be positive integer'),
-    z.literal('No'),
-])).optional().describe('Either "No" or a positive integer string');
+export const reprintSchema = z
+    .union([
+        z.literal("No"),
+        z.string().regex(/^[1-9]\d*$/, {
+            message: "Reprint must be 'No' or a positive integer string",
+        }),
+    ])
+    .nullable()
+    .transform((val) => (val === "" ? null : val))
+    .describe("Either 'No', a positive integer string, or null");
 
 export const createCatalogSchema = z.object({
     broker: z.enum(brokerValues, { message: "Invalid Broker" }),
@@ -37,7 +30,7 @@ export const createCatalogSchema = z.object({
     invoiceNo: z.string().min(1, "Invoice number is required").nullable(),
     saleCode: z.string().min(1, "Sale code is required"),
     category: z.enum(teaCategoryValues, { message: "Invalid tea category" }),
-    reprint: reprintSchema,
+    reprint: reprintSchema.optional(),
     bags: z.number().int().min(1, "Bags must be at least 1"),
     netWeight: z.number().min(0, "Net weight must be non-negative"),
     totalWeight: z.number().min(0, "Total weight must be non-negative"),
@@ -162,7 +155,7 @@ export const createSellingPriceSchema = z.object({
     purchasePrice: z.number().min(0, "Purchase price must be non-negative"),
     producerCountry: z.string().min(1, "Country is required"),
     manufactureDate: z.string().min(1, "Manufacture date is required"),
-    reprint: reprintSchema,
+    reprint: reprintSchema.optional(),
     adminCognitoId: z.string().min(1, "Admin ID is required"),
 });
 

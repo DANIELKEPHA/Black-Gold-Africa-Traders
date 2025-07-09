@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslation } from "react-i18next";
 import { Toaster, toast } from "sonner";
@@ -29,21 +29,25 @@ const SellingPrices: React.FC = () => {
     const { t } = useTranslation(["catalog", "general"]);
     const router = useRouter();
     const { data: authUser, isLoading: isAuthLoading } = useGetAuthUserQuery();
-    const filters = useAppSelector((state) => state.global.filters);
+    const filters = useAppSelector((state) => state.global.filters) || {};
     const viewMode = useAppSelector((state) => state.global.viewMode);
     const [selectedItems, setSelectedItems] = useState<number[]>([]);
+    const [isSelectAllPages, setIsSelectAllPages] = useState<boolean>(false);
     const [page, setPage] = useState(1);
     const [isBulkDeleting, setIsBulkDeleting] = useState<boolean>(false);
     const [isDeleteBulkOpen, setIsDeleteBulkOpen] = useState(false);
     const [isDeleting, setIsDeleting] = useState<Record<number, boolean>>({});
     const limit = 100;
 
-    const { data: sellingPricesDataResponse, isLoading, error } = useGetSellingPricesQuery(
-        {
-            ...filters,
-            page,
-            limit,
-        },
+    console.log("[SellingPrices] Filters before query:", filters);
+
+    const {
+        data: sellingPricesDataResponse,
+        isLoading,
+        error,
+        refetch,
+    } = useGetSellingPricesQuery(
+        { ...filters, page, limit },
         { skip: !authUser?.cognitoInfo?.userId }
     );
 
@@ -51,74 +55,178 @@ const SellingPrices: React.FC = () => {
     const [deleteAllSellingPrices] = useDeleteAllSellingPricesMutation();
 
     const sellingPricesData = sellingPricesDataResponse?.data || [];
-    const { totalPages = 1 } = sellingPricesDataResponse?.meta || {};
+    const { totalPages = 1, total = 0 } = sellingPricesDataResponse?.meta || {};
+
+    // Reset state on component unmount
+    useEffect(() => {
+        return () => {
+            setIsDeleting({});
+            setSelectedItems([]);
+            setIsSelectAllPages(false);
+        };
+    }, []);
+
+    // Debug log for query data changes
+    useEffect(() => {
+        console.log(
+            `[${new Date().toLocaleString("en-US", { timeZone: "Africa/Nairobi" })}] Selling prices data updated:`,
+            {
+                dataLength: sellingPricesData.length,
+                total,
+                page,
+                totalPages,
+                selectedItems,
+                isSelectAllPages,
+            }
+        );
+    }, [sellingPricesData, total, page, totalPages, selectedItems, isSelectAllPages]);
 
     const handleSelectItem = useCallback((itemId: number) => {
-        setSelectedItems((prev) =>
-            prev.includes(itemId) ? prev.filter((id) => id !== itemId) : [...prev, itemId]
-        );
+        console.log("[SellingPrices] handleSelectItem called with itemId:", itemId);
+        setSelectedItems((prev) => {
+            const newSelected = prev.includes(itemId)
+                ? prev.filter((id) => id !== itemId)
+                : [...prev, itemId];
+            console.log("[SellingPrices] New selected items:", newSelected);
+            setIsSelectAllPages(false); // Reset select all pages when selecting individual items
+            return newSelected;
+        });
     }, []);
 
     const handleSelectAll = useCallback(() => {
+        console.log(
+            "[SellingPrices] handleSelectAll called, current isSelectAllPages:",
+            isSelectAllPages
+        );
         if (!sellingPricesData || sellingPricesData.length === 0) {
             setSelectedItems([]);
+            setIsSelectAllPages(false);
+            console.log("[SellingPrices] No data to select");
             return;
         }
-        if (selectedItems.length === sellingPricesData.length) {
+        if (isSelectAllPages || selectedItems.length === sellingPricesData.length) {
             setSelectedItems([]);
+            setIsSelectAllPages(false);
+            console.log("[SellingPrices] Deselected all items");
         } else {
-            setSelectedItems(sellingPricesData.map((item) => item.id));
+            const validIds = sellingPricesData
+                .filter((item) => Number.isInteger(item.id) && item.id > 0)
+                .map((item) => item.id);
+            setSelectedItems(validIds);
+            setIsSelectAllPages(true);
+            console.log("[SellingPrices] Selected all items:", validIds);
         }
-    }, [sellingPricesData, selectedItems.length]);
+    }, [sellingPricesData, selectedItems.length, isSelectAllPages]);
 
-    const handleBulkDelete = async () => {
-        if (selectedItems.length === 0) {
-            toast.error(t("catalog:errors.noItemsSelected", { defaultValue: "No items selected" }));
-            return;
-        }
+    const handleBulkDelete = () => {
         if (!authUser?.cognitoInfo?.userId) {
-            toast.error(t("catalog:errors.authError", { defaultValue: "Authentication error" }));
+            toast.error(t("catalog:errors.authError", { defaultValue: "User authentication data is incomplete" }));
             return;
         }
-
-        // If all items on the current page are selected, trigger delete all
-        if (selectedItems.length === sellingPricesData.length && totalPages > 1) {
-            setIsDeleteBulkOpen(true);
+        if (selectedItems.length === 0 && !isSelectAllPages) {
+            toast.error(t("catalog:errors.noItemsSelected", { defaultValue: "No items selected or no data available" }));
             return;
         }
-
         setIsDeleteBulkOpen(true);
     };
 
     const handleDelete = async (id: number) => {
+        if (!authUser?.cognitoInfo?.userId) {
+            toast.error(t("catalog:errors.authError", { defaultValue: "User authentication data is incomplete" }));
+            return;
+        }
         try {
             setIsDeleting((prev) => ({ ...prev, [id]: true }));
-            await deleteSellingPrices({ ids: [id] }).unwrap();
+            const controller = new AbortController();
+            setTimeout(() => controller.abort(), 10000);
+            await deleteSellingPrices({ ids: [id], signal: controller.signal }).unwrap();
             setSelectedItems((prev) => prev.filter((itemId) => itemId !== id));
+            setIsSelectAllPages(false);
+            await refetch();
+            if (sellingPricesData.length === 1 && page > 1) {
+                setPage((prev) => prev - 1);
+            }
             toast.success(t("catalog:success.sellingPriceDeleted", { defaultValue: "Selling price deleted" }));
         } catch (error: any) {
-            toast.error(t("catalog:errors.deleteFailed", { defaultValue: "Deletion failed" }));
+            console.error(
+                `[${new Date().toLocaleString("en-US", { timeZone: "Africa/Nairobi" })}] Delete error for ID ${id}:`,
+                error
+            );
+            const errorMessage = error?.data?.message || t("catalog:errors.deleteFailed", { defaultValue: "Deletion failed" });
+            if (error.name === "AbortError") {
+                toast.error(t("catalog:errors.timeout", { defaultValue: "Deletion request timed out" }));
+            } else {
+                toast.error(errorMessage);
+            }
         } finally {
-            setIsDeleting((prev) => ({ ...prev, [id]: false }));
+            setIsDeleting((prev) => {
+                const newState = { ...prev };
+                delete newState[id];
+                return newState;
+            });
         }
     };
 
     const confirmBulkDelete = async () => {
+        if (!authUser?.cognitoInfo?.userId) {
+            toast.error(t("catalog:errors.authError", { defaultValue: "User authentication data is incomplete" }));
+            setIsDeleteBulkOpen(false);
+            return;
+        }
+        if (selectedItems.length === 0 && !isSelectAllPages) {
+            toast.error(t("catalog:errors.noItemsSelected", { defaultValue: "No items selected" }));
+            setIsDeleteBulkOpen(false);
+            return;
+        }
         try {
             setIsBulkDeleting(true);
-            if (selectedItems.length === sellingPricesData.length && totalPages > 1) {
-                // Delete all selling prices
-                await deleteAllSellingPrices().unwrap();
-                setSelectedItems([]);
-                toast.success(t("catalog:success.allSellingPricesDeleted", { defaultValue: "All selling prices deleted" }));
+            const controller = new AbortController();
+            setTimeout(() => controller.abort(), 10000);
+            if (isSelectAllPages) {
+                console.log(
+                    `[${new Date().toLocaleString("en-US", { timeZone: "Africa/Nairobi" })}] Sending deleteAllSellingPrices request`
+                );
+                const { deletedCount } = await deleteAllSellingPrices({ confirm: true, signal: controller.signal }).unwrap();
+                if (deletedCount === 0) {
+                    toast.warning(t("catalog:warnings.noItemsDeleted", { defaultValue: "No selling prices were deleted" }));
+                } else {
+                    toast.success(
+                        t("catalog:success.allSellingPricesDeleted", { defaultValue: `All ${deletedCount} selling prices deleted` })
+                    );
+                }
             } else {
-                // Delete selected items
-                await deleteSellingPrices({ ids: selectedItems }).unwrap();
-                setSelectedItems([]);
-                toast.success(t("catalog:success.sellingPricesDeleted", { defaultValue: "Selling prices deleted" }));
+                console.log(
+                    `[${new Date().toLocaleString("en-US", { timeZone: "Africa/Nairobi" })}] Sending deleteSellingPrices with IDs:`,
+                    selectedItems
+                );
+                const { deletedCount } = await deleteSellingPrices({ ids: selectedItems, signal: controller.signal }).unwrap();
+                if (deletedCount === 0) {
+                    toast.warning(t("catalog:warnings.noItemsDeleted", { defaultValue: "No selling prices were deleted" }));
+                } else {
+                    toast.success(
+                        t("catalog:success.sellingPricesDeleted", { defaultValue: `${deletedCount} selling price(s) deleted` })
+                    );
+                }
+            }
+            setSelectedItems([]);
+            setIsSelectAllPages(false);
+            await refetch();
+            if (sellingPricesData.length === selectedItems.length && page > 1) {
+                setPage((prev) => prev - 1);
+            } else if (sellingPricesData.length === 0 && page > 1) {
+                setPage(1);
             }
         } catch (error: any) {
-            toast.error(t("catalog:errors.bulkDeleteFailed", { defaultValue: "Bulk deletion failed" }));
+            console.error(
+                `[${new Date().toLocaleString("en-US", { timeZone: "Africa/Nairobi" })}] Bulk delete error:`,
+                error
+            );
+            const errorMessage = error?.data?.message || t("catalog:errors.bulkDeleteFailed", { defaultValue: "Bulk deletion failed" });
+            if (error.name === "AbortError") {
+                toast.error(t("catalog:errors.timeout", { defaultValue: "Bulk deletion request timed out" }));
+            } else {
+                toast.error(errorMessage);
+            }
         } finally {
             setIsBulkDeleting(false);
             setIsDeleteBulkOpen(false);
@@ -126,17 +234,25 @@ const SellingPrices: React.FC = () => {
     };
 
     if (isAuthLoading || isLoading) return <Loading />;
-    if (error)
+    if (error) {
+        console.error(
+            `[${new Date().toLocaleString("en-US", { timeZone: "Africa/Nairobi" })}] Error loading selling prices:`,
+            error
+        );
         return (
             <div className="text-red-500 p-4">
                 {t("catalog:errors.error", { defaultValue: "Error loading selling prices" })}
             </div>
         );
+    }
 
-    const deleteMessage = t("catalog:confirm.bulkDeleteSellingPricesStatic", {
-        defaultValue: "You are about to delete all selling prices",
-    });
-
+    const deleteMessage = isSelectAllPages
+        ? t("catalog:confirm.bulkDeleteAllSellingPrices", {
+              defaultValue: `You are about to delete ALL ${total} selling prices across all pages. This action cannot be undone.`,
+          })
+        : t("catalog:confirm.bulkDeleteSellingPricesStatic", {
+              defaultValue: `You are about to delete ${selectedItems.length} selling price(s).`,
+          });
 
     return (
         <div className="bg-white dark:bg-gray-800 rounded-sm shadow-md p-6">
@@ -144,18 +260,23 @@ const SellingPrices: React.FC = () => {
             <SellingPricesActions
                 sellingPricesData={sellingPricesData}
                 selectedItems={selectedItems}
+                isSelectAllPages={isSelectAllPages}
                 handleSelectAll={handleSelectAll}
                 handleBulkDelete={handleBulkDelete}
             />
             {viewMode === "list" ? (
                 <SellingPricesTable
-                    SellingPriceData={sellingPricesData}
+                    key={sellingPricesData.length}
+                    sellingPricesData={sellingPricesData}
                     selectedItems={selectedItems}
                     handleSelectItem={handleSelectItem}
+                    isSelectAllPages={isSelectAllPages}
+                    handleSelectAll={handleSelectAll}
                 />
             ) : (
                 <SellingPricesGrid
-                    SellingPriceData={sellingPricesData}
+                    key={sellingPricesData.length}
+                    sellingPricesData={sellingPricesData}
                     selectedItems={selectedItems}
                     handleSelectItem={handleSelectItem}
                     handleDelete={handleDelete}

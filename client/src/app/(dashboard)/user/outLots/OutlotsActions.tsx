@@ -4,7 +4,6 @@ import React from "react";
 import { useTranslation } from "react-i18next";
 import { Toaster, toast } from "sonner";
 import { Download, Loader2 } from "lucide-react";
-import { useRouter } from "next/navigation";
 import { useExportOutLotsXlsxMutation, useGetAuthUserQuery, useGetOutlotsQuery } from "@/state/api";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
@@ -24,7 +23,6 @@ const OutLotsActions: React.FC<OutLotsActionsProps> = ({
                                                            handleSelectAll,
                                                        }) => {
     const { t } = useTranslation(["catalog", "general"]);
-    const router = useRouter();
     const { data: authUser } = useGetAuthUserQuery();
     const [exportOutLots, { isLoading: isExporting }] = useExportOutLotsXlsxMutation();
     const { data: allOutLotsData, isLoading: isAllOutLotsLoading, error: allOutLotsError } = useGetOutlotsQuery(
@@ -32,12 +30,18 @@ const OutLotsActions: React.FC<OutLotsActionsProps> = ({
         { skip: !authUser?.cognitoInfo?.userId }
     );
 
+    console.log("[OutLotsActions] Props received:", {
+        selectedItems,
+        outLotsDataLength: outLotsData.length,
+        selectAllAcrossPages,
+    });
+
     const handleDownload = async () => {
         try {
             if (allOutLotsError) {
                 const errorMessage =
                     (allOutLotsError as any)?.data?.message ||
-                    t("catalog:errors.fetchAllFailed", { defaultValue: "Failed to fetch all outLots" });
+                    t("catalog:errors.fetchAllFailed", { defaultValue: "Failed to fetch all outlots" });
                 console.error(
                     `[${new Date().toLocaleString("en-US", { timeZone: "Africa/Nairobi" })}] handleDownload: allOutLotsError:`,
                     allOutLotsError
@@ -46,14 +50,16 @@ const OutLotsActions: React.FC<OutLotsActionsProps> = ({
                 return;
             }
 
-            const ids =
-                selectedItems.length > 0
+            const ids = selectAllAcrossPages
+                ? (allOutLotsData?.data || []).map((item) => item.id)
+                : selectedItems.length > 0
                     ? selectedItems
-                    : (allOutLotsData?.data || []).map((item) => item.id);
+                    : outLotsData.map((item) => item.id);
 
             if (ids.length === 0) {
+                console.log("[OutLotsActions] No outlots available to export");
                 toast.error(
-                    t("catalog:errors.noItems", { defaultValue: "No outLots available to export" })
+                    t("catalog:errors.noItems", { defaultValue: "No outlots available to export" })
                 );
                 return;
             }
@@ -87,8 +93,11 @@ const OutLotsActions: React.FC<OutLotsActionsProps> = ({
                     <div className="flex items-center">
                         <Checkbox
                             id="select-all"
-                            checked={outLotsData.length > 0 && (selectedItems.length === outLotsData.length || selectAllAcrossPages)}
-                            onCheckedChange={handleSelectAll}
+                            checked={selectAllAcrossPages || (outLotsData.length > 0 && selectedItems.length === outLotsData.length)}
+                            onCheckedChange={() => {
+                                console.log("[OutLotsActions] Select all checkbox toggled");
+                                handleSelectAll();
+                            }}
                             aria-label={t("catalog:actions.selectAll", { defaultValue: "Select All" })}
                             className="border-gray-300 dark:border-gray-600"
                         />

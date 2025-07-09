@@ -7,10 +7,16 @@ const teaCategoryValues = Object.values(TeaCategory) as [string, ...string[]];
 const teaGradeValues = Object.values(TeaGrade) as [string, ...string[]];
 const brokerValues = Object.values(Broker) as [string, ...string[]];
 
+// CSV upload schema (unchanged)
+export const csvUploadSchema = z.object({
+    duplicateAction: z.literal('replace', {
+        errorMap: () => ({ message: "duplicateAction must be 'replace'" }),
+    }),
+});
 export const querySchema = z
     .object({
         page: z.coerce.number().int().positive('Page must be a positive integer').optional().default(1),
-        limit: z.coerce.number().int().positive('Limit must be a positive integer').optional().default(100),
+        limit: z.coerce.number().int().positive('Limit must be a positive integer').optional().default(20),
         lotNo: z.string().min(1, 'Lot number must not be empty').optional(),
         sellingMark: z.string().min(1, 'Selling mark must not be empty').optional(),
         bags: z.coerce.number().int().positive('Bags must be a positive integer').optional(),
@@ -21,15 +27,15 @@ export const querySchema = z
         producerCountry: z.string().min(1, 'Producer country must not be empty').optional(),
         manufactureDate: dateFormat.optional(),
         saleCode: z.string().min(1, 'Sale code must not be empty').optional(),
-        category: z.enum([...teaCategoryValues, 'any'] as const).optional(),
-        grade: z.enum([...teaGradeValues, 'any'] as const).optional(),
-        broker: z.enum([...brokerValues, 'any'] as const).optional(),
+        category: z.enum([...teaCategoryValues, 'any'] as const).optional().default('any'),
+        grade: z.enum([...teaGradeValues, 'any'] as const).optional().default('any'),
+        broker: z.enum([...brokerValues, 'any'] as const).optional().default('any'),
         invoiceNo: z.string().min(1, 'Invoice number must not be empty').optional(),
-        reprint: reprintSchema,
+        reprint: reprintSchema.optional(), // Make reprint optional
         search: z.string().min(1, 'Search term must not be empty').optional(),
         ids: z.array(z.number().int().positive('IDs must be positive integers')).optional(),
-        adminCognitoId: cognitoIdSchema.optional(),
-        userCognitoId: cognitoIdSchema.optional(),
+        sortBy: z.string().optional().default(''),
+        sortOrder: z.enum(['asc', 'desc']).optional().default('asc'),
     })
     .strict();
 

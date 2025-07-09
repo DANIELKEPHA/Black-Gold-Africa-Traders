@@ -32,10 +32,27 @@ const Catalog: React.FC = () => {
     const [isDeleteBulkOpen, setIsDeleteBulkOpen] = useState(false);
     const [isDeleting, setIsDeleting] = useState<Record<number, boolean>>({});
     const limit = 100;
+    console.log("[Catalog] Filters before query:", filters);
+
+    const cleanedFilters = {
+        lotNo: filters.lotNo,
+        sellingMark: filters.sellingMark,
+        manufactureDate: filters.manufactureDate,
+        category: filters.category ?? 'any',
+        grade: filters.grade ?? 'any',
+        broker: filters.broker ?? 'any',
+        invoiceNo: filters.invoiceNo,
+        askingPrice: filters.askingPrice,
+        bags: filters.bags,
+        totalWeight: filters.totalWeight,
+        netWeight: filters.netWeight,
+        reprint: filters.reprint,
+        search: filters.search,
+    };
 
     const { data: catalogDataResponse, isLoading, error } = useGetCatalogQuery(
         {
-            ...filters,
+            ...cleanedFilters,
             page,
             limit,
         },
@@ -49,14 +66,25 @@ const Catalog: React.FC = () => {
     const { totalPages = 1, total = 0 } = catalogDataResponse?.meta || {};
 
     const handleSelectItem = useCallback((itemId: number) => {
-        setSelectedItems((prev) =>
-            prev.includes(itemId) ? prev.filter((id) => id !== itemId) : [...prev, itemId]
-        );
-        setIsSelectAll(false);
-    }, []);
+        // console.log("[Catalog] handleSelectItem called with itemId:", itemId);
+        setSelectedItems((prev) => {
+            if (itemId === 0) {
+                // console.log("[Catalog] Deselecting all items");
+                setIsSelectAll(false);
+                return [];
+            }
+            const newSelected = prev.includes(itemId)
+                ? prev.filter((id) => id !== itemId)
+                : [...prev, itemId];
+            // console.log("[Catalog] New selected items:", newSelected);
+            setIsSelectAll(newSelected.length === catalogData.length && catalogData.length > 0);
+            return newSelected;
+        });
+    }, [catalogData.length]);
 
     const handleSelectAll = useCallback(() => {
-        if (isSelectAll || (catalogData.length > 0 && selectedItems.length === catalogData.length)) {
+        // console.log("[Catalog] handleSelectAll called, current isSelectAll:", isSelectAll);
+        if (isSelectAll || selectedItems.length === catalogData.length) {
             setSelectedItems([]);
             setIsSelectAll(false);
         } else {
@@ -65,33 +93,34 @@ const Catalog: React.FC = () => {
                 .map((item) => item.id);
             setSelectedItems(validIds);
             setIsSelectAll(true);
+            // console.log("[Catalog] Selected all items:", validIds);
         }
     }, [catalogData, isSelectAll, selectedItems.length]);
 
     const handleBulkDelete = async () => {
         if (selectedItems.length === 0 && !isSelectAll) {
-            console.log("[Catalog] Bulk delete attempted with no items selected");
+            // console.log("[Catalog] Bulk delete attempted with no items selected");
             toast.error(t("catalog:errors.noItemsSelected", { defaultValue: "No items selected" }));
             return;
         }
         if (!authUser?.cognitoInfo?.userId) {
-            console.log("[Catalog] Bulk delete attempted without authenticated user");
+            // console.log("[Catalog] Bulk delete attempted without authenticated user");
             toast.error(t("catalog:errors.authError", { defaultValue: "Authentication error" }));
             return;
         }
-        console.log("[Catalog] Opening bulk delete confirmation", { selectedItems, isSelectAll });
+        // console.log("[Catalog] Opening bulk delete confirmation", { selectedItems, isSelectAll });
         setIsDeleteBulkOpen(true);
     };
 
     const handleDelete = async (id: number) => {
         if (!Number.isInteger(id) || id <= 0) {
-            console.log("[Catalog] Invalid ID for single delete", { id });
+            // console.log("[Catalog] Invalid ID for single delete", { id });
             toast.error(t("catalog:errors.invalidId", { defaultValue: "Invalid catalog ID" }));
             return;
         }
         try {
             setIsDeleting((prev) => ({ ...prev, [id]: true }));
-            console.log("[Catalog] Deleting single catalog", { id });
+            // console.log("[Catalog] Deleting single catalog", { id });
             await deleteCatalogs({ ids: [id] }).unwrap();
             setSelectedItems((prev) => prev.filter((itemId) => itemId !== id));
             toast.success(t("catalog:success.catalogDeleted", { defaultValue: "Catalog deleted" }));
@@ -108,7 +137,7 @@ const Catalog: React.FC = () => {
 
     const confirmBulkDelete = async () => {
         if (selectedItems.length === 0 && !isSelectAll) {
-            console.log("[Catalog] Bulk delete confirmed with no items selected");
+            // console.log("[Catalog] Bulk delete confirmed with no items selected");
             toast.error(t("catalog:errors.noItemsSelected", { defaultValue: "No items selected" }));
             setIsDeleteBulkOpen(false);
             return;
@@ -116,10 +145,10 @@ const Catalog: React.FC = () => {
         try {
             setIsBulkDeleting(true);
             if (isSelectAll) {
-                console.log("[Catalog] Executing delete all catalogs", { filters });
+                // console.log("[Catalog] Executing delete all catalogs", { filters });
                 await deleteAllCatalogs(filters).unwrap();
             } else {
-                console.log("[Catalog] Executing bulk delete", { ids: selectedItems });
+                // console.log("[Catalog] Executing bulk delete", { ids: selectedItems });
                 await deleteCatalogs({ ids: selectedItems }).unwrap();
             }
             setSelectedItems([]);
@@ -143,7 +172,6 @@ const Catalog: React.FC = () => {
         return <div className="text-red-500 p-4">{t("catalog:errors.error", { defaultValue: "Error" })}</div>;
     }
 
-    // Compute the delete confirmation message
     const deleteMessage = isSelectAll
         ? t("catalog:confirm.bulkDelete", {
             defaultValue: `Delete ${total} catalog(s)?`,
@@ -169,7 +197,7 @@ const Catalog: React.FC = () => {
                     catalogData={catalogData}
                     selectedItems={selectedItems}
                     handleSelectItem={handleSelectItem}
-                    isSelectAll={selectedItems.length === catalogData.length && catalogData.length > 0}
+                    isSelectAll={isSelectAll}
                 />
             ) : (
                 <CatalogGrid

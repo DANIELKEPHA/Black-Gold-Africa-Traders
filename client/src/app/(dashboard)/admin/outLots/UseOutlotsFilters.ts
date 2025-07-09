@@ -6,12 +6,13 @@ import { cleanParams } from "@/lib/utils";
 import { FiltersState, setFilters } from "@/state";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
+import {TeaCategory, TeaGrade, Broker, TeaProducerCountry} from "@/state/enums";
 
 interface FilterOptions {
-    producerCountries?: string[];
-    grades?: string[];
-    categories?: string[];
-    brokers?: string[];
+    producerCountries?: TeaProducerCountry[];
+    grades?: TeaGrade[];
+    categories?: TeaCategory[];
+    brokers?: Broker[];
     saleCodes?: string[];
     bags?: { min: number; max: number };
     netWeight?: { min: number; max: number };
@@ -29,11 +30,12 @@ export const useOutLotsFilters = () => {
     const [localFilters, setLocalFilters] = useState<FiltersState>({ ...filters });
     const [errors, setErrors] = useState<Partial<Record<keyof FiltersState, string>>>({});
 
-    // Mock filter options for simplicity (replace with API call if needed)
+    // Mock filter options using enums
     const filterOptions: FilterOptions = {
-        grades: ["PD", "PD2", "DUST", "DUST1", "DUST2", "PF", "PF1", "BP", "BP1", "FNGS1", "BOP", "BOPF", "FNGS", "FNGS2", "BMF", "BMFD", "PF2", "BMF1"],
-        categories: ["M1", "M2", "M3", "S1"],
-        brokers: ["AMBR", "ANJL", "ATBL", "ATLS", "BICL", "BTBL", "CENT", "COMK", "CTBL", "PRME", "PTBL", "TBEA", "UNTB", "VENS", "TTBL"],
+        producerCountries: Object.values(TeaProducerCountry),
+        grades: Object.values(TeaGrade),
+        categories: Object.values(TeaCategory),
+        brokers: Object.values(Broker),
     };
     const isFilterOptionsLoading = false;
 

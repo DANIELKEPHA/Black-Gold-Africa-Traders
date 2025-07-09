@@ -9,7 +9,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { SellingPriceResponse } from "@/state";
 
 export interface SellingPricesGridProps {
-    SellingPriceData: SellingPriceResponse[];
+    sellingPricesData: SellingPriceResponse[];
     selectedItems: number[];
     handleSelectItem: (itemId: number) => void;
     handleDelete: (id: number) => Promise<void>;
@@ -17,41 +17,47 @@ export interface SellingPricesGridProps {
 }
 
 const SellingPricesGrid: React.FC<SellingPricesGridProps> = ({
-                                                                 SellingPriceData,
-                                                                 selectedItems,
-                                                                 handleSelectItem,
-                                                                 handleDelete,
-                                                                 isDeleting,
-                                                             }) => {
+    sellingPricesData,
+    selectedItems,
+    handleSelectItem,
+    handleDelete,
+    isDeleting,
+}) => {
     const { t } = useTranslation(["catalog", "general"]);
     const { data: authUser } = useGetAuthUserQuery();
     const isAdmin = authUser?.userRole === "admin";
 
     return (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {SellingPriceData.length > 0 ? (
-                SellingPriceData.map((sellingPrice) => (
+            {sellingPricesData.length > 0 ? (
+                sellingPricesData.map((sellingPrice) => (
                     <Card
                         key={sellingPrice.id}
                         className={`rounded-sm border-gray-200 dark:border-gray-700 ${
-                            selectedItems.includes(sellingPrice.id)
-                                ? "bg-indigo-50 dark:bg-indigo-900/30"
-                                : "bg-white dark:bg-gray-900"
-                        }`}
+    selectedItems.includes(sellingPrice.id)
+        ? "bg-indigo-50 dark:bg-indigo-900/30"
+        : "bg-white dark:bg-gray-900"
+}`}
                     >
                         <CardHeader>
                             <CardTitle className="text-lg font-semibold text-gray-800 dark:text-gray-200">
-                                {sellingPrice.lotNo}
+                                {sellingPrice.lotNo ?? "N/A"}
                             </CardTitle>
                         </CardHeader>
                         <CardContent className="space-y-2">
                             <div className="flex items-center" onClick={(e) => e.stopPropagation()}>
                                 <Checkbox
                                     checked={selectedItems.includes(sellingPrice.id)}
-                                    onChange={() => handleSelectItem(sellingPrice.id)}
+                                    onCheckedChange={() => {
+                                        console.log(
+                                            "[SellingPricesGrid] Checkbox toggled for sellingPrice id:",
+                                            sellingPrice.id
+                                        );
+                                        handleSelectItem(sellingPrice.id);
+                                    }}
                                     aria-label={t("catalog:actions.selectItem", {
                                         defaultValue: "Select item {{lotNo}}",
-                                        lotNo: sellingPrice.lotNo,
+                                        lotNo: sellingPrice.lotNo ?? "N/A",
                                     })}
                                     className="border-gray-300 dark:border-gray-600"
                                 />
@@ -93,19 +99,22 @@ const SellingPricesGrid: React.FC<SellingPricesGridProps> = ({
                                 <span className="font-medium text-gray-700 dark:text-gray-300">
                                     {t("catalog:bags", { defaultValue: "Bags" })}:
                                 </span>{" "}
-                                {sellingPrice.bags}
+                                {sellingPrice.bags ?? "N/A"}
                             </p>
                             <p className="text-sm">
                                 <span className="font-medium text-gray-700 dark:text-gray-300">
                                     {t("catalog:tareWeight", { defaultValue: "Tare Weight" })}:
                                 </span>{" "}
-                                {(sellingPrice.totalWeight - sellingPrice.netWeight).toFixed(2)} kg
+                                {sellingPrice.totalWeight && sellingPrice.netWeight
+                                    ? (sellingPrice.totalWeight - sellingPrice.netWeight).toFixed(2)
+                                    : "N/A"}{" "}
+                                kg
                             </p>
                             <p className="text-sm">
                                 <span className="font-medium text-gray-700 dark:text-gray-300">
                                     {t("catalog:totalWeight", { defaultValue: "Total Weight" })}:
                                 </span>{" "}
-                                {sellingPrice.totalWeight.toFixed(2)} kg
+                                {sellingPrice.totalWeight?.toFixed(2) ?? "N/A"} kg
                             </p>
                             <p className="text-sm">
                                 <span className="font-medium text-gray-700 dark:text-gray-300">
@@ -117,45 +126,55 @@ const SellingPricesGrid: React.FC<SellingPricesGridProps> = ({
                                 <span className="font-medium text-gray-700 dark:text-gray-300">
                                     {t("catalog:askingPrice", { defaultValue: "Asking Price" })}:
                                 </span>{" "}
-                                ${sellingPrice.askingPrice.toFixed(2)}
+                                ${sellingPrice.askingPrice?.toFixed(2) ?? "N/A"}
                             </p>
                             <p className="text-sm">
                                 <span className="font-medium text-gray-700 dark:text-gray-300">
                                     {t("catalog:purchasePrice", { defaultValue: "Purchase Price" })}:
                                 </span>{" "}
-                                ${sellingPrice.purchasePrice.toFixed(2)}
+                                ${sellingPrice.purchasePrice?.toFixed(2) ?? "N/A"}
                             </p>
                             <p className="text-sm">
                                 <span className="font-medium text-gray-700 dark:text-gray-300">
                                     {t("catalog:invoiceNo", { defaultValue: "Invoice Number" })}:
                                 </span>{" "}
-                                {sellingPrice.invoiceNo}
+                                {sellingPrice.invoiceNo ?? "N/A"}
                             </p>
                             <p className="text-sm">
                                 <span className="font-medium text-gray-700 dark:text-gray-300">
                                     {t("catalog:manufactureDate", { defaultValue: "Manufacture Date" })}:
                                 </span>{" "}
                                 {sellingPrice.manufactureDate
-                                    ? new Date(sellingPrice.manufactureDate).toISOString().slice(0, 10)
+                                    ? new Date(sellingPrice.manufactureDate).toLocaleDateString("en-US", {
+                                          day: "2-digit",
+                                          month: "2-digit",
+                                          year: "numeric",
+                                      })
                                     : "N/A"}
                             </p>
                             <p className="text-sm">
                                 <span className="font-medium text-gray-700 dark:text-gray-300">
                                     {t("catalog:reprint", { defaultValue: "Reprint" })}:
                                 </span>{" "}
-                                {sellingPrice.reprint}
+                                {sellingPrice.reprint ?? "No"}
                             </p>
                             <div className="flex gap-2 mt-2" onClick={(e) => e.stopPropagation()}>
                                 {isAdmin && (
                                     <Button
                                         variant="destructive"
                                         size="sm"
-                                        onClick={() => handleDelete(sellingPrice.id)}
+                                        onClick={() => {
+                                            console.log(
+                                                "[SellingPricesGrid] Delete button clicked for sellingPrice id:",
+                                                sellingPrice.id
+                                            );
+                                            handleDelete(sellingPrice.id);
+                                        }}
                                         disabled={isDeleting[sellingPrice.id] ?? false}
                                         className="rounded-sm bg-red-600 hover:bg-red-700 text-white"
                                         aria-label={t("catalog:actions.delete", {
                                             defaultValue: "Delete item {{lotNo}}",
-                                            lotNo: sellingPrice.lotNo,
+                                            lotNo: sellingPrice.lotNo ?? "N/A",
                                         })}
                                     >
                                         {isDeleting[sellingPrice.id]

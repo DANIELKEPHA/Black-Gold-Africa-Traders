@@ -390,6 +390,7 @@
     "invoiceNo": "Invoice Number",
     "manufactureDate": "Manufacture Date",
     "categoryPlaceholder": "Select Category",
+    "gradePlaceholder": "Select Grade",
     "anyCategory": "Any Category",
     "saleCodePlaceholder": "Enter Sale Code",
     "brokerPlaceholder": "Select Broker",

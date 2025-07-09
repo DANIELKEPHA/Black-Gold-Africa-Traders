@@ -67,6 +67,8 @@ function deleteAllData() {
                 'stockHistory',
                 'shipmentItem',
                 'stockAssignment',
+                'favorite',
+                'contact',
                 'shipment',
                 'sellingPrice',
                 'outLots',
@@ -130,7 +132,7 @@ function adjustStock(lotNo, weightChange, reason, adminCognitoId, shipmentId, tx
                 data: { weight: newWeight, updatedAt: new Date() },
             });
             const existingHistory = yield tx.stockHistory.findFirst({
-                where: { stocksId: stock.id, action: reason, timestamp: new Date() },
+                where: { stocksId: stock.id, action: reason, timestamp: { gte: new Date(Date.now() - 1000) } },
             });
             if (!existingHistory) {
                 yield tx.stockHistory.create({
@@ -139,6 +141,7 @@ function adjustStock(lotNo, weightChange, reason, adminCognitoId, shipmentId, tx
                         action: reason,
                         timestamp: new Date(),
                         adminCognitoId,
+                        shipmentId,
                     },
                 });
             }
@@ -160,14 +163,15 @@ function seedTable(model, modelName, jsonData, fileName, tx) {
         ];
         const validBrokers = [
             'AMBR', 'ANJL', 'ATBL', 'ATLS', 'BICL', 'BTBL', 'CENT', 'COMK', 'CTBL',
-            'PRME', 'PTBL', 'TBEA', 'UNTB', 'VENS', 'TTBL',
+            'PRME', 'PTBL', 'TBEA', 'UNTB', 'VENS', 'TTBL', 'UIBD',
         ];
         const validStatuses = ['Pending', 'Approved', 'Shipped', 'Delivered', 'Cancelled'];
         const validVessels = ['first', 'second', 'third', 'fourth'];
         const validPackaging = ['oneJutetwoPolly', 'oneJuteOnePolly'];
+        const validReprints = ['1', '2', '3', '4', '5', '6', '7', 'No', null]; // Allowed values for reprint field
         try {
             if (modelName === 'Admin') {
-                const emails = jsonData.map(item => item.email);
+                const emails = jsonData.map(item => item.email).filter(email => email);
                 const uniqueEmails = new Set(emails);
                 if (emails.length !== uniqueEmails.size) {
                     throw new Error('Duplicate emails found in admin.json');
@@ -188,9 +192,9 @@ function seedTable(model, modelName, jsonData, fileName, tx) {
                         });
                     }
                     else if (modelName === 'User') {
-                        const { id } = item, userData = __rest(item, ["id"]); // Exclude id from data
+                        const { id } = item, userData = __rest(item, ["id"]);
                         yield model.create({
-                            data: Object.assign(Object.assign({}, userData), { createdAt: new Date(item.createdAt || Date.now()), updatedAt: new Date(item.updatedAt || Date.now()) })
+                            data: Object.assign(Object.assign({}, userData), { createdAt: new Date(item.createdAt || Date.now()), updatedAt: new Date(item.updatedAt || Date.now()) }),
                         });
                     }
                     else if (modelName === 'Catalog') {
@@ -204,15 +208,18 @@ function seedTable(model, modelName, jsonData, fileName, tx) {
                             throw new Error(`Invalid broker '${item.broker}'`);
                         if (item.bags <= 0 || item.netWeight <= 0)
                             throw new Error('Zero or negative bags/netWeight');
+                        if (item.reprint !== null && !validReprints.includes(item.reprint)) {
+                            throw new Error(`Invalid reprint value '${item.reprint}'. Must be '1', '2', 'No', or null`);
+                        }
                         const adminRecord = yield tx.admin.findUnique({ where: { adminCognitoId: item.adminCognitoId } });
                         if (!adminRecord)
                             throw new Error(`Invalid adminCognitoId ${item.adminCognitoId}`);
                         const existingCatalog = yield tx.catalog.findUnique({ where: { lotNo: item.lotNo } });
                         if (existingCatalog)
                             throw new Error(`Duplicate lotNo ${item.lotNo}`);
-                        const { adminCognitoId } = item, catalogData = __rest(item, ["adminCognitoId"]); // Exclude adminCognitoId from data
+                        const { adminCognitoId } = item, catalogData = __rest(item, ["adminCognitoId"]);
                         yield model.create({
-                            data: Object.assign(Object.assign({}, catalogData), { manufactureDate: new Date(item.manufactureDate), createdAt: new Date(item.createdAt || Date.now()), updatedAt: new Date(item.updatedAt || Date.now()), admin: { connect: { adminCognitoId: item.adminCognitoId } } }),
+                            data: Object.assign(Object.assign({}, catalogData), { reprint: item.reprint, manufactureDate: new Date(item.manufactureDate), createdAt: new Date(item.createdAt || Date.now()), updatedAt: new Date(item.updatedAt || Date.now()), admin: { connect: { adminCognitoId: item.adminCognitoId } } }),
                         });
                     }
                     else if (modelName === 'SellingPrice') {
@@ -224,15 +231,18 @@ function seedTable(model, modelName, jsonData, fileName, tx) {
                             throw new Error(`Invalid grade '${item.grade}'`);
                         if (!validBrokers.includes(item.broker))
                             throw new Error(`Invalid broker '${item.broker}'`);
+                        if (item.reprint !== null && !validReprints.includes(item.reprint)) {
+                            throw new Error(`Invalid reprint value '${item.reprint}'. Must be '1', '2', 'No', or null`);
+                        }
                         const adminRecord = yield tx.admin.findUnique({ where: { adminCognitoId: item.adminCognitoId } });
                         if (!adminRecord)
                             throw new Error(`Invalid adminCognitoId ${item.adminCognitoId}`);
                         const existingPrice = yield tx.sellingPrice.findUnique({ where: { lotNo: item.lotNo } });
                         if (existingPrice)
                             throw new Error(`Duplicate lotNo ${item.lotNo}`);
-                        const { adminCognitoId } = item, sellingPriceData = __rest(item, ["adminCognitoId"]); // Exclude adminCognitoId from data
+                        const { adminCognitoId } = item, sellingPriceData = __rest(item, ["adminCognitoId"]);
                         yield model.create({
-                            data: Object.assign(Object.assign({}, sellingPriceData), { manufactureDate: new Date(item.manufactureDate), createdAt: new Date(item.createdAt || Date.now()), updatedAt: new Date(item.updatedAt || Date.now()), admin: { connect: { adminCognitoId: item.adminCognitoId } } }),
+                            data: Object.assign(Object.assign({}, sellingPriceData), { reprint: item.reprint, manufactureDate: new Date(item.manufactureDate), createdAt: new Date(item.createdAt || Date.now()), updatedAt: new Date(item.updatedAt || Date.now()), admin: { connect: { adminCognitoId: item.adminCognitoId } } }),
                         });
                     }
                     else if (modelName === 'OutLots') {
@@ -248,7 +258,7 @@ function seedTable(model, modelName, jsonData, fileName, tx) {
                         const existingOutLot = yield tx.outLots.findUnique({ where: { lotNo: item.lotNo } });
                         if (existingOutLot)
                             throw new Error(`Duplicate lotNo ${item.lotNo}`);
-                        const { adminCognitoId } = item, outLotsData = __rest(item, ["adminCognitoId"]); // Exclude adminCognitoId from data
+                        const { adminCognitoId } = item, outLotsData = __rest(item, ["adminCognitoId"]);
                         yield model.create({
                             data: Object.assign(Object.assign({}, outLotsData), { manufactureDate: new Date(item.manufactureDate), createdAt: new Date(item.createdAt || Date.now()), updatedAt: new Date(item.updatedAt || Date.now()), admin: { connect: { adminCognitoId: item.adminCognitoId } } }),
                         });
@@ -266,7 +276,7 @@ function seedTable(model, modelName, jsonData, fileName, tx) {
                         const existingStock = yield tx.stocks.findUnique({ where: { lotNo: item.lotNo } });
                         if (existingStock)
                             throw new Error(`Duplicate lotNo ${item.lotNo}`);
-                        const { adminCognitoId } = item, stocksData = __rest(item, ["adminCognitoId"]); // Exclude adminCognitoId from data
+                        const { adminCognitoId } = item, stocksData = __rest(item, ["adminCognitoId"]);
                         yield model.create({
                             data: Object.assign(Object.assign({}, stocksData), { createdAt: new Date(item.createdAt || Date.now()), updatedAt: new Date(item.updatedAt || Date.now()), admin: { connect: { adminCognitoId: item.adminCognitoId } } }),
                         });
@@ -296,6 +306,7 @@ function seedTable(model, modelName, jsonData, fileName, tx) {
                         });
                         if (existingAssignment) {
                             console.warn(`Skipping duplicate StockAssignment for lotNo ${item.lotNo}, user ${item.userCognitoId}`);
+                            seedStats[modelName].skipped++;
                             continue;
                         }
                         yield model.create({
@@ -336,7 +347,7 @@ function seedTable(model, modelName, jsonData, fileName, tx) {
                         const existingShipment = yield tx.shipment.findUnique({ where: { shipmark: item.shipmark } });
                         if (existingShipment)
                             throw new Error(`Duplicate shipmark ${item.shipmark}`);
-                        const { userCognitoId, adminCognitoId, stocks } = item, shipmentData = __rest(item, ["userCognitoId", "adminCognitoId", "stocks"]); // Exclude userCognitoId, adminCognitoId, and stocks
+                        const { userCognitoId, adminCognitoId, stocks } = item, shipmentData = __rest(item, ["userCognitoId", "adminCognitoId", "stocks"]);
                         const shipmentRecord = yield model.create({
                             data: Object.assign(Object.assign({}, shipmentData), { shipmentDate: new Date(item.shipmentDate), createdAt: new Date(item.createdAt || Date.now()), user: { connect: { userCognitoId: item.userCognitoId } }, admin: item.adminCognitoId ? { connect: { adminCognitoId: item.adminCognitoId } } : undefined }),
                         });
@@ -347,14 +358,17 @@ function seedTable(model, modelName, jsonData, fileName, tx) {
                             });
                             if (!stockRecord) {
                                 console.warn(`Skipping ShipmentItem with invalid lotNo ${shipmentItem.lotNo}`);
+                                seedStats[modelName].skipped++;
                                 continue;
                             }
                             if (shipmentItem.assignedWeight <= 0) {
                                 console.warn(`Skipping ShipmentItem with zero assignedWeight for lotNo ${shipmentItem.lotNo}`);
+                                seedStats[modelName].skipped++;
                                 continue;
                             }
                             if (shipmentItem.assignedWeight > stockRecord.weight) {
                                 console.warn(`Skipping ShipmentItem with assignedWeight ${shipmentItem.assignedWeight} exceeding stock weight ${stockRecord.weight}`);
+                                seedStats[modelName].skipped++;
                                 continue;
                             }
                             const existingShipmentItem = yield tx.shipmentItem.findUnique({
@@ -362,6 +376,7 @@ function seedTable(model, modelName, jsonData, fileName, tx) {
                             });
                             if (existingShipmentItem) {
                                 console.warn(`Skipping duplicate ShipmentItem for shipmark ${item.shipmark}, lotNo ${shipmentItem.lotNo}`);
+                                seedStats[modelName].skipped++;
                                 continue;
                             }
                             yield tx.shipmentItem.create({
@@ -371,8 +386,7 @@ function seedTable(model, modelName, jsonData, fileName, tx) {
                                     assignedWeight: shipmentItem.assignedWeight,
                                 },
                             });
-                            yield adjustStock(shipmentItem.lotNo, -shipmentItem.assignedWeight, `Shipment ${item.shipmark}`, item.adminCognitoId || 'system', // Fallback if adminCognitoId is missing
-                            shipmentRecord.id, tx);
+                            yield adjustStock(shipmentItem.lotNo, -shipmentItem.assignedWeight, `Shipment ${item.shipmark}`, item.adminCognitoId || 'system', shipmentRecord.id, tx);
                         }
                     }
                     else if (modelName === 'ShipmentItem') {
@@ -401,6 +415,7 @@ function seedTable(model, modelName, jsonData, fileName, tx) {
                         });
                         if (existingShipmentItem) {
                             console.warn(`Skipping duplicate ShipmentItem for shipmark ${item.shipmark}, lotNo ${item.lotNo}`);
+                            seedStats[modelName].skipped++;
                             continue;
                         }
                         yield model.create({
@@ -410,8 +425,7 @@ function seedTable(model, modelName, jsonData, fileName, tx) {
                                 assignedWeight: item.assignedWeight,
                             },
                         });
-                        yield adjustStock(item.lotNo, -item.assignedWeight, `ShipmentItem ${item.shipmark}`, item.adminCognitoId || 'system', // Fallback if adminCognitoId is missing
-                        shipmentRecord.id, tx);
+                        yield adjustStock(item.lotNo, -item.assignedWeight, `ShipmentItem ${item.shipmark}`, item.adminCognitoId || 'system', shipmentRecord.id, tx);
                     }
                     else if (modelName === 'StockHistory') {
                         const stockRecord = yield tx.stocks.findUnique({
@@ -429,13 +443,18 @@ function seedTable(model, modelName, jsonData, fileName, tx) {
                         const adminRecord = item.adminCognitoId ? yield tx.admin.findUnique({ where: { adminCognitoId: item.adminCognitoId } }) : null;
                         if (item.adminCognitoId && !adminRecord)
                             throw new Error(`Invalid adminCognitoId ${item.adminCognitoId}`);
+                        const shipmentRecord = item.shipmentId ? yield tx.shipment.findUnique({ where: { id: item.shipmentId } }) : null;
+                        if (item.shipmentId && !shipmentRecord)
+                            throw new Error(`Invalid shipmentId ${item.shipmentId}`);
                         yield model.create({
                             data: {
                                 stocksId: stockRecord.id,
-                                action: item.action || 'Seeded', // Default action if missing
+                                action: item.action || 'Seeded',
                                 timestamp: new Date(item.timestamp || Date.now()),
                                 userCognitoId: item.userCognitoId,
                                 adminCognitoId: item.adminCognitoId,
+                                shipmentId: item.shipmentId,
+                                details: item.details || {},
                             },
                         });
                     }
@@ -480,6 +499,58 @@ function seedTable(model, modelName, jsonData, fileName, tx) {
                             },
                         });
                     }
+                    else if (modelName === 'Contact') {
+                        const userRecord = item.userCognitoId ? yield tx.user.findUnique({ where: { userCognitoId: item.userCognitoId } }) : null;
+                        if (item.userCognitoId && !userRecord)
+                            throw new Error(`Invalid userCognitoId ${item.userCognitoId}`);
+                        if (!item.name)
+                            throw new Error('Missing name');
+                        if (!item.email)
+                            throw new Error('Missing email');
+                        if (!item.message)
+                            throw new Error('Missing message');
+                        if (typeof item.privacyConsent !== 'boolean')
+                            throw new Error('Invalid or missing privacyConsent');
+                        yield model.create({
+                            data: {
+                                name: item.name,
+                                email: item.email,
+                                subject: item.subject || null,
+                                message: item.message,
+                                privacyConsent: item.privacyConsent,
+                                userCognitoId: item.userCognitoId,
+                                createdAt: new Date(item.createdAt || Date.now()),
+                            },
+                        });
+                    }
+                    else if (modelName === 'Favorite') {
+                        const userRecord = yield tx.user.findUnique({ where: { userCognitoId: item.userCognitoId } });
+                        if (!userRecord)
+                            throw new Error(`Invalid userCognitoId ${item.userCognitoId}`);
+                        const stockRecord = item.stocksId ? yield tx.stocks.findUnique({ where: { id: item.stocksId } }) : null;
+                        if (item.stocksId && !stockRecord)
+                            throw new Error(`Invalid stocksId ${item.stocksId}`);
+                        const existingFavorite = yield tx.favorite.findUnique({
+                            where: {
+                                user_stocks_favorite: {
+                                    userCognitoId: item.userCognitoId,
+                                    stocksId: item.stocksId,
+                                },
+                            },
+                        });
+                        if (existingFavorite) {
+                            console.warn(`Skipping duplicate Favorite for user ${item.userCognitoId}, stock ${item.stocksId}`);
+                            seedStats[modelName].skipped++;
+                            continue;
+                        }
+                        yield model.create({
+                            data: {
+                                userCognitoId: item.userCognitoId,
+                                stocksId: item.stocksId,
+                                createdAt: new Date(item.createdAt || Date.now()),
+                            },
+                        });
+                    }
                     else {
                         yield model.create({ data: item });
                     }
@@ -504,7 +575,7 @@ function verifyData() {
         const models = [
             'admin', 'user', 'catalog', 'sellingPrice', 'outLots', 'stocks',
             'stockAssignment', 'shipment', 'shipmentItem', 'stockHistory',
-            'shipmentHistory', 'adminNotification',
+            'shipmentHistory', 'adminNotification', 'contact', 'favorite',
         ];
         for (const modelName of models) {
             const modelNameCamel = toCamelCase(modelName);
@@ -521,7 +592,7 @@ function verifyData() {
 }
 function main() {
     return __awaiter(this, void 0, void 0, function* () {
-        const dataDirectory = path_1.default.join(process.cwd(), 'prisma', 'seedData');
+        const dataDirectory = path_1.default.join(process.cwd(), 'src', 'prisma', 'seedData');
         const orderedFileNames = [
             'admin.json',
             'user.json',
@@ -535,6 +606,8 @@ function main() {
             'stockHistory.json',
             'shipmentHistory.json',
             'adminNotification.json',
+            'contact.json',
+            'favorite.json',
         ];
         try {
             console.log('Starting seeding process...');

@@ -229,6 +229,8 @@ export const getSellingPrices = async (req: Request, res: Response) => {
             broker,
             invoiceNo,
             reprint,
+            sortBy: "",
+            sortOrder: "asc"
         }, undefined, undefined); // Passing undefined for userId and role
 
         // console.log(`[${time}] Built where conditions:`, where);
@@ -561,39 +563,77 @@ export const deleteAllSellingPrices = async (req: Request, res: Response): Promi
     try {
         const authenticatedUser = authenticateUser(req, res);
         if (!authenticatedUser) {
-            res.status(401).json({ message: "Unauthorized" });
+            res.status(401).json({ message: "Unauthorized", details: "Invalid or missing authentication token" });
+            return;
+        }
+
+        if (!req.body.confirm) {
+            res.status(400).json({ message: "Confirmation required for deleting all selling prices" });
             return;
         }
 
         const filters = req.body || {};
-        const where = buildWhereConditions(filters, authenticatedUser.userId);
+        console.log(`[${new Date().toLocaleString("en-US", { timeZone: "Africa/Nairobi" })}] Filters received:`, filters);
+
+        const where = {
+            ...buildWhereConditions(filters, authenticatedUser.userId),
+        };
+        console.log(`[${new Date().toLocaleString("en-US", { timeZone: "Africa/Nairobi" })}] Where conditions for deleteAll:`, where);
+        console.log(`[${new Date().toLocaleString("en-US", { timeZone: "Africa/Nairobi" })}] Authenticated user ID:`, authenticatedUser.userId);
 
         const result = await prisma.$transaction(async (tx) => {
-            const sellingPrices = await tx.sellingPrice.findMany({
-                where,
-                select: { id: true, lotNo: true },
-            });
+            const BATCH_SIZE = 1000;
+            let deletedCount = 0;
+            let skip = 0;
+            const associations: { id: number; lotNo: string }[] = [];
 
-            if (sellingPrices.length === 0) {
-                throw new Error("No selling prices found or unauthorized");
+            // Log total records before deletion attempt
+            const totalRecords = await tx.sellingPrice.count({ where });
+            console.log(`[${new Date().toLocaleString("en-US", { timeZone: "Africa/Nairobi" })}] Total records matching where clause:`, totalRecords);
+
+            while (true) {
+                const sellingPrices = await tx.sellingPrice.findMany({
+                    where,
+                    select: { id: true, lotNo: true, adminCognitoId: true }, // Include adminCognitoId for debugging
+                    take: BATCH_SIZE,
+                    skip,
+                });
+
+                console.log(`[${new Date().toLocaleString("en-US", { timeZone: "Africa/Nairobi" })}] Found ${sellingPrices.length} records in batch (skip: ${skip}):`, sellingPrices);
+
+                if (sellingPrices.length === 0) break;
+
+                associations.push(...sellingPrices.map((sp) => ({ id: sp.id, lotNo: sp.lotNo })));
+
+                const deleteWhere = {
+                    id: { in: sellingPrices.map((sp) => sp.id) },
+                };
+                console.log(`[${new Date().toLocaleString("en-US", { timeZone: "Africa/Nairobi" })}] Delete where clause:`, deleteWhere);
+
+                const { count } = await tx.sellingPrice.deleteMany({
+                    where: deleteWhere,
+                });
+
+                console.log(`[${new Date().toLocaleString("en-US", { timeZone: "Africa/Nairobi" })}] Deleted ${count} records in batch`);
+
+                deletedCount += count;
+                skip += BATCH_SIZE;
+
+                if (sellingPrices.length < BATCH_SIZE) break;
             }
 
-            const associations = sellingPrices.map((sellingPrice) => ({
-                id: sellingPrice.id,
-                lotNo: sellingPrice.lotNo,
-            }));
-
-            const { count } = await tx.sellingPrice.deleteMany({ where });
-
-            return { deletedCount: count, associations };
-        });
+            console.log(`[${new Date().toLocaleString("en-US", { timeZone: "Africa/Nairobi" })}] Total deleted records:`, deletedCount);
+            return { deletedCount, associations };
+        }, { timeout: 10000 }); // 10-second transaction timeout
 
         res.status(200).json({
             message: `Successfully deleted ${result.deletedCount} selling price(s)`,
             associations: result.associations,
+            deletedCount: result.deletedCount,
         });
     } catch (error) {
-        console.error(`[${new Date().toLocaleString("en-US", { timeZone: "Africa/Nairobi" })}] Delete all selling prices error:`, {
+        const time = new Date().toLocaleString("en-US", { timeZone: "Africa/Nairobi" });
+        console.error(`[${time}] Delete all selling prices error:`, {
             message: error instanceof Error ? error.message : String(error),
             stack: error instanceof Error ? error.stack : undefined,
             filters: req.body,
@@ -640,11 +680,10 @@ const fieldNameMapping: { [key: string]: string } = {
     manufactureddate: "manufactureDate",
 };
 
-// Cache enum values
+// Cache enum values for O(1) lookup
 const teaCategories = new Set(Object.values(TeaCategory));
 const teaGrades = new Set(Object.values(TeaGrade));
 const brokers = new Set(Object.values(Broker));
-
 
 export async function uploadSellingPricesCsv(req: Request, res: Response): Promise<void> {
     const errors: Array<{ row: number; message: string }> = [];
@@ -652,133 +691,161 @@ export async function uploadSellingPricesCsv(req: Request, res: Response): Promi
     let skippedCount = 0;
     let replacedCount = 0;
 
-    const time = new Date().toLocaleString("en-US", { timeZone: "Africa/Nairobi" });
-
     try {
-        // Log request initiation
-        console.log(`[${time}] Starting CSV upload:`, {
-            fileName: req.file?.originalname,
-            fileSize: req.file?.size,
-            duplicateAction: req.body.duplicateAction,
+        console.log(`[${new Date().toLocaleString("en-US", { timeZone: "Africa/Nairobi" })}] Starting CSV upload:`, {
+            file: req.file?.originalname,
+            size: req.file?.size,
+            body: req.body,
         });
-
-        if (!req.file) {
-            console.error(`[${time}] No CSV file provided`);
-            res.status(400).json({ message: "CSV file required" });
-            return;
-        }
 
         const authenticatedUser = authenticateUser(req, res);
         if (!authenticatedUser) {
-            console.error(`[${time}] Authentication failed`);
+            console.error(`[${new Date().toLocaleString("en-US", { timeZone: "Africa/Nairobi" })}] Authentication failed`);
             res.status(401).json({ message: "Authentication failed: No authenticated user found" });
             return;
         }
 
         if (authenticatedUser.role.toLowerCase() !== "admin") {
-            console.error(`[${time}] Forbidden: User is not admin`);
+            console.error(`[${new Date().toLocaleString("en-US", { timeZone: "Africa/Nairobi" })}] Forbidden: User role ${authenticatedUser.role}`);
             res.status(403).json({ message: "Forbidden: Only admins can upload selling prices" });
+            return;
+        }
+
+        if (!req.file) {
+            console.error(`[${new Date().toLocaleString("en-US", { timeZone: "Africa/Nairobi" })}] No CSV file provided`);
+            res.status(400).json({ message: "CSV file required" });
             return;
         }
 
         const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
         if (req.file.size > MAX_FILE_SIZE) {
-            console.error(`[${time}] File too large`);
+            console.error(`[${new Date().toLocaleString("en-US", { timeZone: "Africa/Nairobi" })}] File too large: ${req.file.size} bytes`);
             res.status(400).json({ message: `File size exceeds limit of ${MAX_FILE_SIZE / (1024 * 1024)}MB` });
             return;
         }
 
         const parsedParams = csvUploadSchema.safeParse(req.body);
         if (!parsedParams.success) {
-            console.error(`[${time}] Invalid duplicateAction:`, {
-                errors: parsedParams.error.errors,
-            });
+            console.error(`[${new Date().toLocaleString("en-US", { timeZone: "Africa/Nairobi" })}] Invalid duplicateAction:`, parsedParams.error.errors);
             res.status(400).json({ message: "Invalid duplicateAction", details: parsedParams.error.errors });
             return;
         }
         const { duplicateAction } = parsedParams.data;
+        console.log(`[${new Date().toLocaleString("en-US", { timeZone: "Africa/Nairobi" })}] Parsed duplicateAction:`, duplicateAction);
+
+        let rowIndex = 1;
+        let batch: Array<{ sellingPrice: Prisma.SellingPriceCreateInput; rowIndex: number }> = [];
+        const BATCH_SIZE = 200;
+        const MAX_CONCURRENT_BATCHES = 2;
 
         let csvBuffer = req.file.buffer;
         if (csvBuffer.toString("utf8", 0, 3) === "\uFEFF") {
             csvBuffer = csvBuffer.slice(3);
         }
 
-        // Log raw CSV content (first 1000 characters to avoid flooding logs)
-        console.log(`[${time}] Raw CSV content (truncated):`, csvBuffer.toString("utf8").slice(0, 1000));
-
-        // Define required schema fields for validation
-        const requiredSchemaFields = new Set(Object.values(fieldNameMapping));
+        console.log(`[${new Date().toLocaleString("en-US", { timeZone: "Africa/Nairobi" })}] Parsing CSV file: ${req.file.originalname}`);
 
         const parser = new Parser({
-            columns: (header: string[]) => {
-                // Log parsed headers
-                console.log(`[${time}] CSV headers:`, header);
-                const mappedHeaders = header.map((field: string) => {
+            columns: (header) => {
+                console.log(`[${new Date().toLocaleString("en-US", { timeZone: "Africa/Nairobi" })}] CSV headers:`, header);
+                const normalizedHeaders = header.map((field: string) => {
                     const normalized = normalizeFieldName(field);
                     return fieldNameMapping[normalized] || normalized;
                 });
-                // Log mapped headers
-                console.log(`[${time}] Mapped headers:`, mappedHeaders);
-                const missingFields = Array.from(requiredSchemaFields).filter(
-                    (field) => !mappedHeaders.includes(field)
-                );
-                if (missingFields.length > 0) {
-                    console.error(`[${time}] Missing required CSV columns:`, missingFields);
-                    throw new Error(`Missing required CSV columns: ${missingFields.join(", ")}`);
-                }
-                return mappedHeaders;
+                return normalizedHeaders;
             },
             skip_empty_lines: true,
             trim: true,
-            cast: false, // Disable automatic type casting
         });
 
         const stream = Readable.from(csvBuffer);
-        const records: Array<{ record: any; rowIndex: number }> = [];
-        let rowIndex = 0;
+        stream.pipe(parser);
 
-        // Pre-collect and validate records
-        try {
-            for await (const record of stream.pipe(parser)) {
-                rowIndex++;
-                // Log raw parsed record
-                console.log(`[${time}] Raw parsed record for row ${rowIndex}:`, record);
-                records.push({ record, rowIndex });
+        const processBatch = async (batch: Array<{ sellingPrice: Prisma.SellingPriceCreateInput; rowIndex: number }>) => {
+            let retries = 3;
+            let success = false;
+            let lastError: unknown;
+
+            while (retries > 0 && !success) {
+                try {
+                    const result = await prisma.$transaction(async (tx) => {
+                        let batchCreated = 0;
+                        let batchSkipped = 0;
+                        let batchReplaced = 0;
+
+                        if (duplicateAction === "skip") {
+                            const lotNos = batch.map((item) => item.sellingPrice.lotNo);
+                            const existing = await tx.sellingPrice.findMany({
+                                where: { lotNo: { in: lotNos } },
+                                select: { lotNo: true },
+                            });
+                            const existingLotNos = new Set(existing.map((item) => item.lotNo));
+
+                            const toCreate = batch.filter((item) => !existingLotNos.has(item.sellingPrice.lotNo));
+                            batchSkipped += batch.length - toCreate.length;
+
+                            if (toCreate.length > 0) {
+                                await tx.sellingPrice.createMany({
+                                    data: toCreate.map((item) => item.sellingPrice),
+                                    skipDuplicates: true,
+                                });
+                                batchCreated += toCreate.length;
+                            }
+                        } else if (duplicateAction === "replace") {
+                            for (const { sellingPrice, rowIndex } of batch) {
+                                try {
+                                    await tx.sellingPrice.upsert({
+                                        where: { lotNo: sellingPrice.lotNo },
+                                        update: { ...sellingPrice, updatedAt: new Date() },
+                                        create: sellingPrice,
+                                    });
+                                    batchReplaced++;
+                                } catch (error) {
+                                    errors.push({
+                                        row: rowIndex,
+                                        message: error instanceof Error ? error.message : String(error),
+                                    });
+                                }
+                            }
+                        } else {
+                            await tx.sellingPrice.createMany({
+                                data: batch.map((item) => item.sellingPrice),
+                                skipDuplicates: true,
+                            });
+                            batchCreated += batch.length;
+                        }
+
+                        return { batchCreated, batchSkipped, batchReplaced };
+                    }, { timeout: 60000 });
+
+                    createdCount += result.batchCreated;
+                    skippedCount += result.batchSkipped;
+                    replacedCount += result.batchReplaced;
+                    success = true;
+                } catch (error) {
+                    lastError = error;
+                    retries--;
+                    console.warn(`[${new Date().toLocaleString("en-US", { timeZone: "Africa/Nairobi" })}] Batch ${Math.floor(rowIndex / BATCH_SIZE)} failed, retries left: ${retries}`, {
+                        message: error instanceof Error ? error.message : String(error),
+                    });
+                    if (retries === 0) {
+                        throw lastError;
+                    }
+                    await new Promise((resolve) => setTimeout(resolve, 1000));
+                }
             }
-        } catch (error) {
-            console.error(`[${time}] CSV parsing error:`, {
-                message: error instanceof Error ? error.message : String(error),
-            });
-            res.status(400).json({ message: "Invalid CSV format", details: error instanceof Error ? error.message : String(error) });
-            return;
-        }
+        };
 
-        // Log total records parsed
-        console.log(`[${time}] Total records parsed: ${records.length}`);
+        let activeBatches = 0;
+        const batchPromises: Promise<void>[] = [];
 
-        const csvRecordSchema = z.object({
-            broker: z.enum(Array.from(brokers) as [string, ...string[]], { message: "Invalid broker value" }),
-            sellingMark: z.string().min(1, "Selling mark is required"),
-            lotNo: z.string().min(1, "Lot number is required"),
-            reprint: reprintSchema,
-            bags: z.number().int().positive("Bags must be a positive integer"),
-            netWeight: z.number().positive("Net weight must be a positive number"),
-            totalWeight: z.number().positive("Total weight must be a positive number"),
-            invoiceNo: z.string().min(1, "Invoice number is required"),
-            saleCode: z.string().min(1, "Sale code is required"),
-            askingPrice: z.number().positive("Asking price must be a positive number"),
-            purchasePrice: z.number().positive("Purchase price must be a positive number"),
-            producerCountry: z.string().min(1).optional(),
-            manufactureDate: z.string().refine((val) => !isNaN(new Date(val).getTime()), "Invalid date format"),
-            category: z.enum(Array.from(teaCategories) as [string, ...string[]], { message: "Invalid tea category" }),
-            grade: z.enum(Array.from(teaGrades) as [string, ...string[]], { message: "Invalid tea grade" }),
-        }).strict();
-
-        const validatedRecords = records.map(({ record, rowIndex }) => {
-            // Log raw record before processing
-            console.log(`[${time}] Processing record for row ${rowIndex}:`, record);
-
+        for await (const record of parser) {
+            rowIndex++;
             try {
+                if (!record.lotNo || !record.saleCode) {
+                    throw new Error("Missing required fields: lotNo or saleCode");
+                }
+
                 const parsedRecord = {
                     ...record,
                     bags: record.bags ? Number(record.bags) : undefined,
@@ -786,33 +853,57 @@ export async function uploadSellingPricesCsv(req: Request, res: Response): Promi
                     netWeight: record.netWeight ? Number(record.netWeight) : undefined,
                     askingPrice: record.askingPrice ? Number(record.askingPrice) : undefined,
                     purchasePrice: record.purchasePrice ? Number(record.purchasePrice) : undefined,
-                    reprint: String(record.reprint ?? ""), // Ensure reprint is a string
+                    reprint: record.reprint,
+                    saleCode: record.saleCode,
                     manufactureDate: record.manufactureDate,
+                    category: record.category,
+                    grade: record.grade,
+                    broker: record.broker,
                 };
 
-                // Log parsed record before validation
-                console.log(`[${time}] Parsed record for row ${rowIndex}:`, parsedRecord);
+                if (parsedRecord.reprint && parsedRecord.reprint !== "No" && isNaN(Number(parsedRecord.reprint))) {
+                    throw new Error(`Invalid reprint value: ${parsedRecord.reprint}. Must be "No" or a number`);
+                }
+
+                if (parsedRecord.bags && isNaN(parsedRecord.bags)) {
+                    throw new Error("Invalid number format for bags");
+                }
+                if (parsedRecord.totalWeight && isNaN(parsedRecord.totalWeight)) {
+                    throw new Error("Invalid number format for totalWeight");
+                }
+                if (parsedRecord.netWeight && isNaN(parsedRecord.netWeight)) {
+                    throw new Error("Invalid number format for netWeight");
+                }
+                if (parsedRecord.askingPrice && isNaN(parsedRecord.askingPrice)) {
+                    throw new Error("Invalid number format for askingPrice");
+                }
+                if (parsedRecord.purchasePrice && isNaN(parsedRecord.purchasePrice)) {
+                    throw new Error("Invalid number format for purchasePrice");
+                }
+
+                if (parsedRecord.category && !teaCategories.has(parsedRecord.category as TeaCategory)) {
+                    throw new Error(`Invalid category: ${parsedRecord.category}`);
+                }
+                if (parsedRecord.grade && !teaGrades.has(parsedRecord.grade as TeaGrade)) {
+                    throw new Error(`Invalid grade: ${parsedRecord.grade}`);
+                }
+                if (parsedRecord.broker && !brokers.has(parsedRecord.broker as Broker)) {
+                    throw new Error(`Invalid broker: ${parsedRecord.broker}`);
+                }
 
                 const parsed = csvRecordSchema.safeParse(parsedRecord);
                 if (!parsed.success) {
-                    console.error(`[${time}] Validation failed for row ${rowIndex}:`, {
-                        reprintValue: parsedRecord.reprint,
-                        record: parsedRecord,
-                        errors: parsed.error.errors,
-                    });
-                    throw new Error(parsed.error.errors.map(err => err.message).join(", "));
+                    throw new Error(parsed.error.errors.map((err) => err.message).join(", "));
                 }
 
-                // Log successful validation
-                console.log(`[${time}] Validation successful for row ${rowIndex}:`, parsed.data);
-
                 const data = parsed.data;
-                return {
+
+                batch.push({
                     sellingPrice: {
                         broker: data.broker as Broker,
                         sellingMark: data.sellingMark,
                         lotNo: data.lotNo,
-                        reprint: data.reprint,
+                        reprint: data.reprint ?? null,
                         bags: data.bags,
                         totalWeight: data.totalWeight,
                         netWeight: data.netWeight,
@@ -821,140 +912,92 @@ export async function uploadSellingPricesCsv(req: Request, res: Response): Promi
                         askingPrice: data.askingPrice,
                         purchasePrice: data.purchasePrice,
                         producerCountry: data.producerCountry,
-                        manufactureDate: new Date(data.manufactureDate),
+                        manufactureDate: new Date(data.manufactureDate ?? Date.now()),
                         category: data.category as TeaCategory,
                         grade: data.grade as TeaGrade,
                     },
                     rowIndex,
-                };
-            } catch (error) {
-                console.error(`[${time}] Error processing row ${rowIndex}:`, {
-                    message: error instanceof Error ? error.message : String(error),
-                    reprintValue: record.reprint,
                 });
-                errors.push({ row: rowIndex, message: error instanceof Error ? error.message : String(error) });
-                return null;
-            }
-        }).filter(Boolean) as Array<{ sellingPrice: Prisma.SellingPriceCreateInput; rowIndex: number }>;
 
-        // Log validated records
-        console.log(`[${time}] Total validated records: ${validatedRecords.length}`);
+                if (batch.length >= BATCH_SIZE) {
+                    console.log(`[${new Date().toLocaleString("en-US", { timeZone: "Africa/Nairobi" })}] Processing batch ${Math.floor(rowIndex / BATCH_SIZE)} (${batch.length} items)`);
+                    batchPromises.push(processBatch(batch));
+                    batch = [];
+                    activeBatches++;
 
-        const BATCH_SIZE = 500;
-        const processBatch = async (batch: Array<{ sellingPrice: Prisma.SellingPriceCreateInput; rowIndex: number }>) => {
-            try {
-                const timeBatch = new Date().toLocaleString("en-US", { timeZone: "Africa/Nairobi" });
-                console.log(`[${timeBatch}] Processing batch of ${batch.length} records`);
-                const result = await prisma.$transaction(async (tx) => {
-                    let batchCreated = 0;
-                    let batchSkipped = 0;
-                    let batchReplaced = 0;
-
-                    if (duplicateAction === "skip") {
-                        const lotNos = batch.map(item => item.sellingPrice.lotNo);
-                        console.log(`[${timeBatch}] Checking for existing lotNos:`, lotNos);
-                        const existing = await tx.sellingPrice.findMany({
-                            where: { lotNo: { in: lotNos } },
-                            select: { lotNo: true },
-                        });
-                        const existingLotNos = new Set(existing.map(item => item.lotNo));
-                        console.log(`[${timeBatch}] Existing lotNos:`, Array.from(existingLotNos));
-
-                        const toCreate = batch.filter(item => !existingLotNos.has(item.sellingPrice.lotNo));
-                        batchSkipped += batch.length - toCreate.length;
-                        console.log(`[${timeBatch}] Records to create: ${toCreate.length}, Skipped: ${batchSkipped}`);
-
-                        if (toCreate.length > 0) {
-                            console.log(`[${timeBatch}] Creating ${toCreate.length} records`);
-                            const createResult = await tx.sellingPrice.createMany({
-                                data: toCreate.map(item => item.sellingPrice),
-                                skipDuplicates: true,
-                            });
-                            batchCreated += createResult.count;
-                            console.log(`[${timeBatch}] Created ${batchCreated} records in batch`);
-                        }
-                    } else if (duplicateAction === "replace") {
-                        console.log(`[${timeBatch}] Replacing records`);
-                        await Promise.all(batch.map(async ({ sellingPrice, rowIndex }) => {
-                            try {
-                                console.log(`[${timeBatch}] Upserting record for lotNo: ${sellingPrice.lotNo}, reprint: ${sellingPrice.reprint}`);
-                                await tx.sellingPrice.upsert({
-                                    where: { lotNo: sellingPrice.lotNo },
-                                    update: { ...sellingPrice, updatedAt: new Date() },
-                                    create: sellingPrice,
-                                });
-                                batchReplaced++;
-                            } catch (error) {
-                                console.error(`[${timeBatch}] Error upserting row ${rowIndex}:`, {
-                                    message: error instanceof Error ? error.message : String(error),
-                                    lotNo: sellingPrice.lotNo,
-                                    reprint: sellingPrice.reprint,
-                                });
-                                errors.push({ row: rowIndex, message: error instanceof Error ? error.message : String(error) });
-                            }
-                        }));
-                        console.log(`[${timeBatch}] Replaced ${batchReplaced} records in batch`);
-                    } else {
-                        console.log(`[${timeBatch}] Creating records without duplicate check`);
-                        const createResult = await tx.sellingPrice.createMany({
-                            data: batch.map(item => item.sellingPrice),
-                            skipDuplicates: true,
-                        });
-                        batchCreated += createResult.count;
-                        console.log(`[${timeBatch}] Created ${batchCreated} records in batch`);
+                    if (activeBatches >= MAX_CONCURRENT_BATCHES) {
+                        await Promise.all(batchPromises);
+                        batchPromises.length = 0;
+                        activeBatches = 0;
                     }
-
-                    return { batchCreated, batchSkipped, batchReplaced };
-                }, { timeout: 30000 });
-
-                createdCount += result.batchCreated;
-                skippedCount += result.batchSkipped;
-                replacedCount += result.batchReplaced;
-                console.log(`[${timeBatch}] Batch processed:`, { batchCreated: result.batchCreated, batchSkipped: result.batchSkipped, batchReplaced: result.batchReplaced });
+                }
             } catch (error) {
-                console.error(`[${time}] Batch failed:`, { message: error instanceof Error ? error.message : String(error) });
+                errors.push({ row: rowIndex, message: error instanceof Error ? error.message : String(error) });
             }
-        };
-
-        // Log before processing batches
-        console.log(`[${time}] Total batches to process: ${Math.ceil(validatedRecords.length / BATCH_SIZE)}`);
-        const batches = [];
-        for (let i = 0; i < validatedRecords.length; i += BATCH_SIZE) {
-            batches.push(validatedRecords.slice(i, i + BATCH_SIZE));
         }
 
-        await Promise.all(batches.map(batch => processBatch(batch)));
+        if (batch.length > 0) {
+            console.log(`[${new Date().toLocaleString("en-US", { timeZone: "Africa/Nairobi" })}] Processing final batch (${batch.length} items)`);
+            batchPromises.push(processBatch(batch));
+        }
 
-        // Log final counts before response
-        console.log(`[${time}] Upload completed:`, {
-            createdCount,
-            skippedCount,
-            replacedCount,
-            totalProcessed: createdCount + skippedCount + replacedCount,
-            errors: errors.length,
-        });
+        await Promise.all(batchPromises);
+
+        console.log(`[${new Date().toLocaleString("en-US", { timeZone: "Africa/Nairobi" })}] Parsed ${rowIndex - 1} rows, ${createdCount + skippedCount + replacedCount} processed, ${errors.length} errors`);
 
         if (createdCount + skippedCount + replacedCount === 0) {
-            console.error(`[${time}] No valid selling prices processed`);
-            res.status(400).json({ success: { created: 0, skipped: 0, replaced: 0 }, errors });
+            console.error(`[${new Date().toLocaleString("en-US", { timeZone: "Africa/Nairobi" })}] No valid selling prices processed`);
+            res.status(400).json({ success: 0, errors });
             return;
         }
 
-        res.status(errors.length > 0 ? 207 : 201).json({
+        console.log(`[${new Date().toLocaleString("en-US", { timeZone: "Africa/Nairobi" })}] Transaction complete:`, {
+            createdCount,
+            skippedCount,
+            replacedCount,
+            errors: errors.length,
+        });
+
+        if (errors.length > 0) {
+            res.status(207).json({
+                success: { created: createdCount, skipped: skippedCount, replaced: replacedCount },
+                errors,
+            });
+            return;
+        }
+
+        res.status(201).json({
             success: { created: createdCount, skipped: skippedCount, replaced: replacedCount },
             errors,
         });
     } catch (error) {
-        console.error(`[${time}] Upload selling prices error:`, {
+        console.error(`[${new Date().toLocaleString("en-US", { timeZone: "Africa/Nairobi" })}] Upload selling prices error:`, {
             message: error instanceof Error ? error.message : String(error),
+            stack: error instanceof Error ? error.stack : undefined,
             file: req.file?.originalname,
             size: req.file?.size,
+            body: req.body,
+            processedCount: createdCount + skippedCount + replacedCount,
+            errorsCount: errors.length,
         });
         if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
-            res.status(409).json({ message: "Duplicate lotNo", details: error.meta });
+            res.status(409).json({
+                message: "One or more selling prices have duplicate lotNo",
+                details: error.meta,
+            });
             return;
         }
-        res.status(500).json({ message: "Internal server error", details: error instanceof Error ? error.message : String(error) });
+        res.status(500).json({
+            message: "Internal server error",
+            details: error instanceof Error ? error.message : String(error),
+            file: req.file?.originalname,
+            size: req.file?.size,
+            body: req.body,
+            processedCount: createdCount + skippedCount + replacedCount,
+            errorsCount: errors.length,
+        });
+    } finally {
+        await prisma.$disconnect();
     }
 }
 

@@ -1,0 +1,19 @@
+
+[
+  {
+    "name": "Daniel Kepha",
+    "email": "danielkephae@example.com",
+    "subject": "Support Request",
+    "message": "Need help with account access",
+    "privacyConsent": true,
+    "userCognitoId": "3408c408-5021-7092-4c4e-3a8fc204a8e2",
+    "createdAt": "2025-07-01T10:00:00Z"
+  },
+  {
+    "name": "Daniel Kepha",
+    "email": "danielkepha@example.com",
+    "message": "General inquiry about tea grades",
+    "privacyConsent": true,
+    "createdAt": "2025-07-02T12:00:00Z"
+  }
+]

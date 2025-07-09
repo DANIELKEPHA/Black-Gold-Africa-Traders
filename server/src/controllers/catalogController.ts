@@ -165,9 +165,11 @@ const buildWhereConditions = (
             if (value !== undefined) {
                 const parsed = reprintSchema.safeParse(value);
                 if (!parsed.success) {
-                    throw new Error(`Invalid reprint: ${value}. Must be "No" or a positive integer`);
+                    throw new Error(`Invalid reprint: ${value}. Must be 'No', a positive integer string, or null`);
                 }
-                conditions.reprint = parsed.data ?? null;
+                if (parsed.data !== null) {
+                    conditions.reprint = parsed.data;
+                }
             }
         },
     };
@@ -210,15 +212,31 @@ export const getCatalogs = async (req: Request, res: Response) => {
             rawIds = rawIds ? [rawIds] : undefined;
         }
 
+        // console.log(`[${new Date().toLocaleString("en-US", { timeZone: "Africa/Nairobi" })}] getCatalogs raw query:`, req.query);
+
         const params = querySchema.safeParse({
             ...req.query,
             ids: rawIds ? rawIds.map((id) => Number(id)) : undefined,
         });
 
         if (!params.success) {
+            console.error(`[${new Date().toLocaleString("en-US", { timeZone: "Africa/Nairobi" })}] getCatalogs validation error:`, {
+                errors: params.error.issues.map(issue => ({
+                    path: issue.path.join('.'),
+                    message: issue.message,
+                    code: issue.code,
+                    received: 'received' in issue ? issue.received : req.query[issue.path[0]] || 'undefined', // Safe access
+                })),
+                query: req.query,
+            });
             return res.status(400).json({
                 message: "Invalid query parameters",
-                details: params.error.errors,
+                details: params.error.issues.map(issue => ({
+                    path: issue.path.join('.'),
+                    message: issue.message,
+                    code: issue.code,
+                    received: 'received' in issue ? issue.received : req.query[issue.path[0]] || 'undefined', // Safe access
+                })),
             });
         }
 
@@ -258,7 +276,11 @@ export const getCatalogs = async (req: Request, res: Response) => {
             broker,
             invoiceNo,
             reprint,
+            sortBy: "",
+            sortOrder: "asc"
         });
+
+        // console.log(`[${new Date().toLocaleString("en-US", { timeZone: "Africa/Nairobi" })}] getCatalogs where conditions:`, where);
 
         const skip = (page - 1) * limit;
         const take = limit;
@@ -285,6 +307,13 @@ export const getCatalogs = async (req: Request, res: Response) => {
 
         const totalPages = Math.ceil(total / limit);
 
+        // console.log(`[${new Date().toLocaleString("en-US", { timeZone: "Africa/Nairobi" })}] getCatalogs response:`, {
+        //     total,
+        //     totalPages,
+        //     returned: catalogs.length,
+        //     reprintValues: catalogs.map(c => c.reprint)
+        // });
+
         // Normalize admin property for serializeCatalog
         const normalizedCatalogs = catalogs.map((catalog) => ({
             ...catalog,
@@ -296,6 +325,7 @@ export const getCatalogs = async (req: Request, res: Response) => {
             meta: { page, limit, total, totalPages },
         });
     } catch (error) {
+        console.error(`[${new Date().toLocaleString("en-US", { timeZone: "Africa/Nairobi" })}] getCatalogs error:`, error);
         return res.status(500).json({
             message: "Internal server error",
             details: error instanceof Error ? error.message : String(error),
@@ -707,7 +737,7 @@ export async function uploadCatalogsCsv(req: Request, res: Response): Promise<vo
 
         let rowIndex = 1;
         let batch: Array<{ catalog: Prisma.CatalogCreateInput; rowIndex: number }> = [];
-        const BATCH_SIZE = 50;
+        const BATCH_SIZE = 200;
         const MAX_CONCURRENT_BATCHES = 2;
 
         let csvBuffer = req.file.buffer;
@@ -830,7 +860,7 @@ export async function uploadCatalogsCsv(req: Request, res: Response): Promise<vo
                     category: record.category,
                     grade: record.grade,
                     broker: record.broker,
-                    adminCognitoId: authenticatedUser.userId,
+                    // adminCognitoId: authenticatedUser.userId,
                 };
 
                 if (parsedRecord.reprint && parsedRecord.reprint !== "No" && isNaN(Number(parsedRecord.reprint))) {

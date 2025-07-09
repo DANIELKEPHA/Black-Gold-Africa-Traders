@@ -6,7 +6,7 @@ import { useExportCatalogsXlsxMutation } from "@/state/api";
 import { useGetAuthUserQuery } from "@/state/api";
 import { CatalogResponse } from "@/state";
 import {Toaster} from "@/components/ui/sonner";
-import {toast} from "sonner"; // Import from state module
+import {toast} from "sonner";
 
 interface CatalogActionsProps {
     selectedItems: number[];

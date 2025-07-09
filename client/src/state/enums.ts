@@ -30,7 +30,7 @@ export enum TeaGrade {
 export enum Broker {
 AMBR = "AMBR",
 ANJL = "ANJL",
-ATBL = "ATLAS",
+ATBL = "ATBL",
 ATLS = "ATLS",
 BICL = "BICL",
 BTBL = "BTBL",
@@ -43,7 +43,28 @@ TBEA = "TBEA",
 UNTB = "UNTB",
 VENS = "VENS",
 TTBL = "TTBL",
+UIBD = "UIBD"
 }
+
+export enum TeaProducerCountry {
+    Kenya = "Kenya",
+    China = "China",
+    Pakistana = "Pakistana",
+    India = "India",
+    SriLanka = "Sri Lanka",
+    Vietnam = "Vietnam",
+    Turkey = "Turkey",
+    Indonesia = "Indonesia",
+    Bangladesh = "Bangladesh",
+    Japan = "Japan",
+    Iran = "Iran",
+    Argentina = "Argentina",
+    Uganda = "Uganda",
+    Tanzania = "Tanzania",
+    Rwanda = "Rwanda",
+    Malawi = "Malawi",
+}
+
 export enum Vessel {
     first = "first",
     second = "second",
@@ -63,3 +84,4 @@ export enum ShipmentStatus {
     Delivered = "Delivered",
     Cancelled = "Cancelled",
 }
+

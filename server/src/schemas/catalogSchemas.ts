@@ -7,29 +7,27 @@ const teaGradeValues = Object.values(TeaGrade) as [string, ...string[]];
 const brokerValues = Object.values(Broker) as [string, ...string[]];
 
 // Create a reusable reprint schema that matches your Prisma model (String type)
-export const reprintSchema = z.preprocess((val) => {
-    if (val === "No" || val === null || val === "") return "No";
-    const str = String(val);
-    const num = Number(str);
-    if (isNaN(num) || num <= 0) return "No";
-    return str;
-}, z.union([
-    z.literal("No"),
-    z.string().regex(/^[1-9]\d*$/, {
-        message: "Reprint must be 'No' or a positive integer",
-    }),
-]).optional().describe("Either 'No' or a positive integer string"));
+export const reprintSchema = z
+    .union([
+        z.literal("No"),
+        z.string().regex(/^[1-9]\d*$/, {
+            message: "Reprint must be 'No' or a positive integer string",
+        }),
+    ])
+    .nullable()
+    .transform((val) => (val === "" ? null : val))
+    .describe("Either 'No', a positive integer string, or null");
 
 export const dateFormat = z
     .string()
     .regex(
-        /^(?:\d{4}\/(0?[1-9]|1[0-2])\/(0?[1-9]|[12]\d|3[01])|(0?[1-9]|[12]\d|3[01])\/(0?[1-9]|1[0-2])\/\d{4}|([1-9]|1[0-2])\/([1-9]|[12]\d|3[01])\/\d{4})$/,
-        'Invalid date format (expected YYYY/MM/DD, DD/MM/YYYY, or M/D/YYYY)'
+        /^(?:\d{4}\/(0?[1-9]|1[0-2])\/(0?[1-9]|[12]\d|3[01])|(0?[1-9]|[12]\d|3[01])\/(0?[1-9]|1[0-2])\/\d{4}|\d{4}\/([1-9]|1[0-2])\/([1-9]|[12]\d|3[01])|([1-9]|1[0-2])\/([1-9]|[12]\d|3[01])\/\d{4})$/,
+        'Invalid date format (expected YYYY/MM/DD, DD/MM/YYYY, M/D/YYYY, or YYYY/M/D)'
     )
     .transform((val) => {
         let year: number, month: number, day: number;
-        if (val.match(/^\d{4}\/\d{2}\/\d{2}$/)) {
-            // YYYY/MM/DD
+        if (val.match(/^\d{4}\/\d{1,2}\/\d{1,2}$/)) {
+            // YYYY/MM/DD or YYYY/M/D
             [year, month, day] = val.split('/').map(Number);
         } else if (val.match(/^([1-9]|[12]\d|3[01])\/([1-9]|1[0-2])\/\d{4}$/)) {
             // DD/MM/YYYY
@@ -42,7 +40,7 @@ export const dateFormat = z
 
         // Validate the date is valid
         const date = new Date(formattedDate);
-        if (isNaN(date.getTime())) {
+        if (isNaN(date.getTime()) || date.getMonth() + 1 !== month || date.getDate() !== day) {
             console.error(`[Schema] Invalid date: ${formattedDate}`);
             throw new Error('Invalid date');
         }
@@ -64,13 +62,15 @@ export const querySchema = z
         producerCountry: z.string().min(1, 'Producer country must not be empty').optional(),
         manufactureDate: dateFormat.optional(),
         saleCode: z.string().min(1, 'Sale code must not be empty').optional(),
-        category: z.enum([...teaCategoryValues, 'any'] as const).optional(),
-        grade: z.enum([...teaGradeValues, 'any'] as const).optional(),
-        broker: z.enum([...brokerValues, 'any'] as const).optional(),
+        category: z.enum([...teaCategoryValues, 'any'] as const).optional().default('any'),
+        grade: z.enum([...teaGradeValues, 'any'] as const).optional().default('any'),
+        broker: z.enum([...brokerValues, 'any'] as const).optional().default('any'),
         invoiceNo: z.string().min(1, 'Invoice number must not be empty').optional(),
-        reprint: reprintSchema,
+        reprint: reprintSchema.optional(), // Make reprint optional
         search: z.string().min(1, 'Search term must not be empty').optional(),
         ids: z.array(z.number().int().positive('IDs must be positive integers')).optional(),
+        sortBy: z.string().optional().default(''),
+        sortOrder: z.enum(['asc', 'desc']).optional().default('asc'),
     })
     .strict();
 
@@ -78,7 +78,7 @@ export const createCatalogSchema = z.object({
     broker: z.enum(brokerValues, { message: 'Invalid broker value' }),
     sellingMark: z.string().min(1, 'Selling mark is required'),
     lotNo: z.string().min(1, 'Lot number is required'),
-    reprint: reprintSchema,
+    reprint: reprintSchema.optional(),
     bags: z.number().int().positive('Bags must be a positive integer'),
     netWeight: z.number().positive('Net weight must be positive'),
     totalWeight: z.number().positive('Total weight must be positive'),
@@ -96,7 +96,7 @@ export const csvRecordSchema = z.object({
     broker: z.enum(brokerValues, { message: 'Invalid broker value' }),
     sellingMark: z.string().min(1, 'Selling mark is required'),
     lotNo: z.string().min(1, 'Lot number is required'),
-    reprint: reprintSchema,
+    reprint: reprintSchema.optional(),
     bags: z.number().int().positive('Bags must be a positive integer'),
     netWeight: z.number().positive('Net weight must be positive'),
     totalWeight: z.number().positive('Total weight must be positive'),
@@ -112,7 +112,7 @@ export const csvRecordSchema = z.object({
 export const updateSchema = z.object({
     broker: z.enum(brokerValues, { message: 'Invalid broker value' }).optional(),
     sellingMark: z.string().min(1, 'Selling mark must not be empty').optional(),
-    reprint: reprintSchema,
+    reprint: reprintSchema.optional(),
     bags: z.number().int().positive('Bags must be a positive integer').optional(),
     totalWeight: z.number().positive('Total weight must be positive').optional(),
     netWeight: z.number().positive('Net weight must be positive').optional(),
@@ -139,6 +139,6 @@ export const filtersStateSchema = z.object({
     bags: z.number().int().positive('Bags').optional(),
     totalWeight: z.number().positive('').optional(),
     netWeight: z.number().positive('').optional(),
-    reprint: reprintSchema,
+    reprint: reprintSchema.optional(),
     search: z.string().optional(),
 }).strict();

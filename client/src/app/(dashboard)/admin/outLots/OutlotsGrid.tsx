@@ -9,7 +9,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { OutLotsResponse } from "@/state";
 
 export interface OutLotsGridProps {
-    OutLotsData: OutLotsResponse[];
+    outLotsData: OutLotsResponse[];
     selectedItems: number[];
     handleSelectItem: (itemId: number) => void;
     handleDelete: (id: number) => Promise<void>;
@@ -17,7 +17,7 @@ export interface OutLotsGridProps {
 }
 
 const OutLotsGrid: React.FC<OutLotsGridProps> = ({
-                                                     OutLotsData,
+                                                     outLotsData,
                                                      selectedItems,
                                                      handleSelectItem,
                                                      handleDelete,
@@ -29,8 +29,8 @@ const OutLotsGrid: React.FC<OutLotsGridProps> = ({
 
     return (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {OutLotsData.length > 0 ? (
-                OutLotsData.map((outLot) => (
+            {outLotsData.length > 0 ? (
+                outLotsData.map((outLot) => (
                     <Card
                         key={outLot.id}
                         className={`rounded-sm border-gray-200 dark:border-gray-700 ${
@@ -48,7 +48,10 @@ const OutLotsGrid: React.FC<OutLotsGridProps> = ({
                             <div className="flex items-center" onClick={(e) => e.stopPropagation()}>
                                 <Checkbox
                                     checked={selectedItems.includes(outLot.id)}
-                                    onChange={() => handleSelectItem(outLot.id)}
+                                    onCheckedChange={() => {
+                                        // console.log("[OutLotsGrid] Checkbox toggled for outlot id:", outLot.id);
+                                        handleSelectItem(outLot.id);
+                                    }}
                                     aria-label={t("catalog:actions.selectItem", {
                                         defaultValue: "Select item {{lotNo}}",
                                         lotNo: outLot.lotNo,
@@ -63,31 +66,31 @@ const OutLotsGrid: React.FC<OutLotsGridProps> = ({
                                 <span className="font-medium text-gray-700 dark:text-gray-300">
                                     {t("catalog:auction", { defaultValue: "Auction" })}:
                                 </span>{" "}
-                                {outLot.auction}
+                                {outLot.auction ?? "N/A"}
                             </p>
                             <p className="text-sm">
                                 <span className="font-medium text-gray-700 dark:text-gray-300">
                                     {t("catalog:broker", { defaultValue: "Broker" })}:
                                 </span>{" "}
-                                {formatBrokerName(outLot.broker)}
+                                {formatBrokerName(outLot.broker) ?? "N/A"}
                             </p>
                             <p className="text-sm">
                                 <span className="font-medium text-gray-700 dark:text-gray-300">
                                     {t("catalog:sellingMark", { defaultValue: "Selling Mark" })}:
                                 </span>{" "}
-                                {outLot.sellingMark}
+                                {outLot.sellingMark ?? "N/A"}
                             </p>
                             <p className="text-sm">
                                 <span className="font-medium text-gray-700 dark:text-gray-300">
                                     {t("catalog:grade", { defaultValue: "Grade" })}:
                                 </span>{" "}
-                                {outLot.grade}
+                                {outLot.grade ?? "N/A"}
                             </p>
                             <p className="text-sm">
                                 <span className="font-medium text-gray-700 dark:text-gray-300">
                                     {t("catalog:invoiceNo", { defaultValue: "Invoice Number" })}:
                                 </span>{" "}
-                                {outLot.invoiceNo}
+                                {outLot.invoiceNo ?? "N/A"}
                             </p>
                             <p className="text-sm">
                                 <span className="font-medium text-gray-700 dark:text-gray-300">
@@ -117,14 +120,23 @@ const OutLotsGrid: React.FC<OutLotsGridProps> = ({
                                 <span className="font-medium text-gray-700 dark:text-gray-300">
                                     {t("catalog:manufactureDate", { defaultValue: "Manufacture Date" })}:
                                 </span>{" "}
-                                {new Date(outLot.manufactureDate).toISOString().slice(0, 10)}
+                                {outLot.manufactureDate
+                                    ? new Date(outLot.manufactureDate).toLocaleDateString("en-US", {
+                                        day: "2-digit",
+                                        month: "2-digit",
+                                        year: "numeric",
+                                    })
+                                    : "N/A"}
                             </p>
                             <div className="flex gap-2 mt-2" onClick={(e) => e.stopPropagation()}>
                                 {isAdmin && (
                                     <Button
                                         variant="destructive"
                                         size="sm"
-                                        onClick={() => handleDelete(outLot.id)}
+                                        onClick={() => {
+                                            // console.log("[OutLotsGrid] Delete button clicked for outlot id:", outLot.id);
+                                            handleDelete(outLot.id);
+                                        }}
                                         disabled={isDeleting[outLot.id] ?? false}
                                         className="rounded-sm bg-red-600 hover:bg-red-700 text-white"
                                         aria-label={t("catalog:actions.delete", {
@@ -143,7 +155,7 @@ const OutLotsGrid: React.FC<OutLotsGridProps> = ({
                 ))
             ) : (
                 <div className="col-span-full text-center py-4 text-gray-500 dark:text-gray-400">
-                    {t("catalog:noOutLots", { defaultValue: "No outLots found" })}
+                    {t("catalog:noOutLots", { defaultValue: "No outlots found" })}
                 </div>
             )}
         </div>

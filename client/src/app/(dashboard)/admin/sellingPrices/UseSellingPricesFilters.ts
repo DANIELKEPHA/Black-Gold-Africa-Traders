@@ -6,12 +6,13 @@ import { cleanParams } from "@/lib/utils";
 import { FiltersState, setFilters } from "@/state";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
+import {Broker, TeaCategory, TeaGrade, TeaProducerCountry} from "@/state/enums";
 
 interface FilterOptions {
-    producerCountries?: string[];
-    grades?: string[];
-    categories?: string[];
-    brokers?: string[];
+    producerCountries?: TeaProducerCountry[];
+    grades?: TeaGrade[];
+    categories?: TeaCategory[];
+    brokers?: Broker[];
     saleCodes?: string[];
     bags?: { min: number; max: number };
     netWeight?: { min: number; max: number };
@@ -20,23 +21,25 @@ interface FilterOptions {
     manufactureDate?: { min: string; max: string };
 }
 
-interface UseFiltersConfig {
-    translationNamespaces: string[];
-    filterOptions: FilterOptions;
-    validateFilter?: (key: keyof FiltersState, value: any, t: (key: string, options?: any) => string) => string | undefined;
-}
-
-export const UseSellingPricesFilters = ({ translationNamespaces, filterOptions, validateFilter }: UseFiltersConfig) => {
-    const { t } = useTranslation(translationNamespaces);
+export const useSellingPricesFilters = () => {
+    const { t } = useTranslation(["catalog", "general"]);
     const dispatch = useDispatch();
     const router = useRouter();
     const pathname = usePathname();
     const filters = useSelector((state: any) => state.global.filters) as FiltersState;
     const [localFilters, setLocalFilters] = useState<FiltersState>({ ...filters });
     const [errors, setErrors] = useState<Partial<Record<keyof FiltersState, string>>>({});
-    const isFilterOptionsLoading = false; // Replace with API call if needed
 
-    // Memoize the debounced function to avoid recreating it
+    // Mock filter options using enums
+    const filterOptions: FilterOptions = {
+        producerCountries: Object.values(TeaProducerCountry),
+        grades: Object.values(TeaGrade),
+        categories: Object.values(TeaCategory),
+        brokers: Object.values(Broker),
+    };
+    const isFilterOptionsLoading = false;
+
+    // Memoize the debounced function to ensure it's created only once
     const debouncedUpdateURL = useMemo(
         () =>
             debounce((newFilters: FiltersState, currentPathname: string, router: ReturnType<typeof useRouter>) => {
@@ -67,7 +70,7 @@ export const UseSellingPricesFilters = ({ translationNamespaces, filterOptions, 
         [debouncedUpdateURL, pathname, router]
     );
 
-    const defaultValidateFilter = (key: keyof FiltersState, value: any, t: (key: string, options?: any) => string): string | undefined => {
+    const validateFilter = (key: keyof FiltersState, value: any): string | undefined => {
         if (["bags", "netWeight", "totalWeight", "askingPrice", "reprint"].includes(key)) {
             const num = parseFloat(value);
             if (value && isNaN(num)) return t("catalog:errors.invalidNumber", { defaultValue: "Invalid number" });
@@ -87,7 +90,7 @@ export const UseSellingPricesFilters = ({ translationNamespaces, filterOptions, 
             newValue = value;
         }
         setLocalFilters((prev) => ({ ...prev, [key]: newValue }));
-        setErrors((prev) => ({ ...prev, [key]: (validateFilter || defaultValidateFilter)(key, value, t) }));
+        setErrors((prev) => ({ ...prev, [key]: validateFilter(key, value) }));
         dispatch(setFilters({ ...filters, [key]: newValue }));
         updateURL({ ...filters, [key]: newValue });
     };

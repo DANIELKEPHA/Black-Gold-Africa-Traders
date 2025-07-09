@@ -12,6 +12,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { AlertCircle } from "lucide-react";
+import {Broker, TeaGrade} from "@/state/enums";
 
 const StocksUpload: React.FC = () => {
     const { t } = useTranslation(["stocks", "general"]);
@@ -43,44 +44,8 @@ const StocksUpload: React.FC = () => {
         "Total",
     ];
 
-    const validBrokers = [
-        "AMBR",
-        "ANJL",
-        "ATBL",
-        "ATLS",
-        "BICL",
-        "BTBL",
-        "CENT",
-        "COMK",
-        "CTBL",
-        "PRME",
-        "PTBL",
-        "TBEA",
-        "UNTB",
-        "VENS",
-        "TTBL",
-    ];
-    const validGrades = [
-        "PD",
-        "PD2",
-        "DUST1",
-        "DUST2",
-        "PF1",
-        "BP1",
-        "FNGS",
-        "FNGS1",
-        "FNGS2",
-        "BMF",
-        "BMF1",
-        "BMFD",
-        "BP",
-        "BP2",
-        "DUST",
-        "PF2",
-        "PF",
-        "BOP",
-        "BOPF",
-    ];
+    const validBrokers = Object.values(Broker) as string[];
+    const validGrades = Object.values(TeaGrade) as string[];
 
     const validateCsv = async (file: File): Promise<boolean> => {
         const time = new Date().toLocaleString("en-US", { timeZone: "Africa/Nairobi" });

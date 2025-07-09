@@ -1,8 +1,13 @@
+"use client";
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useTranslation } from "react-i18next";
+import { formatBrokerName } from "@/lib/utils";
 import { useRouter } from "next/navigation";
+import { useGetAuthUserQuery } from "@/state/api";
 import { Checkbox } from "@/components/ui/checkbox";
 import { CatalogResponse } from "@/state";
+import { TeaCategory, TeaGrade, Broker, TeaProducerCountry } from "@/enums";
 
 export interface CatalogGridProps {
     catalogData: CatalogResponse[];
@@ -10,20 +15,26 @@ export interface CatalogGridProps {
     handleSelectItem: (itemId: number) => void;
 }
 
-const CatalogGrid: React.FC<CatalogGridProps> = ({ catalogData, selectedItems, handleSelectItem }) => {
+const CatalogGrid: React.FC<CatalogGridProps> = ({
+                                                     catalogData,
+                                                     selectedItems,
+                                                     handleSelectItem,
+                                                 }) => {
     const { t } = useTranslation(["catalog", "general"]);
     const router = useRouter();
+    const { data: authUser } = useGetAuthUserQuery();
 
     const handleCardClick = (catalogId: number) => {
-        router.push(`/user/catalog/${catalogId}`);
+        router.push(`/admin/catalog/${catalogId}`);
     };
 
+    // Helper to safely render potentially null or complex fields
     const renderField = (value: any): string => {
         if (value == null) return "N/A";
         if (typeof value === "string" || typeof value === "number" || typeof value === "boolean") {
             return String(value);
         }
-        return "N/A";
+        return "N/A"; // Fallback for unexpected types
     };
 
     return (
@@ -44,84 +55,87 @@ const CatalogGrid: React.FC<CatalogGridProps> = ({ catalogData, selectedItems, h
                             <div className="flex items-center" onClick={(e) => e.stopPropagation()}>
                                 <Checkbox
                                     checked={selectedItems.includes(catalog.id)}
-                                    onChange={() => handleSelectItem(catalog.id)}
+                                    onCheckedChange={() => {
+                                        console.log("[CatalogGrid] Checkbox toggled for catalog id:", catalog.id);
+                                        handleSelectItem(catalog.id);
+                                    }}
                                     aria-label={t("catalog:actions.selectItem", { defaultValue: "Select item {{lotNo}}", lotNo: catalog.lotNo })}
                                     className="border-gray-300 dark:border-gray-600"
                                 />
                                 <span className="ml-2 text-sm text-gray-600 dark:text-gray-400">
-                                    {t("catalog:actions.selectItem", { defaultValue: "Select item" })}
-                                </span>
+                  {t("catalog:actions.selectItem", { defaultValue: "Select item" })}
+                </span>
                             </div>
                             <p className="text-sm">
-                                <span className="font-medium text-gray-700 dark:text-gray-300">
-                                    {t("catalog:category", { defaultValue: "Category" })}:
-                                </span>{" "}
-                                {renderField(catalog.category)}
+                <span className="font-medium text-gray-700 dark:text-gray-300">
+                  {t("catalog:category", { defaultValue: "Category" })}:
+                </span>{" "}
+                                {renderField(catalog.category as TeaCategory)}
                             </p>
                             <p className="text-sm">
-                                <span className="font-medium text-gray-700 dark:text-gray-300">
-                                    {t("catalog:grade", { defaultValue: "Grade" })}:
-                                </span>{" "}
-                                {renderField(catalog.grade)}
+                <span className="font-medium text-gray-700 dark:text-gray-300">
+                  {t("catalog:grade", { defaultValue: "Grade" })}:
+                </span>{" "}
+                                {renderField(catalog.grade as TeaGrade)}
                             </p>
                             <p className="text-sm">
-                                <span className="font-medium text-gray-700 dark:text-gray-300">
-                                    {t("catalog:broker", { defaultValue: "Broker" })}:
-                                </span>{" "}
-                                {renderField(catalog.broker)}
+                <span className="font-medium text-gray-700 dark:text-gray-300">
+                  {t("catalog:broker", { defaultValue: "Broker" })}:
+                </span>{" "}
+                                {renderField(formatBrokerName(catalog.broker as Broker))}
                             </p>
                             <p className="text-sm">
-                                <span className="font-medium text-gray-700 dark:text-gray-300">
-                                    {t("catalog:sellingMark", { defaultValue: "Selling Mark" })}:
-                                </span>{" "}
+                <span className="font-medium text-gray-700 dark:text-gray-300">
+                  {t("catalog:sellingMark", { defaultValue: "Selling Mark" })}:
+                </span>{" "}
                                 {renderField(catalog.sellingMark)}
                             </p>
                             <p className="text-sm">
-                                <span className="font-medium text-gray-700 dark:text-gray-300">
-                                    {t("catalog:sale", { defaultValue: "Sale" })}:
-                                </span>{" "}
+                <span className="font-medium text-gray-700 dark:text-gray-300">
+                  {t("catalog:sale", { defaultValue: "Sale" })}:
+                </span>{" "}
                                 {renderField(catalog.saleCode)}
                             </p>
                             <p className="text-sm">
-                                <span className="font-medium text-gray-700 dark:text-gray-300">
-                                    {t("catalog:bags", { defaultValue: "Bags" })}:
-                                </span>{" "}
+                <span className="font-medium text-gray-700 dark:text-gray-300">
+                  {t("catalog:bags", { defaultValue: "Bags" })}:
+                </span>{" "}
                                 {catalog.bags}
                             </p>
                             <p className="text-sm">
-                                <span className="font-medium text-gray-700 dark:text-gray-300">
-                                    {t("catalog:tareWeight", { defaultValue: "Tare Weight" })}:
-                                </span>{" "}
+                <span className="font-medium text-gray-700 dark:text-gray-300">
+                  {t("catalog:tareWeight", { defaultValue: "Tare Weight" })}:
+                </span>{" "}
                                 {(catalog.totalWeight - catalog.netWeight).toFixed(2)} kg
                             </p>
                             <p className="text-sm">
-                                <span className="font-medium text-gray-700 dark:text-gray-300">
-                                    {t("catalog:totalWeight", { defaultValue: "Total Weight" })}:
-                                </span>{" "}
+                <span className="font-medium text-gray-700 dark:text-gray-300">
+                  {t("catalog:totalWeight", { defaultValue: "Total Weight" })}:
+                </span>{" "}
                                 {catalog.totalWeight.toFixed(2)} kg
                             </p>
                             <p className="text-sm">
-                                <span className="font-medium text-gray-700 dark:text-gray-300">
-                                    {t("catalog:country", { defaultValue: "Country" })}:
-                                </span>{" "}
-                                {renderField(catalog.producerCountry)}
+                <span className="font-medium text-gray-700 dark:text-gray-300">
+                  {t("catalog:country", { defaultValue: "Country" })}:
+                </span>{" "}
+                                {renderField(catalog.producerCountry as TeaProducerCountry)}
                             </p>
                             <p className="text-sm">
-                                <span className="font-medium text-gray-700 dark:text-gray-300">
-                                    {t("catalog:askingPrice", { defaultValue: "Asking Price" })}:
-                                </span>{" "}
+                <span className="font-medium text-gray-700 dark:text-gray-300">
+                  {t("catalog:askingPrice", { defaultValue: "Asking Price" })}:
+                </span>{" "}
                                 ${catalog.askingPrice.toFixed(2)}
                             </p>
                             <p className="text-sm">
-                                <span className="font-medium text-gray-700 dark:text-gray-300">
-                                    {t("catalog:invoiceNo", { defaultValue: "Invoice Number" })}:
-                                </span>{" "}
+                <span className="font-medium text-gray-700 dark:text-gray-300">
+                  {t("catalog:invoiceNo", { defaultValue: "Invoice Number" })}:
+                </span>{" "}
                                 {renderField(catalog.invoiceNo)}
                             </p>
                             <p className="text-sm">
-                                <span className="font-medium text-gray-700 dark:text-gray-300">
-                                    {t("catalog:manufactureDate", { defaultValue: "Manufacture Date" })}:
-                                </span>{" "}
+                <span className="font-medium text-gray-700 dark:text-gray-300">
+                  {t("catalog:manufactureDate", { defaultValue: "Manufacture Date" })}:
+                </span>{" "}
                                 {catalog.manufactureDate
                                     ? new Date(catalog.manufactureDate).toLocaleDateString("en-US", {
                                         day: "2-digit",
@@ -131,9 +145,9 @@ const CatalogGrid: React.FC<CatalogGridProps> = ({ catalogData, selectedItems, h
                                     : "N/A"}
                             </p>
                             <p className="text-sm">
-                                <span className="font-medium text-gray-700 dark:text-gray-300">
-                                    {t("catalog:reprint", { defaultValue: "Reprint" })}:
-                                </span>{" "}
+                <span className="font-medium text-gray-700 dark:text-gray-300">
+                  {t("catalog:reprint", { defaultValue: "Reprint" })}:
+                </span>{" "}
                                 {catalog.reprint}
                             </p>
                         </CardContent>

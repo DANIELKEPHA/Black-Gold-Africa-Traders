@@ -17,6 +17,7 @@ const Catalog: React.FC = () => {
     const filters = useAppSelector((state) => state.global.filters) || {};
     const viewMode = useAppSelector((state) => state.global.viewMode);
     const [selectedItems, setSelectedItems] = useState<number[]>([]);
+    const [isSelectAll, setIsSelectAll] = useState<boolean>(false); // Add isSelectAll state
     const [page, setPage] = useState(1);
     const limit = 100;
 
@@ -33,10 +34,21 @@ const Catalog: React.FC = () => {
     const { totalPages = 1, total = 0 } = catalogDataResponse?.meta || {};
 
     const handleSelectItem = useCallback((itemId: number) => {
-        setSelectedItems((prev) =>
-            prev.includes(itemId) ? prev.filter((id) => id !== itemId) : [...prev, itemId]
-        );
-    }, []);
+        setSelectedItems((prev) => {
+            if (itemId === 0) {
+                // Handle select-all checkbox
+                const allItemIds = catalogData.map((item) => item.id);
+                const newSelectedItems = prev.length === allItemIds.length ? [] : allItemIds;
+                setIsSelectAll(newSelectedItems.length === allItemIds.length);
+                return newSelectedItems;
+            }
+            const newSelectedItems = prev.includes(itemId)
+                ? prev.filter((id) => id !== itemId)
+                : [...prev, itemId];
+            setIsSelectAll(newSelectedItems.length === catalogData.length);
+            return newSelectedItems;
+        });
+    }, [catalogData]);
 
     if (isAuthLoading || isLoading) return <Loading />;
     if (error) {
@@ -49,7 +61,12 @@ const Catalog: React.FC = () => {
             <Toaster richColors position="top-right" />
             <CatalogActions selectedItems={selectedItems} catalogData={catalogData} />
             {viewMode === "list" ? (
-                <CatalogTable catalogData={catalogData} selectedItems={selectedItems} handleSelectItem={handleSelectItem} />
+                <CatalogTable
+                    catalogData={catalogData}
+                    selectedItems={selectedItems}
+                    handleSelectItem={handleSelectItem}
+                    isSelectAll={isSelectAll}
+                />
             ) : (
                 <CatalogGrid catalogData={catalogData} selectedItems={selectedItems} handleSelectItem={handleSelectItem} />
             )}
@@ -63,8 +80,8 @@ const Catalog: React.FC = () => {
                         {t("general:pagination.previous", { defaultValue: "Previous" })}
                     </Button>
                     <span className="text-gray-700 dark:text-gray-200">
-                        {t("general:pagination.page", { page, totalPages })}
-                    </span>
+            {t("general:pagination.page", { page, totalPages })}
+          </span>
                     <Button
                         disabled={page === totalPages || isLoading}
                         onClick={() => setPage((prev) => prev + 1)}

@@ -15,12 +15,14 @@ const OutLots: React.FC = () => {
     const { t } = useTranslation(["catalog", "general"]);
     const router = useRouter();
     const { data: authUser, isLoading: isAuthLoading } = useGetAuthUserQuery();
-    const filters = useAppSelector((state) => state.global.filters);
+    const filters = useAppSelector((state) => state.global.filters) || {};
     const viewMode = useAppSelector((state) => state.global.viewMode);
     const [selectedItems, setSelectedItems] = useState<number[]>([]);
     const [selectAllAcrossPages, setSelectAllAcrossPages] = useState<boolean>(false);
     const [page, setPage] = useState(1);
     const limit = 100;
+
+    console.log("[OutLots] Filters before query:", filters);
 
     const { data: outLotsDataResponse, isLoading, error } = useGetOutlotsQuery(
         {
@@ -47,34 +49,41 @@ const OutLots: React.FC = () => {
     const { totalPages = 1, total = 0 } = outLotsDataResponse?.meta || {};
 
     const handleSelectItem = useCallback((itemId: number) => {
-        setSelectedItems((prev) =>
-            prev.includes(itemId) ? prev.filter((id) => id !== itemId) : [...prev, itemId]
-        );
-        setSelectAllAcrossPages(false); // Reset select all across pages when individual items are toggled
+        console.log("[OutLots] handleSelectItem called with itemId:", itemId);
+        setSelectedItems((prev) => {
+            const newSelected = prev.includes(itemId)
+                ? prev.filter((id) => id !== itemId)
+                : [...prev, itemId];
+            console.log("[OutLots] New selected items:", newSelected);
+            setSelectAllAcrossPages(false); // Reset select all across pages when individual items are toggled
+            return newSelected;
+        });
     }, []);
 
     const handleSelectAll = useCallback(() => {
-        if (!outLotsData || outLotsData.length === 0) {
-            setSelectedItems([]);
-            setSelectAllAcrossPages(false);
-            return;
-        }
-        if (selectedItems.length === outLotsData.length && !selectAllAcrossPages) {
+        console.log("[OutLots] handleSelectAll called, current selectAllAcrossPages:", selectAllAcrossPages);
+        if (selectAllAcrossPages || selectedItems.length === outLotsData.length) {
             setSelectedItems([]);
             setSelectAllAcrossPages(false);
         } else {
-            setSelectedItems(outLotsData.map((item) => item.id));
-            setSelectAllAcrossPages(true); // Indicate all items across pages are selected
+            const validIds = outLotsData
+                .filter((item) => Number.isInteger(item.id) && item.id > 0)
+                .map((item) => item.id);
+            setSelectedItems(validIds);
+            setSelectAllAcrossPages(true);
+            console.log("[OutLots] Selected all items:", validIds);
         }
     }, [outLotsData, selectedItems.length, selectAllAcrossPages]);
 
     if (isAuthLoading || isLoading) return null; // Simplified loading state
-    if (error)
+    if (error) {
+        console.error("[OutLots] Error loading outlots data", { error });
         return (
             <div className="text-red-500 p-4">
-                {t("catalog:errors.error", { defaultValue: "Error loading outLots" })}
+                {t("catalog:errors.error", { defaultValue: "Error loading outlots" })}
             </div>
         );
+    }
 
     return (
         <div className="bg-white dark:bg-gray-800 rounded-sm shadow-md p-6">
@@ -87,13 +96,15 @@ const OutLots: React.FC = () => {
             />
             {viewMode === "list" ? (
                 <OutlotsTable
-                    OutLotsData={outLotsData}
+                    outLotsData={outLotsData}
                     selectedItems={selectedItems}
                     handleSelectItem={handleSelectItem}
+                    selectAllAcrossPages={selectAllAcrossPages}
+                    handleSelectAll={handleSelectAll}
                 />
             ) : (
                 <OutlotsGrid
-                    OutLotsData={outLotsData}
+                    outLotsData={outLotsData}
                     selectedItems={selectedItems}
                     handleSelectItem={handleSelectItem}
                 />

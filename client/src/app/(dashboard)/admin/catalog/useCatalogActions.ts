@@ -22,13 +22,13 @@ export const useCatalogActions = () => {
 
     const handleCreateCatalogFromCsv = async (file: File) => {
         try {
-            console.log("Uploading CSV file:", file.name);
+            // console.log("Uploading CSV file:", file.name);
             // Wrap the file in the expected object structure
             const response = await createCatalogFromCsv({
                 file,
                 duplicateAction: "replace" // or "skip" based on your needs
             }).unwrap();
-            console.log("CSV upload successful:", response);
+            // console.log("CSV upload successful:", response);
             toast.success(`Successfully uploaded ${response.count} catalog(s)`);
             return response;
         } catch (error: any) {
@@ -66,7 +66,7 @@ export const useCatalogActions = () => {
             if (!catalogs || catalogs.length === 0) {
                 throw new Error("No catalog data to export");
             }
-            console.log("Exporting catalogs:", catalogs.length);
+            // console.log("Exporting catalogs:", catalogs.length);
             const csvData = [
                 [
                     "id",
@@ -114,7 +114,7 @@ export const useCatalogActions = () => {
             a.click();
             window.URL.revokeObjectURL(url);
             toast.success("Catalogs exported successfully");
-            console.log("CSV exported successfully");
+            // console.log("CSV exported successfully");
             return true;
         } catch (error: any) {
             console.error("Failed to export CSV:", error);

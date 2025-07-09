@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.filtersStateSchema = exports.updateSchema = exports.csvRecordSchema = exports.createSellingPriceSchema = exports.exportQuerySchema = exports.querySchema = void 0;
+exports.filtersStateSchema = exports.updateSchema = exports.csvRecordSchema = exports.createSellingPriceSchema = exports.exportQuerySchema = exports.querySchema = exports.csvUploadSchema = void 0;
 const zod_1 = require("zod");
 const client_1 = require("@prisma/client");
 const shipmentSchemas_1 = require("./shipmentSchemas");
@@ -8,10 +8,16 @@ const catalogSchemas_1 = require("./catalogSchemas");
 const teaCategoryValues = Object.values(client_1.TeaCategory);
 const teaGradeValues = Object.values(client_1.TeaGrade);
 const brokerValues = Object.values(client_1.Broker);
+// CSV upload schema (unchanged)
+exports.csvUploadSchema = zod_1.z.object({
+    duplicateAction: zod_1.z.literal('replace', {
+        errorMap: () => ({ message: "duplicateAction must be 'replace'" }),
+    }),
+});
 exports.querySchema = zod_1.z
     .object({
     page: zod_1.z.coerce.number().int().positive('Page must be a positive integer').optional().default(1),
-    limit: zod_1.z.coerce.number().int().positive('Limit must be a positive integer').optional().default(100),
+    limit: zod_1.z.coerce.number().int().positive('Limit must be a positive integer').optional().default(20),
     lotNo: zod_1.z.string().min(1, 'Lot number must not be empty').optional(),
     sellingMark: zod_1.z.string().min(1, 'Selling mark must not be empty').optional(),
     bags: zod_1.z.coerce.number().int().positive('Bags must be a positive integer').optional(),
@@ -22,15 +28,15 @@ exports.querySchema = zod_1.z
     producerCountry: zod_1.z.string().min(1, 'Producer country must not be empty').optional(),
     manufactureDate: catalogSchemas_1.dateFormat.optional(),
     saleCode: zod_1.z.string().min(1, 'Sale code must not be empty').optional(),
-    category: zod_1.z.enum([...teaCategoryValues, 'any']).optional(),
-    grade: zod_1.z.enum([...teaGradeValues, 'any']).optional(),
-    broker: zod_1.z.enum([...brokerValues, 'any']).optional(),
+    category: zod_1.z.enum([...teaCategoryValues, 'any']).optional().default('any'),
+    grade: zod_1.z.enum([...teaGradeValues, 'any']).optional().default('any'),
+    broker: zod_1.z.enum([...brokerValues, 'any']).optional().default('any'),
     invoiceNo: zod_1.z.string().min(1, 'Invoice number must not be empty').optional(),
-    reprint: catalogSchemas_1.reprintSchema,
+    reprint: catalogSchemas_1.reprintSchema.optional(), // Make reprint optional
     search: zod_1.z.string().min(1, 'Search term must not be empty').optional(),
     ids: zod_1.z.array(zod_1.z.number().int().positive('IDs must be positive integers')).optional(),
-    adminCognitoId: shipmentSchemas_1.cognitoIdSchema.optional(),
-    userCognitoId: shipmentSchemas_1.cognitoIdSchema.optional(),
+    sortBy: zod_1.z.string().optional().default(''),
+    sortOrder: zod_1.z.enum(['asc', 'desc']).optional().default('asc'),
 })
     .strict();
 exports.exportQuerySchema = zod_1.z

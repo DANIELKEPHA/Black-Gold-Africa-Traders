@@ -60,7 +60,10 @@ const CatalogGrid: React.FC<CatalogGridProps> = ({
                             <div className="flex items-center" onClick={(e) => e.stopPropagation()}>
                                 <Checkbox
                                     checked={selectedItems.includes(catalog.id)}
-                                    onChange={() => handleSelectItem(catalog.id)}
+                                    onCheckedChange={() => {
+                                        console.log("[CatalogGrid] Checkbox toggled for catalog id:", catalog.id);
+                                        handleSelectItem(catalog.id);
+                                    }}
                                     aria-label={t("catalog:actions.selectItem", { defaultValue: "Select item {{lotNo}}", lotNo: catalog.lotNo })}
                                     className="border-gray-300 dark:border-gray-600"
                                 />

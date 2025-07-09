@@ -20,7 +20,9 @@ type ModelName =
     | 'shipmentItem'
     | 'stockHistory'
     | 'shipmentHistory'
-    | 'adminNotification';
+    | 'adminNotification'
+    | 'contact'
+    | 'favorite';
 
 type PrismaModels = {
     [K in ModelName]: PrismaClient[K];
@@ -64,6 +66,8 @@ async function deleteAllData() {
             'stockHistory',
             'shipmentItem',
             'stockAssignment',
+            'favorite',
+            'contact',
             'shipment',
             'sellingPrice',
             'outLots',
@@ -138,7 +142,7 @@ async function adjustStock(
         });
 
         const existingHistory = await tx.stockHistory.findFirst({
-            where: { stocksId: stock.id, action: reason, timestamp: new Date() },
+            where: { stocksId: stock.id, action: reason, timestamp: { gte: new Date(Date.now() - 1000) } },
         });
 
         if (!existingHistory) {
@@ -148,6 +152,7 @@ async function adjustStock(
                     action: reason,
                     timestamp: new Date(),
                     adminCognitoId,
+                    shipmentId,
                 },
             });
         }
@@ -175,15 +180,16 @@ async function seedTable(
     ];
     const validBrokers = [
         'AMBR', 'ANJL', 'ATBL', 'ATLS', 'BICL', 'BTBL', 'CENT', 'COMK', 'CTBL',
-        'PRME', 'PTBL', 'TBEA', 'UNTB', 'VENS', 'TTBL',
+        'PRME', 'PTBL', 'TBEA', 'UNTB', 'VENS', 'TTBL', 'UIBD',
     ];
     const validStatuses = ['Pending', 'Approved', 'Shipped', 'Delivered', 'Cancelled'];
     const validVessels = ['first', 'second', 'third', 'fourth'];
     const validPackaging = ['oneJutetwoPolly', 'oneJuteOnePolly'];
+    const validReprints = ['1', '2', '3', '4', '5', '6', '7', 'No', null]; // Allowed values for reprint field
 
     try {
         if (modelName === 'Admin') {
-            const emails = jsonData.map(item => item.email);
+            const emails = jsonData.map(item => item.email).filter(email => email);
             const uniqueEmails = new Set(emails);
             if (emails.length !== uniqueEmails.size) {
                 throw new Error('Duplicate emails found in admin.json');
@@ -204,13 +210,13 @@ async function seedTable(
                         },
                     });
                 } else if (modelName === 'User') {
-                    const { id, ...userData } = item; // Exclude id from data
+                    const { id, ...userData } = item;
                     await model.create({
                         data: {
                             ...userData,
                             createdAt: new Date(item.createdAt || Date.now()),
-                            updatedAt: new Date(item.updatedAt || Date.now())
-                        }
+                            updatedAt: new Date(item.updatedAt || Date.now()),
+                        },
                     });
                 } else if (modelName === 'Catalog') {
                     if (!item.lotNo) throw new Error('Missing lotNo');
@@ -218,14 +224,18 @@ async function seedTable(
                     if (!validTeaGrades.includes(item.grade)) throw new Error(`Invalid grade '${item.grade}'`);
                     if (!validBrokers.includes(item.broker)) throw new Error(`Invalid broker '${item.broker}'`);
                     if (item.bags <= 0 || item.netWeight <= 0) throw new Error('Zero or negative bags/netWeight');
+                    if (item.reprint !== null && !validReprints.includes(item.reprint)) {
+                        throw new Error(`Invalid reprint value '${item.reprint}'. Must be '1', '2', 'No', or null`);
+                    }
                     const adminRecord = await tx.admin.findUnique({ where: { adminCognitoId: item.adminCognitoId } });
                     if (!adminRecord) throw new Error(`Invalid adminCognitoId ${item.adminCognitoId}`);
                     const existingCatalog = await tx.catalog.findUnique({ where: { lotNo: item.lotNo } });
                     if (existingCatalog) throw new Error(`Duplicate lotNo ${item.lotNo}`);
-                    const { adminCognitoId, ...catalogData } = item; // Exclude adminCognitoId from data
+                    const { adminCognitoId, ...catalogData } = item;
                     await model.create({
                         data: {
                             ...catalogData,
+                            reprint: item.reprint, // Include reprint field
                             manufactureDate: new Date(item.manufactureDate),
                             createdAt: new Date(item.createdAt || Date.now()),
                             updatedAt: new Date(item.updatedAt || Date.now()),
@@ -237,14 +247,18 @@ async function seedTable(
                     if (!validTeaCategories.includes(item.category)) throw new Error(`Invalid category '${item.category}'`);
                     if (!validTeaGrades.includes(item.grade)) throw new Error(`Invalid grade '${item.grade}'`);
                     if (!validBrokers.includes(item.broker)) throw new Error(`Invalid broker '${item.broker}'`);
+                    if (item.reprint !== null && !validReprints.includes(item.reprint)) {
+                        throw new Error(`Invalid reprint value '${item.reprint}'. Must be '1', '2', 'No', or null`);
+                    }
                     const adminRecord = await tx.admin.findUnique({ where: { adminCognitoId: item.adminCognitoId } });
                     if (!adminRecord) throw new Error(`Invalid adminCognitoId ${item.adminCognitoId}`);
                     const existingPrice = await tx.sellingPrice.findUnique({ where: { lotNo: item.lotNo } });
                     if (existingPrice) throw new Error(`Duplicate lotNo ${item.lotNo}`);
-                    const { adminCognitoId, ...sellingPriceData } = item; // Exclude adminCognitoId from data
+                    const { adminCognitoId, ...sellingPriceData } = item;
                     await model.create({
                         data: {
                             ...sellingPriceData,
+                            reprint: item.reprint, // Include reprint field
                             manufactureDate: new Date(item.manufactureDate),
                             createdAt: new Date(item.createdAt || Date.now()),
                             updatedAt: new Date(item.updatedAt || Date.now()),
@@ -259,7 +273,7 @@ async function seedTable(
                     if (!adminRecord) throw new Error(`Invalid adminCognitoId ${item.adminCognitoId}`);
                     const existingOutLot = await tx.outLots.findUnique({ where: { lotNo: item.lotNo } });
                     if (existingOutLot) throw new Error(`Duplicate lotNo ${item.lotNo}`);
-                    const { adminCognitoId, ...outLotsData } = item; // Exclude adminCognitoId from data
+                    const { adminCognitoId, ...outLotsData } = item;
                     await model.create({
                         data: {
                             ...outLotsData,
@@ -277,7 +291,7 @@ async function seedTable(
                     if (!adminRecord) throw new Error(`Invalid adminCognitoId ${item.adminCognitoId}`);
                     const existingStock = await tx.stocks.findUnique({ where: { lotNo: item.lotNo } });
                     if (existingStock) throw new Error(`Duplicate lotNo ${item.lotNo}`);
-                    const { adminCognitoId, ...stocksData } = item; // Exclude adminCognitoId from data
+                    const { adminCognitoId, ...stocksData } = item;
                     await model.create({
                         data: {
                             ...stocksData,
@@ -307,6 +321,7 @@ async function seedTable(
                     });
                     if (existingAssignment) {
                         console.warn(`Skipping duplicate StockAssignment for lotNo ${item.lotNo}, user ${item.userCognitoId}`);
+                        seedStats[modelName].skipped++;
                         continue;
                     }
                     await model.create({
@@ -347,7 +362,7 @@ async function seedTable(
                     if (item.adminCognitoId && !adminRecord) throw new Error(`Invalid adminCognitoId ${item.adminCognitoId}`);
                     const existingShipment = await tx.shipment.findUnique({ where: { shipmark: item.shipmark } });
                     if (existingShipment) throw new Error(`Duplicate shipmark ${item.shipmark}`);
-                    const { userCognitoId, adminCognitoId, stocks, ...shipmentData } = item; // Exclude userCognitoId, adminCognitoId, and stocks
+                    const { userCognitoId, adminCognitoId, stocks, ...shipmentData } = item;
                     const shipmentRecord = await model.create({
                         data: {
                             ...shipmentData,
@@ -364,14 +379,17 @@ async function seedTable(
                         });
                         if (!stockRecord) {
                             console.warn(`Skipping ShipmentItem with invalid lotNo ${shipmentItem.lotNo}`);
+                            seedStats[modelName].skipped++;
                             continue;
                         }
                         if (shipmentItem.assignedWeight <= 0) {
                             console.warn(`Skipping ShipmentItem with zero assignedWeight for lotNo ${shipmentItem.lotNo}`);
+                            seedStats[modelName].skipped++;
                             continue;
                         }
                         if (shipmentItem.assignedWeight > stockRecord.weight) {
                             console.warn(`Skipping ShipmentItem with assignedWeight ${shipmentItem.assignedWeight} exceeding stock weight ${stockRecord.weight}`);
+                            seedStats[modelName].skipped++;
                             continue;
                         }
                         const existingShipmentItem = await tx.shipmentItem.findUnique({
@@ -379,6 +397,7 @@ async function seedTable(
                         });
                         if (existingShipmentItem) {
                             console.warn(`Skipping duplicate ShipmentItem for shipmark ${item.shipmark}, lotNo ${shipmentItem.lotNo}`);
+                            seedStats[modelName].skipped++;
                             continue;
                         }
                         await tx.shipmentItem.create({
@@ -392,7 +411,7 @@ async function seedTable(
                             shipmentItem.lotNo,
                             -shipmentItem.assignedWeight,
                             `Shipment ${item.shipmark}`,
-                            item.adminCognitoId || 'system', // Fallback if adminCognitoId is missing
+                            item.adminCognitoId || 'system',
                             shipmentRecord.id,
                             tx
                         );
@@ -423,6 +442,7 @@ async function seedTable(
                     });
                     if (existingShipmentItem) {
                         console.warn(`Skipping duplicate ShipmentItem for shipmark ${item.shipmark}, lotNo ${item.lotNo}`);
+                        seedStats[modelName].skipped++;
                         continue;
                     }
                     await model.create({
@@ -436,7 +456,7 @@ async function seedTable(
                         item.lotNo,
                         -item.assignedWeight,
                         `ShipmentItem ${item.shipmark}`,
-                        item.adminCognitoId || 'system', // Fallback if adminCognitoId is missing
+                        item.adminCognitoId || 'system',
                         shipmentRecord.id,
                         tx
                     );
@@ -454,13 +474,17 @@ async function seedTable(
                     if (item.userCognitoId && !userRecord) throw new Error(`Invalid userCognitoId ${item.userCognitoId}`);
                     const adminRecord = item.adminCognitoId ? await tx.admin.findUnique({ where: { adminCognitoId: item.adminCognitoId } }) : null;
                     if (item.adminCognitoId && !adminRecord) throw new Error(`Invalid adminCognitoId ${item.adminCognitoId}`);
+                    const shipmentRecord = item.shipmentId ? await tx.shipment.findUnique({ where: { id: item.shipmentId } }) : null;
+                    if (item.shipmentId && !shipmentRecord) throw new Error(`Invalid shipmentId ${item.shipmentId}`);
                     await model.create({
                         data: {
                             stocksId: stockRecord.id,
-                            action: item.action || 'Seeded', // Default action if missing
+                            action: item.action || 'Seeded',
                             timestamp: new Date(item.timestamp || Date.now()),
                             userCognitoId: item.userCognitoId,
                             adminCognitoId: item.adminCognitoId,
+                            shipmentId: item.shipmentId,
+                            details: item.details || {},
                         },
                     });
                 } else if (modelName === 'ShipmentHistory') {
@@ -497,6 +521,49 @@ async function seedTable(
                             createdAt: new Date(item.createdAt || Date.now()),
                         },
                     });
+                } else if (modelName === 'Contact') {
+                    const userRecord = item.userCognitoId ? await tx.user.findUnique({ where: { userCognitoId: item.userCognitoId } }) : null;
+                    if (item.userCognitoId && !userRecord) throw new Error(`Invalid userCognitoId ${item.userCognitoId}`);
+                    if (!item.name) throw new Error('Missing name');
+                    if (!item.email) throw new Error('Missing email');
+                    if (!item.message) throw new Error('Missing message');
+                    if (typeof item.privacyConsent !== 'boolean') throw new Error('Invalid or missing privacyConsent');
+                    await model.create({
+                        data: {
+                            name: item.name,
+                            email: item.email,
+                            subject: item.subject || null,
+                            message: item.message,
+                            privacyConsent: item.privacyConsent,
+                            userCognitoId: item.userCognitoId,
+                            createdAt: new Date(item.createdAt || Date.now()),
+                        },
+                    });
+                } else if (modelName === 'Favorite') {
+                    const userRecord = await tx.user.findUnique({ where: { userCognitoId: item.userCognitoId } });
+                    if (!userRecord) throw new Error(`Invalid userCognitoId ${item.userCognitoId}`);
+                    const stockRecord = item.stocksId ? await tx.stocks.findUnique({ where: { id: item.stocksId } }) : null;
+                    if (item.stocksId && !stockRecord) throw new Error(`Invalid stocksId ${item.stocksId}`);
+                    const existingFavorite = await tx.favorite.findUnique({
+                        where: {
+                            user_stocks_favorite: {
+                                userCognitoId: item.userCognitoId,
+                                stocksId: item.stocksId,
+                            },
+                        },
+                    });
+                    if (existingFavorite) {
+                        console.warn(`Skipping duplicate Favorite for user ${item.userCognitoId}, stock ${item.stocksId}`);
+                        seedStats[modelName].skipped++;
+                        continue;
+                    }
+                    await model.create({
+                        data: {
+                            userCognitoId: item.userCognitoId,
+                            stocksId: item.stocksId,
+                            createdAt: new Date(item.createdAt || Date.now()),
+                        },
+                    });
                 } else {
                     await model.create({ data: item });
                 }
@@ -515,10 +582,10 @@ async function seedTable(
 
 async function verifyData() {
     console.log('\nVerifying seeded data:');
-    const models = [
+    const models: ModelName[] = [
         'admin', 'user', 'catalog', 'sellingPrice', 'outLots', 'stocks',
         'stockAssignment', 'shipment', 'shipmentItem', 'stockHistory',
-        'shipmentHistory', 'adminNotification',
+        'shipmentHistory', 'adminNotification', 'contact', 'favorite',
     ];
     for (const modelName of models) {
         const modelNameCamel = toCamelCase(modelName);
@@ -533,7 +600,7 @@ async function verifyData() {
 }
 
 async function main() {
-    const dataDirectory = path.join(process.cwd(), 'prisma', 'seedData');
+    const dataDirectory = path.join(process.cwd(), 'src', 'prisma', 'seedData');
     const orderedFileNames = [
         'admin.json',
         'user.json',
@@ -547,6 +614,8 @@ async function main() {
         'stockHistory.json',
         'shipmentHistory.json',
         'adminNotification.json',
+        'contact.json',
+        'favorite.json',
     ];
 
     try {

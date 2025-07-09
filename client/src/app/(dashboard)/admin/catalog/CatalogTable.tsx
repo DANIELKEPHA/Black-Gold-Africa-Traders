@@ -23,26 +23,17 @@ const CatalogTable: React.FC<CatalogTableProps> = ({
     const { t } = useTranslation(["catalog", "general"]);
     const { data: authUser } = useGetAuthUserQuery();
 
-    const handleSelectAll = () => {
-        if (isSelectAll || (selectedItems.length === catalogData.length && catalogData.length > 0)) {
-            handleSelectItem(0); // Deselect all
-        } else {
-            catalogData.forEach((catalog) => {
-                if (!selectedItems.includes(catalog.id)) {
-                    handleSelectItem(catalog.id);
-                }
-            });
-        }
-    };
-
     return (
         <Table className="rounded-sm overflow-hidden border border-gray-200 dark:border-gray-700">
             <TableHeader>
                 <TableRow className="bg-gray-50 dark:bg-gray-800">
                     <TableHead className="w-[50px]">
                         <Checkbox
-                            checked={isSelectAll || (selectedItems.length === catalogData.length && catalogData.length > 0)}
-                            onChange={handleSelectAll}
+                            checked={isSelectAll}
+                            onCheckedChange={() => {
+                                // console.log("[CatalogTable] Select all checkbox toggled");
+                                handleSelectItem(0);
+                            }}
                             aria-label={t("catalog:actions.selectAll", { defaultValue: "Select all" })}
                             className="border-gray-300 dark:border-gray-600"
                         />
@@ -64,57 +55,60 @@ const CatalogTable: React.FC<CatalogTableProps> = ({
                 </TableRow>
             </TableHeader>
             <TableBody>
-                {catalogData.length > 0 ? (
-                    catalogData.map((catalog) => (
+                {catalogData?.length > 0 ? (
+                    catalogData.map((item) => (
                         <TableRow
-                            key={catalog.id}
+                            key={item.id}
                             className={`${
-                                selectedItems.includes(catalog.id) || isSelectAll
+                                selectedItems.includes(item.id) || isSelectAll
                                     ? "bg-indigo-50 dark:bg-indigo-900/30"
                                     : "bg-white dark:bg-gray-900"
-                            } hover:bg-gray-100 dark:hover:bg-gray-800`}
+                            } hover:bg-gray-100 dark:hover:bg-gray-700`}
                         >
                             <TableCell onClick={(e) => e.stopPropagation()}>
                                 <Checkbox
-                                    checked={selectedItems.includes(catalog.id) || isSelectAll}
-                                    onChange={() => handleSelectItem(catalog.id)}
+                                    checked={selectedItems.includes(item.id)}
+                                    onCheckedChange={() => {
+                                        // console.log("[CatalogTable] Checkbox toggled for item id:", item.id);
+                                        handleSelectItem(item.id);
+                                    }}
                                     aria-label={t("catalog:actions.selectItem", {
                                         defaultValue: "Select item {{lotNo}}",
-                                        lotNo: catalog.lotNo,
+                                        lotNo: item.lotNo,
                                     })}
                                     className="border-gray-300 dark:border-gray-600"
                                 />
                             </TableCell>
-                            <TableCell className="text-gray-800 dark:text-gray-200">{catalog.lotNo}</TableCell>
-                            <TableCell className="text-gray-800 dark:text-gray-200">{catalog.category ?? "N/A"}</TableCell>
-                            <TableCell className="text-gray-800 dark:text-gray-200">{catalog.grade ?? "N/A"}</TableCell>
+                            <TableCell className="text-gray-800 dark:text-gray-200">{item.lotNo}</TableCell>
+                            <TableCell className="text-gray-800 dark:text-gray-200">{item.category ?? "N/A"}</TableCell>
+                            <TableCell className="text-gray-800 dark:text-gray-200">{item.grade ?? "N/A"}</TableCell>
                             <TableCell className="text-gray-800 dark:text-gray-200">
-                                {formatBrokerName(catalog.broker) ?? "N/A"}
+                                {formatBrokerName(item.broker) ?? "N/A"}
                             </TableCell>
-                            <TableCell className="text-gray-800 dark:text-gray-200">{catalog.sellingMark ?? "N/A"}</TableCell>
-                            <TableCell className="text-gray-800 dark:text-gray-200">{catalog.saleCode ?? "N/A"}</TableCell>
-                            <TableCell className="text-gray-800 dark:text-gray-200">{catalog.bags}</TableCell>
+                            <TableCell className="text-gray-800 dark:text-gray-200">{item.sellingMark ?? "N/A"}</TableCell>
+                            <TableCell className="text-gray-800 dark:text-gray-200">{item.saleCode ?? "N/A"}</TableCell>
+                            <TableCell className="text-gray-800 dark:text-gray-200">{item.bags}</TableCell>
                             <TableCell className="text-gray-800 dark:text-gray-200">
-                                {(catalog.totalWeight - catalog.netWeight).toFixed(2)} kg
+                                {(item.totalWeight - item.netWeight).toFixed(2)} kg
                             </TableCell>
                             <TableCell className="text-gray-800 dark:text-gray-200">
-                                {catalog.totalWeight.toFixed(2)} kg
+                                {item.totalWeight.toFixed(2)} kg
                             </TableCell>
-                            <TableCell className="text-gray-800 dark:text-gray-200">{catalog.producerCountry ?? "N/A"}</TableCell>
+                            <TableCell className="text-gray-800 dark:text-gray-200">{item.producerCountry ?? "N/A"}</TableCell>
                             <TableCell className="text-gray-800 dark:text-gray-200">
-                                ${catalog.askingPrice.toFixed(2)}
+                                ${item.askingPrice.toFixed(2)}
                             </TableCell>
-                            <TableCell className="text-gray-800 dark:text-gray-200">{catalog.invoiceNo ?? "N/A"}</TableCell>
+                            <TableCell className="text-gray-800 dark:text-gray-200">{item.invoiceNo ?? "N/A"}</TableCell>
                             <TableCell className="text-gray-800 dark:text-gray-200">
-                                {catalog.manufactureDate
-                                    ? new Date(catalog.manufactureDate).toLocaleDateString("en-US", {
+                                {item.manufactureDate
+                                    ? new Date(item.manufactureDate).toLocaleDateString("en-US", {
                                         day: "2-digit",
                                         month: "2-digit",
                                         year: "numeric",
                                     })
                                     : "N/A"}
                             </TableCell>
-                            <TableCell className="text-gray-800 dark:text-gray-200">{catalog.reprint}</TableCell>
+                            <TableCell className="text-gray-800 dark:text-gray-200">{item.reprint}</TableCell>
                         </TableRow>
                     ))
                 ) : (

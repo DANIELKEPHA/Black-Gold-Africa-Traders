@@ -61,7 +61,7 @@ export interface SellingPriceResponse {
     category: string;
     grade: string;
     broker: string;
-    reprint: string;
+    reprint?: string;
     createdAt: string;
     updatedAt: string;
     admin: {
@@ -188,9 +188,8 @@ export interface FiltersState {
     // SellingPrice and Catalog specific
     saleCode?: string;
     category?: TeaCategory | "any";
-    reprint?: string;
+    reprint?: string | null;
     askingPrice?: number;
-    country?: string;
     purchasePrice?: number;
     producerCountry?: string;
     adminCognitoId?: string;
@@ -287,7 +286,6 @@ export const initialState: InitialState = {
     filters: {
         lotNo: undefined,
         sellingMark: undefined,
-        country: undefined,
         manufactureDate: undefined,
         category: undefined,
         grade: undefined,
@@ -302,7 +300,7 @@ export const initialState: InitialState = {
         sortBy: '',
         sortOrder: 'asc',
     },
-    isFiltersFullOpen: true,
+    isFiltersFullOpen: false,
     viewMode: "list",
 };
 
@@ -311,7 +309,47 @@ export const globalSlice = createSlice({
     initialState,
     reducers: {
         setFilters: (state, action: PayloadAction<Partial<FiltersState>>) => {
-            state.filters = { ...state.filters, ...action.payload };
+            const sanitizedPayload: Partial<FiltersState> = {
+                lotNo: action.payload.lotNo ?? state.filters.lotNo,
+                sellingMark: action.payload.sellingMark ?? state.filters.sellingMark,
+                manufactureDate: action.payload.manufactureDate ?? state.filters.manufactureDate,
+                category: action.payload.category ?? state.filters.category,
+                grade: action.payload.grade ?? state.filters.grade,
+                broker: action.payload.broker ?? state.filters.broker,
+                invoiceNo: action.payload.invoiceNo ?? state.filters.invoiceNo,
+                askingPrice: action.payload.askingPrice ?? state.filters.askingPrice,
+                bags: action.payload.bags ?? state.filters.bags,
+                totalWeight: action.payload.totalWeight ?? state.filters.totalWeight,
+                netWeight: action.payload.netWeight ?? state.filters.netWeight,
+                reprint: action.payload.reprint ?? state.filters.reprint,
+                search: action.payload.search ?? state.filters.search,
+                sortBy: action.payload.sortBy ?? state.filters.sortBy,
+                sortOrder: action.payload.sortOrder ?? state.filters.sortOrder,
+                saleCode: action.payload.saleCode ?? state.filters.saleCode,
+                producerCountry: action.payload.producerCountry ?? state.filters.producerCountry,
+                auction: action.payload.auction ?? state.filters.auction,
+                baselinePrice: action.payload.baselinePrice ?? state.filters.baselinePrice,
+                favoriteIds: action.payload.favoriteIds ?? state.filters.favoriteIds,
+                userCognitoId: action.payload.userCognitoId ?? state.filters.userCognitoId,
+                ids: action.payload.ids ?? state.filters.ids,
+                showFavorites: action.payload.showFavorites ?? state.filters.showFavorites,
+                shipmentId: action.payload.shipmentId ?? state.filters.shipmentId,
+                status: action.payload.status ?? state.filters.status,
+                weight: action.payload.weight ?? state.filters.weight,
+                purchaseValue: action.payload.purchaseValue ?? state.filters.purchaseValue,
+                totalPurchaseValue: action.payload.totalPurchaseValue ?? state.filters.totalPurchaseValue,
+                agingDays: action.payload.agingDays ?? state.filters.agingDays,
+                penalty: action.payload.penalty ?? state.filters.penalty,
+                bgtCommission: action.payload.bgtCommission ?? state.filters.bgtCommission,
+                maerskFee: action.payload.maerskFee ?? state.filters.maerskFee,
+                commission: action.payload.commission ?? state.filters.commission,
+                netPrice: action.payload.netPrice ?? state.filters.netPrice,
+                total: action.payload.total ?? state.filters.total,
+                batchNumber: action.payload.batchNumber ?? state.filters.batchNumber,
+                lowStockThreshold: action.payload.lowStockThreshold ?? state.filters.lowStockThreshold,
+                selectAll: action.payload.selectAll ?? state.filters.selectAll,
+            };
+            state.filters = { ...state.filters, ...sanitizedPayload };
         },
         toggleFiltersFullOpen: (state) => {
             state.isFiltersFullOpen = !state.isFiltersFullOpen;

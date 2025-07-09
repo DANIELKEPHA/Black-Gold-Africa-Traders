@@ -14,6 +14,7 @@ import { Button } from "@/components/ui/button";
 import { Loader2, Download } from "lucide-react";
 import Loading from "@/components/Loading";
 import { SellingPriceResponse } from "@/state";
+import {formatBrokerName} from "@/lib/utils";
 
 interface SellingPricesDetailsProps {
     params: { id: string };
@@ -27,7 +28,8 @@ const SellingPricesDetails: React.FC<SellingPricesDetailsProps> = ({ params }) =
         parseInt(params.id)
     );
     const [deleteSellingPrices, { isLoading: isDeleting }] = useDeleteSellingPricesMutation();
-    const [exportSellingPricesXlsx, { isLoading: isExporting }] = useExportSellingPricesXlsxMutation(); // Updated hook
+    const [exportSellingPricesXlsx, { isLoading: isExporting }] = useExportSellingPricesXlsxMutation();
+
     const isAdmin = authUser?.userRole === "admin";
 
     const handleDelete = async () => {
@@ -36,30 +38,44 @@ const SellingPricesDetails: React.FC<SellingPricesDetailsProps> = ({ params }) =
             return;
         }
         try {
+            console.log("[SellingPricesDetails] Deleting selling price with ID:", params.id);
             await deleteSellingPrices({ ids: [parseInt(params.id)] }).unwrap();
             toast.success(t("catalog:success.sellingPriceDeleted", { defaultValue: "Selling price deleted" }));
             router.push("/admin/sellingPrices");
         } catch (err: any) {
-            toast.error(t("catalog:errors.deleteFailed", { defaultValue: "Failed to delete selling price" }));
+            console.error("[SellingPricesDetails] Delete error:", err);
+            toast.error(
+                err?.data?.message || t("catalog:errors.deleteFailed", { defaultValue: "Failed to delete selling price" })
+            );
         }
     };
 
     const handleDownload = async () => {
         try {
+            if (!sellingPrice) {
+                toast.error(t("catalog:errors.noSellingPrice", { defaultValue: "No selling price data available" }));
+                return;
+            }
+            console.log("[SellingPricesDetails] Exporting selling price with ID:", params.id);
             await exportSellingPricesXlsx({ sellingPriceIds: [parseInt(params.id)] }).unwrap();
-            toast.success(t("catalog:success.xlsxDownloaded", { defaultValue: "XLSX downloaded successfully" })); // Updated message
+            toast.success(t("catalog:success.xlsxDownloaded", { defaultValue: "XLSX downloaded successfully" }));
         } catch (err: any) {
-            toast.error(t("catalog:errors.xlsxError", { defaultValue: "Failed to export XLSX" })); // Updated message
+            console.error("[SellingPricesDetails] Export error:", err);
+            toast.error(
+                err?.data?.message || t("catalog:errors.xlsxError", { defaultValue: "Failed to export XLSX" })
+            );
         }
     };
 
     if (isAuthLoading || isSellingPriceLoading) return <Loading />;
-    if (error || !sellingPrice)
+    if (error || !sellingPrice) {
+        console.error("[SellingPricesDetails] Error loading selling price, ID:", params.id, { error });
         return (
             <div className="text-red-500 p-4">
                 {t("catalog:errors.error", { defaultValue: "Error loading selling price" })}
             </div>
         );
+    }
 
     return (
         <div className="min-h-screen bg-gradient-to-br from-blue-50 via-blue-100 to-blue-200 dark:from-blue-900 dark:via-blue-800 dark:to-blue-700 py-12 px-4 sm:px-6 lg:px-8">
@@ -71,7 +87,7 @@ const SellingPricesDetails: React.FC<SellingPricesDetailsProps> = ({ params }) =
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                         <p className="font-semibold">{t("catalog:lotNo", { defaultValue: "Lot Number" })}:</p>
-                        <p>{sellingPrice.lotNo}</p>
+                        <p>{sellingPrice.lotNo ?? "N/A"}</p>
                     </div>
                     <div>
                         <p className="font-semibold">{t("catalog:sellingMark", { defaultValue: "Selling Mark" })}:</p>
@@ -83,7 +99,7 @@ const SellingPricesDetails: React.FC<SellingPricesDetailsProps> = ({ params }) =
                     </div>
                     <div>
                         <p className="font-semibold">{t("catalog:invoiceNo", { defaultValue: "Invoice Number" })}:</p>
-                        <p>{sellingPrice.invoiceNo}</p>
+                        <p>{sellingPrice.invoiceNo ?? "N/A"}</p>
                     </div>
                     <div>
                         <p className="font-semibold">{t("catalog:saleCode", { defaultValue: "Sale Code" })}:</p>
@@ -95,31 +111,31 @@ const SellingPricesDetails: React.FC<SellingPricesDetailsProps> = ({ params }) =
                     </div>
                     <div>
                         <p className="font-semibold">{t("catalog:broker", { defaultValue: "Broker" })}:</p>
-                        <p>{sellingPrice.broker ?? "N/A"}</p>
+                        <p>{formatBrokerName(sellingPrice.broker) ?? "N/A"}</p>
                     </div>
                     <div>
                         <p className="font-semibold">{t("catalog:reprint", { defaultValue: "Reprint" })}:</p>
-                        <p>{sellingPrice.reprint ?? "No"}</p> {/* Added fallback to "No" */}
+                        <p>{sellingPrice.reprint ?? "No"}</p>
                     </div>
                     <div>
                         <p className="font-semibold">{t("catalog:bags", { defaultValue: "Bags" })}:</p>
-                        <p>{sellingPrice.bags}</p>
+                        <p>{sellingPrice.bags ?? "N/A"}</p>
                     </div>
                     <div>
                         <p className="font-semibold">{t("catalog:netWeight", { defaultValue: "Net Weight" })}:</p>
-                        <p>{sellingPrice.netWeight?.toFixed(2)} kg</p> {/* Added null check */}
+                        <p>{sellingPrice.netWeight?.toFixed(2) ?? "N/A"} kg</p>
                     </div>
                     <div>
                         <p className="font-semibold">{t("catalog:totalWeight", { defaultValue: "Total Weight" })}:</p>
-                        <p>{sellingPrice.totalWeight?.toFixed(2)} kg</p> {/* Added null check */}
+                        <p>{sellingPrice.totalWeight?.toFixed(2) ?? "N/A"} kg</p>
                     </div>
                     <div>
                         <p className="font-semibold">{t("catalog:askingPrice", { defaultValue: "Asking Price" })}:</p>
-                        <p>${sellingPrice.askingPrice?.toFixed(2)}</p> {/* Added null check */}
+                        <p>${sellingPrice.askingPrice?.toFixed(2) ?? "N/A"}</p>
                     </div>
                     <div>
                         <p className="font-semibold">{t("catalog:purchasePrice", { defaultValue: "Purchase Price" })}:</p>
-                        <p>${sellingPrice.purchasePrice?.toFixed(2)}</p> {/* Added null check */}
+                        <p>${sellingPrice.purchasePrice?.toFixed(2) ?? "N/A"}</p>
                     </div>
                     <div>
                         <p className="font-semibold">{t("catalog:producerCountry", { defaultValue: "Producer Country" })}:</p>
@@ -127,7 +143,15 @@ const SellingPricesDetails: React.FC<SellingPricesDetailsProps> = ({ params }) =
                     </div>
                     <div>
                         <p className="font-semibold">{t("catalog:manufactureDate", { defaultValue: "Manufacture Date" })}:</p>
-                        <p>{sellingPrice.manufactureDate ? new Date(sellingPrice.manufactureDate).toISOString().slice(0, 10) : "N/A"}</p>
+                        <p>
+                            {sellingPrice.manufactureDate
+                                ? new Date(sellingPrice.manufactureDate).toLocaleDateString("en-US", {
+                                      day: "2-digit",
+                                      month: "2-digit",
+                                      year: "numeric",
+                                  })
+                                : "N/A"}
+                        </p>
                     </div>
                 </div>
                 <div className="mt-6 flex justify-between">
