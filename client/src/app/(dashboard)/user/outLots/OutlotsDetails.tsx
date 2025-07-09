@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Loader2, Download } from "lucide-react";
 import Loading from "@/components/Loading";
 import { OutLotsResponse } from "@/state";
+import {formatBrokerName} from "@/lib/utils";
 
 interface OutLotsDetailsProps {
     params: { id: string };
