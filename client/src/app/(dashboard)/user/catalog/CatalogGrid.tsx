@@ -7,7 +7,7 @@ import { useRouter } from "next/navigation";
 import { useGetAuthUserQuery } from "@/state/api";
 import { Checkbox } from "@/components/ui/checkbox";
 import { CatalogResponse } from "@/state";
-import { TeaCategory, TeaGrade, Broker, TeaProducerCountry } from "@/enums";
+import { TeaCategory, TeaGrade, Broker, TeaProducerCountry } from "@/state/enums";
 
 export interface CatalogGridProps {
     catalogData: CatalogResponse[];
