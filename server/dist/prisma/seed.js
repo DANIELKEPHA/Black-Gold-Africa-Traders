@@ -163,7 +163,7 @@ function seedTable(model, modelName, jsonData, fileName, tx) {
         ];
         const validBrokers = [
             'AMBR', 'ANJL', 'ATBL', 'ATLS', 'BICL', 'BTBL', 'CENT', 'COMK', 'CTBL',
-            'PRME', 'PTBL', 'TBEA', 'UNTB', 'VENS', 'TTBL', 'UIBD',
+            'PRME', 'PTBL', 'TBEA', 'UNTB', 'VENS', 'TTBL', 'ABBL',
         ];
         const validStatuses = ['Pending', 'Approved', 'Shipped', 'Delivered', 'Cancelled'];
         const validVessels = ['first', 'second', 'third', 'fourth'];
