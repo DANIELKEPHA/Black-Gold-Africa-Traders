@@ -1,10 +1,11 @@
+
 "use client";
 
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslation } from "react-i18next";
 import { Toaster, toast } from "sonner";
-import { useGetAuthUserQuery, useGetSellingPricesQuery, useExportSellingPricesXlsxMutation } from "@/state/api"; // Updated imports
+import { useGetAuthUserQuery, useGetSellingPricesQuery, useExportSellingPricesXlsxMutation } from "@/state/api";
 import { useAppSelector } from "@/state/redux";
 import { Button } from "@/components/ui/button";
 import SellingPricesActions from "@/app/(dashboard)/user/sellingPrices/SellingPricesActions";
@@ -16,11 +17,13 @@ const SellingPrices: React.FC = () => {
     const { t } = useTranslation(["catalog", "general"]);
     const router = useRouter();
     const { data: authUser, isLoading: isAuthLoading } = useGetAuthUserQuery();
-    const filters = useAppSelector((state) => state.global.filters);
+    const filters = useAppSelector((state) => state.global.filters) || {};
     const viewMode = useAppSelector((state) => state.global.viewMode);
     const [selectedItems, setSelectedItems] = useState<number[]>([]);
     const [page, setPage] = useState(1);
     const limit = 100;
+
+    console.log("[SellingPrices] Filters before query:", filters);
 
     const { data: sellingPricesDataResponse, isLoading, error } = useGetSellingPricesQuery(
         {
@@ -31,26 +34,52 @@ const SellingPrices: React.FC = () => {
         { skip: !authUser?.cognitoInfo?.userId }
     );
 
-    const [exportSellingPricesXlsx] = useExportSellingPricesXlsxMutation(); // Only export mutation remains
+    const [exportSellingPricesXlsx] = useExportSellingPricesXlsxMutation();
 
     const sellingPricesData = sellingPricesDataResponse?.data || [];
-    const { totalPages = 1 } = sellingPricesDataResponse?.meta || {};
+    const { totalPages = 1, total = 0 } = sellingPricesDataResponse?.meta || {};
+
+    // Debug log for query data changes
+    useEffect(() => {
+        console.log(
+            `[${new Date().toLocaleString("en-US", { timeZone: "Africa/Nairobi" })}] Selling prices data updated:`,
+            {
+                dataLength: sellingPricesData.length,
+                total,
+                page,
+                totalPages,
+                selectedItems,
+            }
+        );
+    }, [sellingPricesData, total, page, totalPages, selectedItems]);
 
     const handleSelectItem = useCallback((itemId: number) => {
-        setSelectedItems((prev) =>
-            prev.includes(itemId) ? prev.filter((id) => id !== itemId) : [...prev, itemId]
-        );
+        console.log("[SellingPrices] handleSelectItem called with itemId:", itemId);
+        setSelectedItems((prev) => {
+            const newSelected = prev.includes(itemId)
+                ? prev.filter((id) => id !== itemId)
+                : [...prev, itemId];
+            console.log("[SellingPrices] New selected items:", newSelected);
+            return newSelected;
+        });
     }, []);
 
     const handleSelectAll = useCallback(() => {
+        console.log("[SellingPrices] handleSelectAll called");
         if (!sellingPricesData || sellingPricesData.length === 0) {
             setSelectedItems([]);
+            console.log("[SellingPrices] No data to select");
             return;
         }
         if (selectedItems.length === sellingPricesData.length) {
             setSelectedItems([]);
+            console.log("[SellingPrices] Deselected all items");
         } else {
-            setSelectedItems(sellingPricesData.map((item) => item.id));
+            const validIds = sellingPricesData
+                .filter((item) => Number.isInteger(item.id) && item.id > 0)
+                .map((item) => item.id);
+            setSelectedItems(validIds);
+            console.log("[SellingPrices] Selected all items:", validIds);
         }
     }, [sellingPricesData, selectedItems.length]);
 
@@ -61,28 +90,42 @@ const SellingPrices: React.FC = () => {
                 : sellingPricesData.map(item => item.id);
 
             if (sellingPricesData.length === 0) {
+                console.log("[SellingPrices] No selling prices available to export");
                 toast.error(t("catalog:errors.noItems", { defaultValue: "No selling prices available to export" }));
                 return;
             }
 
-            console.log(`[${new Date().toLocaleString('en-US', { timeZone: 'Africa/Nairobi' })}] Exporting selling prices with IDs:`, ids);
+            console.log(
+                `[${new Date().toLocaleString("en-US", { timeZone: "Africa/Nairobi" })}] Exporting selling prices with IDs:`,
+                ids
+            );
             await exportSellingPricesXlsx({
                 sellingPriceIds: ids,
             }).unwrap();
             toast.success(t("catalog:success.xlsxDownloaded", { defaultValue: "XLSX downloaded successfully" }));
         } catch (err: any) {
-            console.error(`[${new Date().toLocaleString('en-US', { timeZone: 'Africa/Nairobi' })}] Export error:`, err);
-            toast.error(t("catalog:errors.xlsxError", { defaultValue: "Failed to export XLSX" }));
+            console.error(
+                `[${new Date().toLocaleString("en-US", { timeZone: "Africa/Nairobi" })}] Export error:`,
+                err
+            );
+            toast.error(
+                err?.data?.message || t("catalog:errors.xlsxError", { defaultValue: "Failed to export XLSX" })
+            );
         }
     };
 
     if (isAuthLoading || isLoading) return <Loading />;
-    if (error)
+    if (error) {
+        console.error(
+            `[${new Date().toLocaleString("en-US", { timeZone: "Africa/Nairobi" })}] Error loading selling prices:`,
+            error
+        );
         return (
             <div className="text-red-500 p-4">
                 {t("catalog:errors.error", { defaultValue: "Error loading selling prices" })}
             </div>
         );
+    }
 
     return (
         <div className="bg-white dark:bg-gray-800 rounded-sm shadow-md p-6">
@@ -91,17 +134,20 @@ const SellingPrices: React.FC = () => {
                 sellingPricesData={sellingPricesData}
                 selectedItems={selectedItems}
                 handleSelectAll={handleSelectAll}
-                handleDownload={handleDownload} // Updated prop
+                handleDownload={handleDownload}
             />
             {viewMode === "list" ? (
                 <SellingPricesTable
-                    SellingPriceData={sellingPricesData}
+                    key={sellingPricesData.length}
+                    sellingPricesData={sellingPricesData}
                     selectedItems={selectedItems}
                     handleSelectItem={handleSelectItem}
+                    handleSelectAll={handleSelectAll}
                 />
             ) : (
                 <SellingPricesGrid
-                    SellingPriceData={sellingPricesData}
+                    key={sellingPricesData.length}
+                    sellingPricesData={sellingPricesData}
                     selectedItems={selectedItems}
                     handleSelectItem={handleSelectItem}
                 />

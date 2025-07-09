@@ -3,18 +3,17 @@
 import React from "react";
 import { useTranslation } from "react-i18next";
 import { Toaster, toast } from "sonner";
-import { Download, Loader2 } from "lucide-react"; // Removed Upload and UploadIcon
+import { Download, Loader2 } from "lucide-react";
 import { useExportSellingPricesXlsxMutation, useGetAuthUserQuery } from "@/state/api";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
 import { SellingPriceResponse } from "@/state";
-import {Loader} from "@aws-amplify/ui-react";
 
 interface SellingPricesActionsProps {
     sellingPricesData: SellingPriceResponse[];
     selectedItems: number[];
     handleSelectAll: () => void;
-    handleDownload: () => void; // Updated prop
+    handleDownload: () => void;
 }
 
 const SellingPricesActions: React.FC<SellingPricesActionsProps> = ({
@@ -27,7 +26,10 @@ const SellingPricesActions: React.FC<SellingPricesActionsProps> = ({
     const { data: authUser } = useGetAuthUserQuery();
     const [exportSellingPricesXlsx, { isLoading: isExporting }] = useExportSellingPricesXlsxMutation();
 
-    const handleDownloadLocal = handleDownload; // No admin check needed
+    console.log("[SellingPricesActions] Props received:", {
+        selectedItems,
+        sellingPricesDataLength: sellingPricesData.length,
+    });
 
     return (
         <>
@@ -40,7 +42,10 @@ const SellingPricesActions: React.FC<SellingPricesActionsProps> = ({
                                 sellingPricesData.length > 0 &&
                                 selectedItems.length === sellingPricesData.length
                             }
-                            onCheckedChange={handleSelectAll}
+                            onCheckedChange={() => {
+                                console.log("[SellingPricesActions] Select all checkbox toggled");
+                                handleSelectAll();
+                            }}
                             aria-label={t("catalog:actions.selectAll", { defaultValue: "Select All" })}
                             className="border-gray-300 dark:border-gray-600"
                         />
@@ -54,12 +59,15 @@ const SellingPricesActions: React.FC<SellingPricesActionsProps> = ({
                 </div>
                 <div className="flex items-center space-x-2">
                     <Button
-                        onClick={handleDownloadLocal}
+                        onClick={() => {
+                            console.log("[SellingPricesActions] Download button clicked");
+                            handleDownload();
+                        }}
                         disabled={isExporting}
                         className="rounded-sm bg-blue-600 hover:bg-blue-700 text-white"
                     >
                         {isExporting ? (
-                            <Loader className="w-4 h-4 animate-spin mr-2" />
+                            <Loader2 className="w-4 h-4 animate-spin mr-2" />
                         ) : (
                             <Download className="w-4 h-4 mr-2" />
                         )}

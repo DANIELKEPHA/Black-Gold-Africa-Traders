@@ -5,7 +5,7 @@ import {
     useCreateSellingPriceMutation,
     useDeleteSellingPricesMutation,
 } from "@/state/api";
-import { SellingPriceFormData} from "@/lib/schemas";
+import { SellingPriceFormData } from "@/lib/schemas";
 import { SellingPriceResponse } from "@/state";
 
 export const useSellingPriceActions = () => {
@@ -29,6 +29,7 @@ export const useSellingPriceActions = () => {
             console.log("Creating selling price:", data);
             const response = await createSellingPrice({
                 ...data,
+                reprint: data.reprint ?? undefined, // Convert null to undefined
                 adminCognitoId: authUser?.cognitoInfo?.userId || "",
             }).unwrap();
             console.log("Selling price created:", response);
@@ -80,13 +81,13 @@ export const useSellingPriceActions = () => {
         }
 
         try {
-            console.log(`Deleting selling price ID ${id}`);
+            // console.log(`Deleting selling price ID ${id}`);
             const response = await deleteSellingPrices({ ids: [id] }).unwrap();
-            console.log("Selling price deleted:", response);
+            // console.log("Selling price deleted:", response);
             toast.success("Selling price deleted successfully");
             return response;
         } catch (error: any) {
-            console.error("Failed to delete selling price:", error);
+            // console.error("Failed to delete selling price:", error);
             console.error("Error details:", JSON.stringify(error, null, 2));
             const errorMessage = error?.data?.message || "Failed to delete selling price";
             toast.error(errorMessage);
@@ -110,9 +111,9 @@ export const useSellingPriceActions = () => {
         }
 
         try {
-            console.log("Bulk deleting selling prices:", ids);
+            // console.log("Bulk deleting selling prices:", ids);
             const response = await deleteSellingPrices({ ids }).unwrap();
-            console.log("Bulk delete successful:", response);
+            // console.log("Bulk delete successful:", response);
             toast.success(`Successfully deleted ${response.associations.length} selling price(s)`);
             return response;
         } catch (error: any) {
@@ -159,7 +160,7 @@ export const useSellingPriceActions = () => {
                     price.saleCode ?? "",
                     price.category,
                     price.broker,
-                    price.reprint,
+                    price.reprint ?? "", // Handle null in CSV export
                     price.bags,
                     price.netWeight,
                     price.totalWeight,
