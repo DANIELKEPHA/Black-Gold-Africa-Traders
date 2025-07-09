@@ -48,12 +48,12 @@ const baseQueryWithAuth: BaseQueryFn<string | FetchArgs, unknown, FetchBaseQuery
         const token = session.tokens?.idToken?.toString();
         if (token) {
             headers.set("Authorization", `Bearer ${token}`);
-            console.log(`[${new Date().toLocaleString('en-US', { timeZone: 'Africa/Nairobi' })}] ✅ Attached token to headers`);
+            // console.log(`[${new Date().toLocaleString('en-US', { timeZone: 'Africa/Nairobi' })}] ✅ Attached token to headers`);
         } else {
-            console.warn(`[${new Date().toLocaleString('en-US', { timeZone: 'Africa/Nairobi' })}] ⚠️ No ID token found in session`);
+            // console.warn(`[${new Date().toLocaleString('en-US', { timeZone: 'Africa/Nairobi' })}] ⚠️ No ID token found in session`);
         }
     } catch (error) {
-        console.error(`[${new Date().toLocaleString('en-US', { timeZone: 'Africa/Nairobi' })}] ❌ Failed to fetch Cognito session:`, error);
+        // console.error(`[${new Date().toLocaleString('en-US', { timeZone: 'Africa/Nairobi' })}] ❌ Failed to fetch Cognito session:`, error);
     }
 
     const modifiedArgs = typeof args === "string"

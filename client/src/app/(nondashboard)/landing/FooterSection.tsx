@@ -4,9 +4,7 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faFacebook,
   faInstagram,
-  faTwitter,
   faLinkedin,
-  faYoutube,
 } from "@fortawesome/free-brands-svg-icons";
 
 const FooterSection = () => {
@@ -18,8 +16,8 @@ const FooterSection = () => {
             Black Gold&nbsp;
             <span className="text-yellow-500 font-light hover:!text-yellow-300"
             >
-                                    Africa Traders Ltd
-                                </span>
+            &nbsp;Africa Traders Ltd
+            </span>
           </div>
           <nav className="mb-4">
             <ul className="flex space-x-6">
