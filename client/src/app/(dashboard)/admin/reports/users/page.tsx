@@ -525,18 +525,18 @@ const UsersPage = () => {
 
                                             <IconButton
                                                 onClick={() =>
-                                                    router.push(`/dashboard/admin/users/${user.userCognitoId}/stock-history`)
+                                                    router.push(`/admin/users/${user.userCognitoId}/stock-history`)
                                                 }
                                             >
                                                 <HistoryIcon fontSize="small" />
                                             </IconButton>
-                                            <IconButton
-                                                onClick={() =>
-                                                    router.push(`/dashboard/admin/users/${user.userCognitoId}`)
-                                                }
-                                            >
-                                                <MoreIcon fontSize="small" />
-                                            </IconButton>
+                                            {/*<IconButton*/}
+                                            {/*    onClick={() =>*/}
+                                            {/*        router.push(`/admin/users/${user.userCognitoId}`)*/}
+                                            {/*    }*/}
+                                            {/*>*/}
+                                            {/*    <MoreIcon fontSize="small" />*/}
+                                            {/*</IconButton>*/}
                                         </TableCell>
                                     </TableRow>
                                 ))}
