@@ -37,6 +37,7 @@ export interface StockFilters {
     page?: number;
     limit?: number;
     assignmentStatus?: "all" | "assigned" | "unassigned";
+    isFavorited?: true;
 }
 
 export interface StockHistory {
@@ -220,15 +221,15 @@ export interface UserStockTableProps {
     authUser: AuthUserResponse | null;
     selectedItems: number[];
     handleSelectItem: (stockId: number) => void;
+    handleClearAllSelectedItems: () => void;
     handleSelectAll: () => void;
-    viewMode: "list" | "grid";
+    viewMode: 'list' | 'grid';
     loading: boolean;
     isExporting: boolean;
     isCreatingFavorite: boolean;
     isDeletingFavorite: boolean;
     handleFavoriteToggle: (stockId: number, isFavorited: boolean) => Promise<void>;
-    handleExportXlsv: () => Promise<void>;
-
+    handleExportXlsv: (stocks: StockData[]) => Promise<boolean | Error>;
 }
 
 export interface StockHistoryWithDetails {

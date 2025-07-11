@@ -24,6 +24,10 @@ const Stocks: React.FC = () => {
     const [isDeletingFavorite, setIsDeletingFavorite] = useState(false);
     const limit = 100;
 
+    const handleClearAllSelectedItems = useCallback(() => {
+        setSelectedItems([]);
+    }, []);
+
     const { data: stockResponse, isLoading, error } = useGetStocksQuery(
         {
             page,
@@ -40,35 +44,34 @@ const Stocks: React.FC = () => {
     const [exportStocksXlsx, { isLoading: isExporting }] = useExportStocksXlsxMutation();
     const [toggleFavorite] = useToggleFavoriteMutation();
 
-    // Memoize stocksData to ensure stable reference
     const stocksData: StockData[] = useMemo(
         () =>
             stockResponse?.data.map((stock: Stock) => ({
                 id: stock.id,
-                saleCode: stock.saleCode,
-                broker: stock.broker,
-                lotNo: stock.lotNo,
-                mark: stock.mark,
-                grade: stock.grade,
-                invoiceNo: stock.invoiceNo,
-                bags: stock.bags,
-                weight: stock.assignedWeight ?? stock.weight,
-                purchaseValue: stock.purchaseValue,
-                totalPurchaseValue: stock.totalPurchaseValue,
-                agingDays: stock.agingDays,
-                penalty: stock.penalty,
-                bgtCommission: stock.bgtCommission,
-                maerskFee: stock.maerskFee,
-                commission: stock.commission,
-                netPrice: stock.netPrice,
-                total: stock.total,
-                batchNumber: stock.batchNumber || null,
-                lowStockThreshold: stock.lowStockThreshold,
-                isLowStock: stock.lowStockThreshold != null && (stock.assignedWeight ?? stock.weight) < stock.lowStockThreshold,
-                adminCognitoId: stock.adminCognitoId || '',
-                createdAt: stock.createdAt,
-                updatedAt: stock.updatedAt,
-                isFavorited: stock.isFavorited || false, // Use server-provided isFavorited if available
+                saleCode: stock.saleCode ?? 'N/A',
+                broker: stock.broker ?? 'N/A',
+                lotNo: stock.lotNo ?? 'N/A',
+                mark: stock.mark ?? 'N/A',
+                grade: stock.grade ?? 'N/A',
+                invoiceNo: stock.invoiceNo ?? 'N/A',
+                bags: stock.bags ?? 0,
+                weight: stock.assignedWeight ?? stock.weight ?? 0,
+                purchaseValue: stock.purchaseValue ?? 0,
+                totalPurchaseValue: stock.totalPurchaseValue ?? 0,
+                agingDays: stock.agingDays ?? 0,
+                penalty: stock.penalty ?? 0,
+                bgtCommission: stock.bgtCommission ?? 0,
+                maerskFee: stock.maerskFee ?? 0,
+                commission: stock.commission ?? 0,
+                netPrice: stock.netPrice ?? 0,
+                total: stock.total ?? 0,
+                batchNumber: stock.batchNumber ?? null,
+                lowStockThreshold: stock.lowStockThreshold ?? null,
+                isLowStock: stock.lowStockThreshold != null && (stock.assignedWeight ?? stock.weight ?? 0) < stock.lowStockThreshold,
+                adminCognitoId: stock.adminCognitoId ?? '',
+                createdAt: stock.createdAt ?? '',
+                updatedAt: stock.updatedAt ?? '',
+                isFavorited: stock.isFavorited ?? false,
             })) || [],
         [stockResponse]
     );
@@ -78,10 +81,10 @@ const Stocks: React.FC = () => {
     const handleSelectItem = useCallback(
         (itemId: number) => {
             setSelectedItems((prev) =>
-                prev.includes(itemId) ? prev.filter((id) => id !== itemId) : [...prev, itemId],
+                prev.includes(itemId) ? prev.filter((id) => id !== itemId) : [...prev, itemId]
             );
         },
-        [],
+        []
     );
 
     const handleSelectAll = useCallback(() => {
@@ -96,70 +99,79 @@ const Stocks: React.FC = () => {
         }
     }, [stocksData, selectedItems.length]);
 
-    const handleExportExcel = async (stocks?: StockData[]) => {
-        try {
-            if (!stocks || stocks.length === 0) {
-                throw new Error(t('stocks:errors.noItems', { defaultValue: 'No stock data to export' }));
+    const handleExportXlsv = useCallback(
+        async (stocks: StockData[]) => {
+            try {
+                if (!stocks || stocks.length === 0) {
+                    throw new Error(t('stocks:errors.noItems', { defaultValue: 'No stock data to export' }));
+                }
+                console.log('Exporting stocks to Excel:', stocks.length);
+                const stockIds = stocks.map((stock) => stock.id);
+                await exportStocksXlsx({
+                    stockIds,
+                    search: filters.search,
+                    lotNo: filters.lotNo,
+                    grade: filters.grade === 'any' ? undefined : filters.grade,
+                    broker: filters.broker === 'any' ? undefined : filters.broker,
+                    batchNumber: filters.batchNumber,
+                }).unwrap();
+                toast.success(t('stocks:exportExcel', { defaultValue: 'Stocks exported to Excel successfully' }));
+                return true;
+            } catch (error: any) {
+                console.error('Failed to export Excel:', error);
+                toast.error(
+                    t('stocks:errors.excelError', { defaultValue: 'Failed to export Excel: ' }) +
+                    (error.message || 'Unknown error')
+                );
+                throw error;
             }
-            console.log('Exporting stocks to Excel:', stocks.length);
-            const stockIds = stocks.map((stock) => stock.id);
-            await exportStocksXlsx({
-                stockIds,
-                search: filters.search,
-                lotNo: filters.lotNo,
-                grade: filters.grade === 'any' ? undefined : filters.grade,
-                broker: filters.broker === 'any' ? undefined : filters.broker,
-                batchNumber: filters.batchNumber,
-            }).unwrap();
-            toast.success(t('stocks:exportExcel', { defaultValue: 'Stocks exported to Excel successfully' }));
-            return true;
-        } catch (error: any) {
-            console.error('Failed to export Excel:', error);
-            console.error('Error details:', JSON.stringify(error, null, 2));
-            toast.error(t('stocks:errors.excelError', { defaultValue: 'Failed to export Excel: ' }) + (error.message || 'Unknown error'));
-            return error;
-        }
-    };
+        },
+        [exportStocksXlsx, filters, t]
+    );
 
-    const handleFavoriteToggle = async (stockId: number, isFavorited: boolean) => {
-        if (!userCognitoId) {
-            toast.error(t('stocks:errors.unauthorized', { defaultValue: 'User not authenticated' }));
-            return;
-        }
-
-        try {
-            if (isFavorited) {
-                setIsCreatingFavorite(true);
-                await toggleFavorite({ userCognitoId, stocksId: stockId }).unwrap();
-                toast.success(t('stocks:favoriteAdded', { defaultValue: 'Stock added to favorites' }));
-            } else {
-                setIsDeletingFavorite(true);
-                await toggleFavorite({ userCognitoId, stocksId: stockId }).unwrap();
-                toast.success(t('stocks:favoriteRemoved', { defaultValue: 'Stock removed from favorites' }));
+    const handleFavoriteToggle = useCallback(
+        async (stockId: number, isFavorited: boolean) => {
+            if (!userCognitoId) {
+                toast.error(t('stocks:errors.unauthorized', { defaultValue: 'User not authenticated' }));
+                return;
             }
-        } catch (error: any) {
-            console.error('Failed to toggle favorite:', error);
-            toast.error(
-                t('stocks:errors.favoriteError', { defaultValue: 'Error toggling favorite: ' }) +
-                (error.message || 'Unknown error')
-            );
-        } finally {
-            setIsCreatingFavorite(false);
-            setIsDeletingFavorite(false);
-        }
-    };
 
+            try {
+                if (isFavorited) {
+                    setIsCreatingFavorite(true);
+                } else {
+                    setIsDeletingFavorite(true);
+                }
+                await toggleFavorite({ userCognitoId, stocksId: stockId }).unwrap();
+                toast.success(
+                    isFavorited
+                        ? t('stocks:favoriteAdded', { defaultValue: 'Stock added to favorites' })
+                        : t('stocks:favoriteRemoved', { defaultValue: 'Stock removed from favorites' })
+                );
+            } catch (error: any) {
+                console.error('Failed to toggle favorite:', error);
+                toast.error(
+                    t('stocks:errors.favoriteError', { defaultValue: 'Error toggling favorite: ' }) +
+                    (error.message || 'Unknown error')
+                );
+            } finally {
+                setIsCreatingFavorite(false);
+                setIsDeletingFavorite(false);
+            }
+        },
+        [toggleFavorite, userCognitoId, t]
+    );
 
     if (isAuthLoading || isLoading) return <Loading />;
     if (authError || error)
         return (
-            <div className="text-red-500 p-4">
-                {t('stocks:errors.error', { defaultValue: 'Error' })}
+            <div className="text-red-500 dark:text-red-400 p-4">
+                {t('stocks:errors.error', { defaultValue: 'Error loading stocks' })}
             </div>
         );
 
     return (
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 border border-gray-200 dark:border-gray-700">
             <Toaster richColors position="top-right" />
             <StocksActions
                 stocks={stocksData}
@@ -167,9 +179,10 @@ const Stocks: React.FC = () => {
                 selectedItems={selectedItems}
                 handleSelectItem={handleSelectItem}
                 handleSelectAll={handleSelectAll}
+                handleClearAllSelectedItems={handleClearAllSelectedItems}
                 viewMode={viewMode}
                 loading={isLoading}
-                handleExportXlsv={handleExportExcel}
+                handleExportXlsv={handleExportXlsv}
                 isExporting={isExporting}
                 isCreatingFavorite={isCreatingFavorite}
                 isDeletingFavorite={isDeletingFavorite}
@@ -182,9 +195,10 @@ const Stocks: React.FC = () => {
                     selectedItems={selectedItems}
                     handleSelectItem={handleSelectItem}
                     handleSelectAll={handleSelectAll}
+                    handleClearAllSelectedItems={handleClearAllSelectedItems}
                     viewMode={viewMode}
                     loading={isLoading}
-                    handleExportXlsv={handleExportExcel}
+                    handleExportXlsv={handleExportXlsv}
                     isExporting={isExporting}
                     isCreatingFavorite={isCreatingFavorite}
                     isDeletingFavorite={isDeletingFavorite}
@@ -197,9 +211,10 @@ const Stocks: React.FC = () => {
                     selectedItems={selectedItems}
                     handleSelectItem={handleSelectItem}
                     handleSelectAll={handleSelectAll}
+                    handleClearAllSelectedItems={handleClearAllSelectedItems}
                     viewMode={viewMode}
                     loading={isLoading}
-                    handleExportXlsv={handleExportExcel}
+                    handleExportXlsv={handleExportXlsv}
                     isExporting={isExporting}
                     isCreatingFavorite={isCreatingFavorite}
                     isDeletingFavorite={isDeletingFavorite}
@@ -211,17 +226,17 @@ const Stocks: React.FC = () => {
                     <Button
                         disabled={page === 1 || isLoading}
                         onClick={() => setPage((prev) => prev - 1)}
-                        className="rounded-lg bg-blue-600 text-white hover:bg-blue-700"
+                        className="rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 dark:hover:bg-indigo-800 transition-colors duration-200"
                     >
                         {t('general:pagination:previous', { defaultValue: 'Previous' })}
                     </Button>
-                    <span className="text-gray-700 dark:text-gray-200">
-                        {t('general:pagination:page', { defaultValue: 'Page {page} of {totalPages}', page, totalPages })}
-                    </span>
+                    <span className="text-gray-700 dark:text-gray-200 font-medium">
+            {t('general:pagination:page', { defaultValue: 'Page {page} of {totalPages}', page, totalPages })}
+          </span>
                     <Button
                         disabled={page >= totalPages || isLoading}
                         onClick={() => setPage((prev) => prev + 1)}
-                        className="rounded-lg bg-blue-600 text-white hover:bg-blue-700"
+                        className="rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 dark:hover:bg-indigo-800 transition-colors duration-200"
                     >
                         {t('general:pagination:next', { defaultValue: 'Next' })}
                     </Button>

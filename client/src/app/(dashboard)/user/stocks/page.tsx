@@ -84,14 +84,14 @@ const UserStocksPage = () => {
 
     return (
         <div
-            className='w-full mx-auto px-4 sm:px-6 lg:px-8 flex flex-col bg-gray-50 dark:bg-gray-900'
+            className="w-full mx-auto px-4 sm:px-6 lg:px-8 flex flex-col bg-gray-50 dark:bg-gray-900 min-h-screen"
             style={{ minHeight: `calc(100vh - ${NAVBAR_HEIGHT}px)` }}
         >
-            <div className='sticky top-0 z-10'>
+            <div className="sticky top-0 z-10 bg-gray-50 dark:bg-gray-900">
                 <FiltersBar />
             </div>
-            <div className='flex flex-1 gap-4 mt-4'>
-                <div className='flex-1 overflow-x-auto'>
+            <div className="flex flex-1 gap-4 mt-4">
+                <div className="flex-1 overflow-x-auto">
                     <Stocks />
                 </div>
             </div>
