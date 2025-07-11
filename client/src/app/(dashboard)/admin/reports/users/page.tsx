@@ -54,6 +54,17 @@ import {
 } from '@/state/api';
 import { UserResponse } from '@/state/user';
 
+interface UserDialogData {
+    id: number;
+    userCognitoId: string;
+    name: string | null;
+    email: string | null;
+    phoneNumber: string | null;
+    role: 'user' | 'admin';
+    createdAt: string;
+    // Don't include complex nested types if not needed in dialog
+}
+
 // Define theme consistent with previous styling
 const theme = createTheme({
     palette: {
@@ -499,10 +510,13 @@ const UsersPage = () => {
                                             <IconButton
                                                 onClick={() =>
                                                     openUpdateDialogWithUser({
-                                                        ...user,
+                                                        id: user.id,
+                                                        userCognitoId: user.userCognitoId,
                                                         name: user.name ?? null,
                                                         email: user.email ?? null,
                                                         phoneNumber: user.phoneNumber ?? null,
+                                                        role: user.role === 'user' || user.role === 'admin' ? user.role : 'user',
+                                                        createdAt: user.createdAt
                                                     })
                                                 }
                                             >

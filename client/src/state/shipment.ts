@@ -47,16 +47,16 @@ export interface ShipmentItem {
 export interface Shipment {
     id: number;
     status: ShipmentStatus;
-    userCognitoId: string;
+    userCognitoId?: string;
     shipmentDate: string;
     consignee: string;
     vessel: string;
     shipmark: string;
     packagingInstructions: string;
-    additionalInstructions: string | null;
-    createdAt: string;
-    updatedAt: string;
-    user: {
+    additionalInstructions?: string | null;
+    createdAt?: string;
+    updatedAt?: string;
+    user?: {
         id: number;
         userCognitoId: string;
         name: string | null;
