@@ -15,11 +15,23 @@ const router = express_1.default.Router();
  */
 router.get('/admin/shipments', (0, authMiddleware_1.authMiddleware)(['admin']), (0, asyncHandler_1.asyncHandler)(shipmentController_1.getShipments));
 /**
+ * @route GET /admin/shipments/:id
+ * @desc Retrieve a single shipment by ID (admin only)
+ * @access Authenticated (Admin only)
+ */
+router.get('/admin/shipments/:id', (0, authMiddleware_1.authMiddleware)(['admin']), (0, asyncHandler_1.asyncHandler)(shipmentController_1.getShipmentById));
+/**
  * @route GET /users/:userCognitoId/shipments
  * @desc Retrieve shipments for a user
  * @access Authenticated (Admin or Self)
  */
 router.get('/users/:userCognitoId/shipments', (0, authMiddleware_1.authMiddleware)(['admin', 'user']), (0, asyncHandler_1.asyncHandler)(shipmentController_1.getShipments));
+/**
+ * @route GET /users/:userCognitoId/shipments/:id
+ * @desc Retrieve a single shipment by ID for a user
+ * @access Authenticated (Admin or Self)
+ */
+router.get('/users/:userCognitoId/shipments/:id', (0, authMiddleware_1.authMiddleware)(['admin', 'user']), (0, asyncHandler_1.asyncHandler)(shipmentController_1.getShipmentById));
 /**
  * @route POST /users/:userCognitoId/shipments
  * @desc Create a new shipment for a user

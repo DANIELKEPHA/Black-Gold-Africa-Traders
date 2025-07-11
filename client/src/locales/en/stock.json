@@ -1,5 +1,28 @@
 {
   "stock": {
+    "exportExcel": "Export Excel",
+    "assignmentHistory": "Stock Assignment History",
+    "userPlaceholder": "Search by username or email",
+    "noAssignments": "No assignments found",
+    "showing": "Showing {{start}} to {{end}} of {{total}}",
+    "previousPage": "Previous Page",
+    "nextPage": "Next Page",
+    "errors.fetchAssignments": "Failed to fetch assignment history",
+    "assignmentStatus": "Assignment Status",
+    "assignmentStatus.all": "All",
+    "assignmentStatus.assigned": "Assigned",
+    "assignmentStatus.unassigned": "Unassigned",
+    "assigned": "Assigned",
+    "unassigned": "Unassigned",
+    "assignmentDetails": "Assignment Details",
+    "user": "User",
+    "assignedAt": "Assigned At",
+    "noAssignment": "This stock is not assigned to any user.",
+    "tooltip.assigned": "Assigned to {{user}}",
+    "tooltip.unassigned": "Unassigned - Please assign this stock",
+    "warning.reassign": "Reassigning will overwrite the current assignment.",
+    "actions.quickAssign": "Assign",
+    "summary": "Stock Summary",
     "myStocks": "My Stocks",
     "viewHistory": "View Stock History",
     "stockHistoryTitle": "Stock Assignment History",
@@ -25,12 +48,12 @@
     "brokerPlaceholder": "Broker Placeholder",
     "markPlaceholder": "Mark Placeholder",
     "saleCodePlaceholder": "Sale Code Placeholder",
-    "invoiceNoPlaceholder": "Invoice No Placeholder",
-    "lotNoPlaceholder": "Lot No Placeholder",
+    "invoiceNoPlaceholder": "Invoice No",
+    "lotNoPlaceholder": "Lot Number",
     "bagsPlaceholder": "Bags Placeholder",
     "weightPlaceholder": "Weight Placeholder",
-    "purchaseValuePlaceholder": "Purchase Value Placeholder",
-    "agingDaysPlaceholder": "Aging Days Placeholder",
+    "purchaseValuePlaceholder": "Purchase Value ",
+    "agingDaysPlaceholder": "Aging Days ",
     "assignStock": "Assign Stock",
     "selectUser": "Select User",
     "selectUserPlaceholder": "Select a user",
@@ -182,7 +205,8 @@
       "csvFailedUnknown": "An unknown error occurred while exporting CSV.",
       "invalidToken": "Invalid or expired session. Please log in again.",
       "authError": "Authentication error. Please sign in.",
-      "stocksLoadFailed": "Failed to load stocks. Please try again."
+      "stocksLoadFailed": "Failed to load stocks. Please try again.",
+      "excelError": "Failed to export Excel"
     },
     "success": {
       "favoriteAdded": "Added to favorites successfully!",
@@ -195,5 +219,6 @@
     "selectedCount": "{{count}} selected",
     "lowStock": "Low Stock",
     "sufficientStock": "Sufficient Stock"
-  }
+  },
+  "favorites": "Favorite Stocks"
 }

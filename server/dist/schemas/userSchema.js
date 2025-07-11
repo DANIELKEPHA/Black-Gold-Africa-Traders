@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getStocksQuerySchema = exports.getLoggedInUsersQuerySchema = exports.updateUserBodySchema = exports.updateUserParamsSchema = exports.getUserQuerySchema = exports.getUserParamsSchema = exports.createUserSchema = exports.getUserStockHistoryQuerySchema = exports.createContactSchema = void 0;
+exports.getStocksQuerySchema = exports.getLoggedInUsersQuerySchema = exports.updateUserBodySchema = exports.updateUserParamsSchema = exports.getUserQuerySchema = exports.getUserParamsSchema = exports.createUserSchema = exports.getUserStockHistoryQuerySchema = exports.createContactSchema = exports.deleteContactSchema = exports.getContactsSchema = void 0;
 const zod_1 = require("zod");
 // Enum definitions to match Prisma schema
 const teaGradeEnum = zod_1.z.enum([
@@ -42,6 +42,38 @@ const brokerEnum = zod_1.z.enum([
     "VENS",
     "TTBL",
 ]);
+exports.getContactsSchema = zod_1.z.object({
+    query: zod_1.z.object({
+        page: zod_1.z
+            .string()
+            .optional()
+            .transform((val) => (val ? parseInt(val, 10) : 1))
+            .refine((val) => val > 0, { message: 'Page must be a positive integer' }),
+        limit: zod_1.z
+            .string()
+            .optional()
+            .transform((val) => (val ? parseInt(val, 10) : 10))
+            .refine((val) => val >= 1 && val <= 100, {
+            message: 'Limit must be between 1 and 100',
+        }),
+        search: zod_1.z
+            .string()
+            .max(100, 'Search term must be up to 100 characters')
+            .optional(),
+    }),
+    body: zod_1.z.object({}).optional(),
+    params: zod_1.z.object({}).optional(),
+});
+exports.deleteContactSchema = zod_1.z.object({
+    params: zod_1.z.object({
+        id: zod_1.z
+            .string()
+            .transform((val) => parseInt(val, 10))
+            .refine((val) => val > 0, { message: 'Invalid contact ID' }),
+    }),
+    query: zod_1.z.object({}).optional(),
+    body: zod_1.z.object({}).optional(),
+});
 exports.createContactSchema = zod_1.z.object({
     name: zod_1.z.string().min(1, "Name is required").max(100, "Name is too long"),
     email: zod_1.z.string().email("Invalid email address").min(1, "Email is required"),

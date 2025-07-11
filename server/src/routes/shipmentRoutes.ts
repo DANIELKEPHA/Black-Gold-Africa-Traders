@@ -7,6 +7,7 @@ import {
     getShipmentHistory,
     updateShipmentStatus,
     removeShipment,
+    getShipmentById,
 } from '../controllers/shipmentController';
 import { asyncHandler } from '../utils/asyncHandler';
 
@@ -24,6 +25,17 @@ router.get(
 );
 
 /**
+ * @route GET /admin/shipments/:id
+ * @desc Retrieve a single shipment by ID (admin only)
+ * @access Authenticated (Admin only)
+ */
+router.get(
+    '/admin/shipments/:id',
+    authMiddleware(['admin']),
+    asyncHandler(getShipmentById),
+);
+
+/**
  * @route GET /users/:userCognitoId/shipments
  * @desc Retrieve shipments for a user
  * @access Authenticated (Admin or Self)
@@ -32,6 +44,17 @@ router.get(
     '/users/:userCognitoId/shipments',
     authMiddleware(['admin', 'user']),
     asyncHandler(getShipments),
+);
+
+/**
+ * @route GET /users/:userCognitoId/shipments/:id
+ * @desc Retrieve a single shipment by ID for a user
+ * @access Authenticated (Admin or Self)
+ */
+router.get(
+    '/users/:userCognitoId/shipments/:id',
+    authMiddleware(['admin', 'user']),
+    asyncHandler(getShipmentById),
 );
 
 /**

@@ -12,7 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.createContact = exports.getUserStockHistory = exports.getLoggedInUsers = exports.updateUser = exports.createUser = exports.getUserById = void 0;
+exports.deleteContact = exports.getContacts = exports.createContact = exports.getUserStockHistory = exports.getLoggedInUsers = exports.updateUser = exports.createUser = exports.getUserById = void 0;
 const client_1 = require("@prisma/client");
 const userSchema_1 = require("../schemas/userSchema");
 const response_1 = require("../lib/response");
@@ -305,7 +305,7 @@ const getLoggedInUsers = (req, res) => __awaiter(void 0, void 0, void 0, functio
             return;
         }
         const { page, limit, search, includeShipments, includeFavoritedStocks, includeAssignedStocks } = query.data;
-        (0, logger_1.logInfo)("Fetching logged-in users", {
+        (0, logger_1.logInfo)("Fetching logged-in contact-forms", {
             page,
             limit,
             search,
@@ -389,12 +389,12 @@ const getLoggedInUsers = (req, res) => __awaiter(void 0, void 0, void 0, functio
             });
         }
         if (users.length === 0) {
-            (0, logger_1.logInfo)("No users found", {
+            (0, logger_1.logInfo)("No contact-forms found", {
                 page,
                 limit,
                 timestamp: new Date().toLocaleString("en-US", { timeZone: "Africa/Nairobi" }),
             });
-            res.status(404).json((0, response_1.errorResponse)("No users found"));
+            res.status(404).json((0, response_1.errorResponse)("No contact-forms found"));
             return;
         }
         (0, logger_1.logInfo)(`Retrieved ${users.length} users`, {
@@ -430,7 +430,7 @@ const getLoggedInUsers = (req, res) => __awaiter(void 0, void 0, void 0, functio
         }));
     }
     catch (error) {
-        (0, logger_1.logError)("Error retrieving logged-in users", {
+        (0, logger_1.logError)("Error retrieving logged-in contact-forms", {
             error,
             timestamp: new Date().toLocaleString("en-US", { timeZone: "Africa/Nairobi" }),
         });
@@ -667,3 +667,128 @@ const createContact = (req, res) => __awaiter(void 0, void 0, void 0, function* 
     }
 });
 exports.createContact = createContact;
+const getContacts = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const { page, limit, search } = userSchema_1.getContactsSchema.parse(req).query;
+        (0, logger_1.logInfo)('Fetching contact submissions', {
+            page,
+            limit,
+            search,
+            timestamp: new Date().toLocaleString('en-US', { timeZone: 'Africa/Nairobi' }),
+        });
+        const where = search
+            ? {
+                OR: [
+                    { name: { contains: search, mode: 'insensitive' } },
+                    { email: { contains: search, mode: 'insensitive' } },
+                    {
+                        subject: { contains: search, mode: 'insensitive' },
+                    },
+                ],
+            }
+            : {};
+        const [contacts, total] = yield Promise.all([
+            prisma.contact.findMany({
+                where,
+                select: {
+                    id: true,
+                    name: true,
+                    email: true,
+                    subject: true,
+                    message: true,
+                    privacyConsent: true,
+                    userCognitoId: true,
+                    createdAt: true,
+                },
+                orderBy: { createdAt: 'desc' },
+                skip: (page - 1) * limit,
+                take: limit,
+            }),
+            prisma.contact.count({ where }),
+        ]);
+        if (contacts.length === 0) {
+            (0, logger_1.logInfo)('No contact submissions found', {
+                page,
+                limit,
+                timestamp: new Date().toLocaleString('en-US', { timeZone: 'Africa/Nairobi' }),
+            });
+            res.status(404).json({
+                status: 'fail',
+                message: 'No contact submissions found',
+            });
+            return;
+        }
+        (0, logger_1.logInfo)(`Retrieved ${contacts.length} contact submissions`, {
+            page,
+            limit,
+            total,
+            timestamp: new Date().toLocaleString('en-US', { timeZone: 'Africa/Nairobi' }),
+        });
+        res.status(200).json({
+            status: 'success',
+            data: contacts.map((contact) => (Object.assign(Object.assign({}, contact), { createdAt: contact.createdAt.toISOString() }))),
+            meta: {
+                page,
+                limit,
+                total,
+                totalPages: Math.ceil(total / limit),
+            },
+        });
+    }
+    catch (error) {
+        (0, logger_1.logError)('Error retrieving contact submissions', {
+            error,
+            timestamp: new Date().toLocaleString('en-US', { timeZone: 'Africa/Nairobi' }),
+        });
+        res.status(500).json({
+            status: 'fail',
+            message: 'Internal server error',
+        });
+    }
+    finally {
+        yield prisma.$disconnect();
+    }
+});
+exports.getContacts = getContacts;
+const deleteContact = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const { id } = userSchema_1.deleteContactSchema.parse(req).params;
+        (0, logger_1.logInfo)('Deleting contact submission', {
+            id,
+            timestamp: new Date().toLocaleString('en-US', { timeZone: 'Africa/Nairobi' }),
+        });
+        const contact = yield prisma.contact.delete({
+            where: { id },
+            select: { id: true },
+        });
+        (0, logger_1.logInfo)('Contact submission deleted', {
+            id: contact.id,
+            timestamp: new Date().toLocaleString('en-US', { timeZone: 'Africa/Nairobi' }),
+        });
+        res.status(200).json({
+            status: 'success',
+            message: 'Contact submission deleted successfully',
+        });
+    }
+    catch (error) {
+        (0, logger_1.logError)('Error deleting contact submission', {
+            error,
+            timestamp: new Date().toLocaleString('en-US', { timeZone: 'Africa/Nairobi' }),
+        });
+        if (error instanceof client_1.Prisma.PrismaClientKnownRequestError && error.code === 'P2025') {
+            res.status(404).json({
+                status: 'fail',
+                message: 'Contact submission not found',
+            });
+            return;
+        }
+        res.status(500).json({
+            status: 'fail',
+            message: 'Internal server error',
+        });
+    }
+    finally {
+        yield prisma.$disconnect();
+    }
+});
+exports.deleteContact = deleteContact;

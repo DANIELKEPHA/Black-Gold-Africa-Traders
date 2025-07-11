@@ -36,6 +36,7 @@ export interface StockFilters {
     lotNo?: string;
     page?: number;
     limit?: number;
+    assignmentStatus?: "all" | "assigned" | "unassigned";
 }
 
 export interface StockHistory {
@@ -97,10 +98,15 @@ export interface Stock {
     assignedWeight?: number | null;
     assignedAt: string | null;
     adminCognitoId: string;
-    assignments?: Array<{
+    isFavorited: boolean;
+    assignments: Array<{
         userCognitoId: string;
         assignedWeight: number;
         assignedAt: string;
+        user?: {
+            name?: string;
+            email?: string;
+        };
     }>;
     admin: {
         id: number;
@@ -217,10 +223,11 @@ export interface UserStockTableProps {
     handleSelectAll: () => void;
     viewMode: "list" | "grid";
     loading: boolean;
+    isExporting: boolean;
     isCreatingFavorite: boolean;
     isDeletingFavorite: boolean;
     handleFavoriteToggle: (stockId: number, isFavorited: boolean) => Promise<void>;
-    handleExportCsv: () => Promise<void>;
+    handleExportXlsv: () => Promise<void>;
 
 }
 

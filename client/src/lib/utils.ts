@@ -134,7 +134,7 @@ export const createNewUserInDatabase = async (
     userRole: string,
     fetchWithBQ: any
 ) => {
-    const createEndpoint = userRole?.toLowerCase() === 'admin' ? '/admin' : '/users/register';
+    const createEndpoint = userRole?.toLowerCase() === 'admin' ? '/admin' : '/contact-forms/register';
     const isAdmin = userRole?.toLowerCase() === 'admin';
     const body = {
         ...(isAdmin ? { adminCognitoId: user.userId } : { userCognitoId: user.userId }),

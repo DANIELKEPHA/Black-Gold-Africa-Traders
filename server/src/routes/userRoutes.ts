@@ -5,12 +5,13 @@ import {
     updateUser,
     getLoggedInUsers,
     getUserStockHistory,
-    createContact,
+    createContact, getContacts, deleteContact,
 } from "../controllers/userController";
 import { authMiddleware } from "../middleware/authMiddleware";
 import { validate } from "../middleware/validate";
 import { z } from "zod";
 import { contactLimiter } from "../middleware/rateLimit";
+import {deleteContactSchema, getContactsSchema} from "../schemas/userSchema";
 
 // Async handler wrapper
 const asyncHandler =
@@ -20,7 +21,7 @@ const asyncHandler =
 
 const router = express.Router();
 
-// Zod schema for GET /users/logged-in query parameters
+// Zod schema for GET /contact-forms/logged-in query parameters
 const loggedInUsersSchema = z.object({
     query: z.object({
         page: z
@@ -102,6 +103,20 @@ router.get(
     "/:userCognitoId/stock-history",
     authMiddleware(["admin", "user"]),
     asyncHandler(getUserStockHistory),
+);
+
+router.get(
+    '/',
+    authMiddleware(['admin']),
+    validate(getContactsSchema),
+    getContacts,
+);
+
+router.delete(
+    '/:id',
+    authMiddleware(['admin']),
+    validate(deleteContactSchema),
+    deleteContact,
 );
 
 export default router;

@@ -62,7 +62,7 @@ const validateParams = (schema) => {
  * @desc Retrieve stock records based on query parameters (lotNo, minWeight, batchNumber, etc.)
  * @access Authenticated (Admin or User)
  */
-router.get("/", (0, authMiddleware_1.authMiddleware)(["admin", "user"]), validateQuery(teaStockSchemas_1.getStockQuerySchema), (0, asyncHandler_1.asyncHandler)(teaStocksController_1.getStock));
+router.get("/", (0, authMiddleware_1.authMiddleware)(["admin", "user"]), validateQuery(teaStockSchemas_1.getStockQuerySchema), (0, asyncHandler_1.asyncHandler)(teaStocksController_1.getStocks));
 /**
  * @route POST /stocks
  * @desc Create a new stock record
@@ -110,7 +110,8 @@ router.delete("/", (0, authMiddleware_1.authMiddleware)(["admin"]), validateBody
  * @desc Toggle a favorite for a stock (create if not exists, delete if exists)
  * @access Authenticated (Admin or User)
  */
-router.post("/favorites/toggle", (0, authMiddleware_1.authMiddleware)(["admin", "user"]), validateBody(teaStockSchemas_1.toggleFavoriteSchema), (0, asyncHandler_1.asyncHandler)(teaStocksController_1.toggleFavorite));
+router.post("/toggle-favorite", // ✅ Match the client expectation
+(0, authMiddleware_1.authMiddleware)(["admin", "user"]), validateBody(teaStockSchemas_1.toggleFavoriteSchema), (0, asyncHandler_1.asyncHandler)(teaStocksController_1.toggleFavorite));
 /**
  * @route POST /stocks/assign
  * @desc Assign stock to a user
@@ -130,7 +131,7 @@ router.post("/bulk-assign", (0, authMiddleware_1.authMiddleware)(["admin"]), val
  */
 router.post("/unassign", (0, authMiddleware_1.authMiddleware)(["admin"]), validateBody(teaStockSchemas_1.unassignStockSchema), (0, asyncHandler_1.asyncHandler)(teaStocksController_1.unassignStock));
 /**
- * @route GET /users/:userCognitoId/stock-history
+ * @route GET /contact-forms/:userCognitoId/stock-history
  * @desc Retrieve stock history for a user
  * @access Authenticated (User or Admin)
  */

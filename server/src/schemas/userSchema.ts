@@ -43,6 +43,40 @@ const brokerEnum = z.enum([
     "TTBL",
 ]);
 
+export const getContactsSchema = z.object({
+    query: z.object({
+        page: z
+            .string()
+            .optional()
+            .transform((val) => (val ? parseInt(val, 10) : 1))
+            .refine((val) => val > 0, { message: 'Page must be a positive integer' }),
+        limit: z
+            .string()
+            .optional()
+            .transform((val) => (val ? parseInt(val, 10) : 10))
+            .refine((val) => val >= 1 && val <= 100, {
+                message: 'Limit must be between 1 and 100',
+            }),
+        search: z
+            .string()
+            .max(100, 'Search term must be up to 100 characters')
+            .optional(),
+    }),
+    body: z.object({}).optional(),
+    params: z.object({}).optional(),
+});
+
+export const deleteContactSchema = z.object({
+    params: z.object({
+        id: z
+            .string()
+            .transform((val) => parseInt(val, 10))
+            .refine((val) => val > 0, { message: 'Invalid contact ID' }),
+    }),
+    query: z.object({}).optional(),
+    body: z.object({}).optional(),
+});
+
 export const createContactSchema = z.object({
     name: z.string().min(1, "Name is required").max(100, "Name is too long"),
     email: z.string().email("Invalid email address").min(1, "Email is required"),

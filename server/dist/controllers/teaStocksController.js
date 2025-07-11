@@ -19,7 +19,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.unassignStock = exports.getUserStockHistory = exports.bulkAssignStocks = exports.assignStock = exports.toggleFavorite = exports.exportStocksXlsx = exports.uploadStocksCsv = exports.getStockHistory = exports.deleteStocks = exports.updateStock = exports.createStock = exports.getStock = void 0;
+exports.unassignStock = exports.getUserStockHistory = exports.bulkAssignStocks = exports.assignStock = exports.toggleFavorite = exports.exportStocksXlsx = exports.uploadStocksCsv = exports.getStockHistory = exports.deleteStocks = exports.updateStock = exports.createStock = exports.getStocks = void 0;
 exports.adjustStock = adjustStock;
 exports.adjustStockHandler = adjustStockHandler;
 const client_1 = require("@prisma/client");
@@ -71,9 +71,9 @@ const fieldNameMapping = {
     lowstockthreshold: "lowStockThreshold",
     admincognitoid: "adminCognitoId",
 };
-const getStock = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+const getStocks = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        const parsedQuery = teaStockSchemas_1.getStockQuerySchema.safeParse(req.query);
+        const parsedQuery = teaStockSchemas_1.getStockQuerySchema.safeParse(Object.assign(Object.assign({}, req.query), { assignmentStatus: req.query.assignmentStatus || "all" }));
         if (!parsedQuery.success) {
             res.status(400).json({
                 message: "Invalid query parameters",
@@ -81,7 +81,7 @@ const getStock = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
             });
             return;
         }
-        const { minWeight, batchNumber, lotNo, page, limit, grade, broker, search, onlyFavorites, } = parsedQuery.data;
+        const { minWeight, batchNumber, lotNo, page = 1, limit = 10, grade, broker, search, onlyFavorites, assignmentStatus, } = parsedQuery.data;
         const authenticatedUser = (0, controllerUtils_1.authenticateUser)(req, res);
         if (!authenticatedUser) {
             res.status(401).json({ message: "Unauthorized: No valid token provided" });
@@ -99,20 +99,25 @@ const getStock = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
         if (lotNo) {
             where.lotNo = lotNo;
         }
-        if (grade) {
+        if (grade && grade !== "any") {
             where.grade = grade;
         }
-        if (broker) {
+        if (broker && broker !== "any") {
             where.broker = broker;
         }
         if (search) {
             where.OR = [
                 { lotNo: { contains: search, mode: "insensitive" } },
                 { mark: { contains: search, mode: "insensitive" } },
+                { saleCode: { contains: search, mode: "insensitive" } },
+                { invoiceNo: { contains: search, mode: "insensitive" } },
             ];
         }
         if (onlyFavorites) {
             where.favorites = { some: { userCognitoId: userId } };
+        }
+        if (assignmentStatus !== "all") {
+            where.assignments = assignmentStatus === "assigned" ? { some: {} } : { none: {} };
         }
         if (!isAdmin) {
             where.assignments = {
@@ -124,51 +129,67 @@ const getStock = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
                 where,
                 include: {
                     assignments: {
-                        where: { userCognitoId: userId },
-                        select: { assignedWeight: true, assignedAt: true },
+                        take: 1, // Ensure only one assignment per stock
+                        include: {
+                            user: {
+                                select: {
+                                    name: true,
+                                    email: true,
+                                },
+                            },
+                        },
                     },
                 },
                 orderBy: { updatedAt: "desc" },
-                skip: (page - 1) * limit,
-                take: limit,
+                skip: (Number(page) - 1) * Number(limit),
+                take: Number(limit),
             }),
             prisma.stocks.count({ where }),
         ]);
         res.status(200).json({
-            data: stocks.map((stock) => {
-                var _a, _b, _c, _d, _e;
-                return ({
-                    id: stock.id,
-                    saleCode: stock.saleCode,
-                    broker: stock.broker,
-                    lotNo: stock.lotNo,
-                    mark: stock.mark,
-                    grade: stock.grade,
-                    invoiceNo: stock.invoiceNo,
-                    bags: stock.bags,
-                    weight: Number(stock.weight),
-                    purchaseValue: Number(stock.purchaseValue),
-                    totalPurchaseValue: Number(stock.totalPurchaseValue),
-                    agingDays: stock.agingDays,
-                    penalty: Number(stock.penalty),
-                    bgtCommission: Number(stock.bgtCommission),
-                    maerskFee: Number(stock.maerskFee),
-                    commission: Number(stock.commission),
-                    netPrice: Number(stock.netPrice),
-                    total: Number(stock.total),
-                    batchNumber: stock.batchNumber,
-                    lowStockThreshold: stock.lowStockThreshold ? Number(stock.lowStockThreshold) : null,
-                    createdAt: stock.createdAt.toISOString(),
-                    updatedAt: stock.updatedAt.toISOString(),
-                    assignedWeight: (_b = (_a = stock.assignments[0]) === null || _a === void 0 ? void 0 : _a.assignedWeight) !== null && _b !== void 0 ? _b : null,
-                    assignedAt: (_e = (_d = (_c = stock.assignments[0]) === null || _c === void 0 ? void 0 : _c.assignedAt) === null || _d === void 0 ? void 0 : _d.toISOString()) !== null && _e !== void 0 ? _e : null,
-                });
-            }),
+            data: stocks.map((stock) => ({
+                id: stock.id,
+                saleCode: stock.saleCode,
+                broker: stock.broker,
+                lotNo: stock.lotNo,
+                mark: stock.mark,
+                grade: stock.grade,
+                invoiceNo: stock.invoiceNo,
+                bags: stock.bags,
+                weight: Number(stock.weight),
+                purchaseValue: Number(stock.purchaseValue),
+                totalPurchaseValue: Number(stock.totalPurchaseValue),
+                agingDays: stock.agingDays,
+                penalty: Number(stock.penalty),
+                bgtCommission: Number(stock.bgtCommission),
+                maerskFee: Number(stock.maerskFee),
+                commission: Number(stock.commission),
+                netPrice: Number(stock.netPrice),
+                total: Number(stock.total),
+                batchNumber: stock.batchNumber,
+                lowStockThreshold: stock.lowStockThreshold ? Number(stock.lowStockThreshold) : null,
+                createdAt: stock.createdAt.toISOString(),
+                updatedAt: stock.updatedAt.toISOString(),
+                assignments: stock.assignments.map((assignment) => {
+                    var _a, _b;
+                    return ({
+                        userCognitoId: assignment.userCognitoId,
+                        assignedWeight: Number(assignment.assignedWeight),
+                        assignedAt: (_b = (_a = assignment.assignedAt) === null || _a === void 0 ? void 0 : _a.toISOString()) !== null && _b !== void 0 ? _b : null,
+                        user: assignment.user
+                            ? {
+                                name: assignment.user.name,
+                                email: assignment.user.email,
+                            }
+                            : null,
+                    });
+                }),
+            })),
             meta: {
-                page,
-                limit,
+                page: Number(page),
+                limit: Number(limit),
                 total,
-                totalPages: Math.ceil(total / limit),
+                totalPages: Math.ceil(total / Number(limit)),
             },
         });
     }
@@ -181,7 +202,7 @@ const getStock = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
         yield prisma.$disconnect();
     }
 });
-exports.getStock = getStock;
+exports.getStocks = getStocks;
 const createStock = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const parsedBody = teaStockSchemas_1.createStockSchema.safeParse(req.body);

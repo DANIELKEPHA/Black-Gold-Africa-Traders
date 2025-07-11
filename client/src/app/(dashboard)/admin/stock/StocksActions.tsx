@@ -9,7 +9,7 @@ import { Download, Upload, Loader2, UserPlus } from "lucide-react";
 import { useExportStocksXlsxMutation, useGetAuthUserQuery } from "@/state/api";
 import { useRouter } from "next/navigation";
 import { StocksResponse } from "@/state";
-import AssignStockModal, { mapStocksResponseToStock } from "./AssignStockModal";
+import  {AssignStockModal, mapStocksResponseToStock } from "./AssignStockModal";
 
 interface StocksActionsProps {
     stocksData: StocksResponse[];

@@ -1,9 +1,9 @@
 'use client';
 
-import React, { useState, useCallback, useMemo } from 'react'; // Add useMemo import
+import React, { useState, useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast, Toaster } from 'sonner';
-import { useGetAuthUserQuery, useGetStocksQuery } from '@/state/api';
+import { useGetAuthUserQuery, useGetStocksQuery, useExportStocksXlsxMutation, useToggleFavoriteMutation } from '@/state/api';
 import { Button } from '@/components/ui/button';
 import Loading from '@/components/Loading';
 import { useAppSelector } from '@/state/redux';
@@ -37,6 +37,9 @@ const Stocks: React.FC = () => {
         { skip: !userCognitoId },
     );
 
+    const [exportStocksXlsx, { isLoading: isExporting }] = useExportStocksXlsxMutation();
+    const [toggleFavorite] = useToggleFavoriteMutation();
+
     // Memoize stocksData to ensure stable reference
     const stocksData: StockData[] = useMemo(
         () =>
@@ -65,7 +68,7 @@ const Stocks: React.FC = () => {
                 adminCognitoId: stock.adminCognitoId || '',
                 createdAt: stock.createdAt,
                 updatedAt: stock.updatedAt,
-                isFavorited: false, // Default value
+                isFavorited: stock.isFavorited || false, // Use server-provided isFavorited if available
             })) || [],
         [stockResponse]
     );
@@ -93,43 +96,59 @@ const Stocks: React.FC = () => {
         }
     }, [stocksData, selectedItems.length]);
 
-    const handleExportCsv = async () => {
-        toast.info(t('stocks:exportCsvStarted', { defaultValue: 'Exporting CSV...' }));
-        // Implement actual CSV export logic in StocksActions
-    };
-
-    const handleUploadCsv = async (file: File, duplicateAction: 'skip' | 'replace') => {
-        toast.error(t('stocks:errors.uploadNotImplemented', { defaultValue: 'CSV upload not implemented' }));
-    };
-
-    const handleAdjustStock = async (stockId: number, weight: number, reason: string) => {
-        toast.error(t('stocks:errors.adjustNotImplemented', { defaultValue: 'Stock adjustment not implemented' }));
-    };
-
-    const handleAssignStock = async (stockId: number, userCognitoId: string, assignedWeight: number) => {
-        toast.error(t('stocks:errors.assignNotImplemented', { defaultValue: 'Stock assignment not implemented' }));
+    const handleExportExcel = async (stocks?: StockData[]) => {
+        try {
+            if (!stocks || stocks.length === 0) {
+                throw new Error(t('stocks:errors.noItems', { defaultValue: 'No stock data to export' }));
+            }
+            console.log('Exporting stocks to Excel:', stocks.length);
+            const stockIds = stocks.map((stock) => stock.id);
+            await exportStocksXlsx({
+                stockIds,
+                search: filters.search,
+                lotNo: filters.lotNo,
+                grade: filters.grade === 'any' ? undefined : filters.grade,
+                broker: filters.broker === 'any' ? undefined : filters.broker,
+                batchNumber: filters.batchNumber,
+            }).unwrap();
+            toast.success(t('stocks:exportExcel', { defaultValue: 'Stocks exported to Excel successfully' }));
+            return true;
+        } catch (error: any) {
+            console.error('Failed to export Excel:', error);
+            console.error('Error details:', JSON.stringify(error, null, 2));
+            toast.error(t('stocks:errors.excelError', { defaultValue: 'Failed to export Excel: ' }) + (error.message || 'Unknown error'));
+            return error;
+        }
     };
 
     const handleFavoriteToggle = async (stockId: number, isFavorited: boolean) => {
+        if (!userCognitoId) {
+            toast.error(t('stocks:errors.unauthorized', { defaultValue: 'User not authenticated' }));
+            return;
+        }
+
         try {
             if (isFavorited) {
                 setIsCreatingFavorite(true);
-                // Placeholder for API call to create favorite
-                // await api.createFavorite(stockId);
+                await toggleFavorite({ userCognitoId, stocksId: stockId }).unwrap();
                 toast.success(t('stocks:favoriteAdded', { defaultValue: 'Stock added to favorites' }));
             } else {
                 setIsDeletingFavorite(true);
-                // Placeholder for API call to delete favorite
-                // await api.deleteFavorite(stockId);
+                await toggleFavorite({ userCognitoId, stocksId: stockId }).unwrap();
                 toast.success(t('stocks:favoriteRemoved', { defaultValue: 'Stock removed from favorites' }));
             }
-        } catch (error) {
-            toast.error(t('stocks:errors.favoriteError', { defaultValue: 'Error toggling favorite' }));
+        } catch (error: any) {
+            console.error('Failed to toggle favorite:', error);
+            toast.error(
+                t('stocks:errors.favoriteError', { defaultValue: 'Error toggling favorite: ' }) +
+                (error.message || 'Unknown error')
+            );
         } finally {
             setIsCreatingFavorite(false);
             setIsDeletingFavorite(false);
         }
     };
+
 
     if (isAuthLoading || isLoading) return <Loading />;
     if (authError || error)
@@ -150,7 +169,8 @@ const Stocks: React.FC = () => {
                 handleSelectAll={handleSelectAll}
                 viewMode={viewMode}
                 loading={isLoading}
-                handleExportCsv={handleExportCsv}
+                handleExportXlsv={handleExportExcel}
+                isExporting={isExporting}
                 isCreatingFavorite={isCreatingFavorite}
                 isDeletingFavorite={isDeletingFavorite}
                 handleFavoriteToggle={handleFavoriteToggle}
@@ -164,7 +184,8 @@ const Stocks: React.FC = () => {
                     handleSelectAll={handleSelectAll}
                     viewMode={viewMode}
                     loading={isLoading}
-                    handleExportCsv={handleExportCsv}
+                    handleExportXlsv={handleExportExcel}
+                    isExporting={isExporting}
                     isCreatingFavorite={isCreatingFavorite}
                     isDeletingFavorite={isDeletingFavorite}
                     handleFavoriteToggle={handleFavoriteToggle}
@@ -178,7 +199,8 @@ const Stocks: React.FC = () => {
                     handleSelectAll={handleSelectAll}
                     viewMode={viewMode}
                     loading={isLoading}
-                    handleExportCsv={handleExportCsv}
+                    handleExportXlsv={handleExportExcel}
+                    isExporting={isExporting}
                     isCreatingFavorite={isCreatingFavorite}
                     isDeletingFavorite={isDeletingFavorite}
                     handleFavoriteToggle={handleFavoriteToggle}

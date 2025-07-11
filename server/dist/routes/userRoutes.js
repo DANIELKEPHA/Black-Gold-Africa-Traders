@@ -9,10 +9,11 @@ const authMiddleware_1 = require("../middleware/authMiddleware");
 const validate_1 = require("../middleware/validate");
 const zod_1 = require("zod");
 const rateLimit_1 = require("../middleware/rateLimit");
+const userSchema_1 = require("../schemas/userSchema");
 // Async handler wrapper
 const asyncHandler = (fn) => (req, res, next) => Promise.resolve(fn(req, res, next)).catch(next);
 const router = express_1.default.Router();
-// Zod schema for GET /users/logged-in query parameters
+// Zod schema for GET /contact-forms/logged-in query parameters
 const loggedInUsersSchema = zod_1.z.object({
     query: zod_1.z.object({
         page: zod_1.z
@@ -63,4 +64,6 @@ router.get("/:userCognitoId", (0, authMiddleware_1.authMiddleware)(["admin", "us
 router.post("/register", asyncHandler(userController_1.createUser));
 router.put("/:userCognitoId", (0, authMiddleware_1.authMiddleware)(["admin", "user"]), asyncHandler(userController_1.updateUser));
 router.get("/:userCognitoId/stock-history", (0, authMiddleware_1.authMiddleware)(["admin", "user"]), asyncHandler(userController_1.getUserStockHistory));
+router.get('/', (0, authMiddleware_1.authMiddleware)(['admin']), (0, validate_1.validate)(userSchema_1.getContactsSchema), userController_1.getContacts);
+router.delete('/:id', (0, authMiddleware_1.authMiddleware)(['admin']), (0, validate_1.validate)(userSchema_1.deleteContactSchema), userController_1.deleteContact);
 exports.default = router;

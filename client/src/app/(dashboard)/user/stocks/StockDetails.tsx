@@ -1,18 +1,15 @@
-"use client";
+'use client';
 
 import React from 'react';
 import { useRouter } from 'next/navigation';
 import { useTranslation } from 'react-i18next';
 import { Toaster, toast } from 'sonner';
-import {useGetAuthUserQuery, useGetUserStockHistoryQuery} from '@/state/api';
+import { useGetAuthUserQuery, useGetUserStockHistoryQuery, useExportStocksXlsxMutation } from '@/state/api';
 import { Button } from '@/components/ui/button';
 import { Loader2, Download } from 'lucide-react';
 import Loading from '@/components/Loading';
-import { useStockActions } from "@/app/(dashboard)/user/stocks/useStockActions";
-import { useAppSelector } from '@/state/redux';
-import {  StocksResponse } from '@/state';
 import { Broker, TeaGrade } from '@/state/enums';
-import {StockHistory, UserStockHistoryEntry} from "@/state/stock";
+import { UserStockHistoryEntry } from '@/state/stock';
 
 interface StockDetailsProps {
     params: { id: string };
@@ -21,10 +18,8 @@ interface StockDetailsProps {
 const StockDetails: React.FC<StockDetailsProps> = ({ params }) => {
     const { t } = useTranslation(['stocks', 'general']);
     const router = useRouter();
-
     const { data: authData, isLoading, isError } = useGetAuthUserQuery();
     const userCognitoId = authData?.cognitoInfo?.userId;
-
     const { data: stockHistoryResponse, isLoading: isStockLoading, error } = useGetUserStockHistoryQuery(
         {
             userCognitoId: userCognitoId || '',
@@ -32,61 +27,27 @@ const StockDetails: React.FC<StockDetailsProps> = ({ params }) => {
         },
         { skip: !userCognitoId },
     );
-    const { handleExportCsv } = useStockActions();
-    const [isExporting, setIsExporting] = React.useState(false);
+    const [exportStocksXlsx, { isLoading: isExporting }] = useExportStocksXlsxMutation();
 
     const stock: UserStockHistoryEntry | undefined = stockHistoryResponse?.data.find(
         (entry) => entry.details.lotNo === params.id
     );
 
-
-
     const handleDownload = async () => {
-        setIsExporting(true);
         try {
             if (!stock) {
                 toast.error(t('stocks:errors.noItems', { defaultValue: 'No stock data to export' }));
                 return;
             }
-
-            const stockResponse: StocksResponse = {
-                id: stock.stocksId,
-                lotNo: stock.details.lotNo,
-                mark: stock.details.mark || "",
-                grade: (stock.details.grade as TeaGrade) || null,
-                broker: (stock.details.broker as Broker) || null,
-                saleCode: stock.details.saleCode || "",
-                bags: stock.details.bags,
-                weight: stock.details.assignedWeight ?? 0,
-                purchaseValue: stock.details.purchaseValue,
-                totalPurchaseValue: stock.details.totalPurchaseValue,
-                agingDays: stock.details.agingDays,
-                penalty: stock.details.penalty,
-                bgtCommission: stock.details.bgtCommission,
-                maerskFee: stock.details.maerskFee,
-                commission: stock.details.commission,
-                netPrice: stock.details.netPrice,
-                total: stock.details.total,
-                invoiceNo: stock.details.invoiceNo || "",
-                batchNumber: stock.details.batchNumber || null,
-                lowStockThreshold: stock.details.lowStockThreshold || null,
-                adminCognitoId: stock.details.adminCognitoId || '',
-                createdAt: stock.assignedAt,
-                updatedAt: stock.assignedAt,
-                assignedWeight: stock.details.assignedWeight,
-            };
-
-            await handleExportCsv([stockResponse]);
-            toast.success(t('stocks:success.csvDownloaded', { defaultValue: 'CSV downloaded successfully' }));
+            await exportStocksXlsx({ stockIds: [stock.stocksId] }).unwrap();
+            toast.success(t('stocks:success.csvDownloaded', { defaultValue: 'Excel downloaded successfully' }));
         } catch (err: any) {
-            toast.error(t('stocks:errors.csvError', { defaultValue: 'Failed to export CSV' }));
-        } finally {
-            setIsExporting(false);
+            toast.error(t('stocks:errors.excelError', { defaultValue: 'Failed to export Excel' }));
         }
     };
 
-    if (isStockLoading) return <Loading />;
-    if (error || !stock)
+    if (isStockLoading || isLoading) return <Loading />;
+    if (error || isError || !stock)
         return <div className='text-red-500 p-4'>{t('stocks:errors.error', { defaultValue: 'Error' })}</div>;
 
     return (

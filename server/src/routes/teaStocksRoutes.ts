@@ -1,6 +1,5 @@
 import express from "express";
 import {
-    getStock,
     createStock,
     updateStock,
     getStockHistory,
@@ -12,7 +11,7 @@ import {
     adjustStockHandler,
     uploadStocksCsv,
     bulkAssignStocks,
-    getUserStockHistory,
+    getUserStockHistory, getStocks,
 } from "../controllers/teaStocksController";
 import { authMiddleware } from "../middleware/authMiddleware";
 import { z } from "zod";
@@ -93,7 +92,7 @@ router.get(
     "/",
     authMiddleware(["admin", "user"]),
     validateQuery(getStockQuerySchema),
-    asyncHandler(getStock)
+    asyncHandler(getStocks)
 );
 
 /**
@@ -189,7 +188,7 @@ router.delete(
  * @access Authenticated (Admin or User)
  */
 router.post(
-    "/favorites/toggle",
+    "/toggle-favorite", // ✅ Match the client expectation
     authMiddleware(["admin", "user"]),
     validateBody(toggleFavoriteSchema),
     asyncHandler(toggleFavorite)
@@ -232,7 +231,7 @@ router.post(
 );
 
 /**
- * @route GET /users/:userCognitoId/stock-history
+ * @route GET /contact-forms/:userCognitoId/stock-history
  * @desc Retrieve stock history for a user
  * @access Authenticated (User or Admin)
  */

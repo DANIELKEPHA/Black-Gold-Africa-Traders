@@ -4,6 +4,7 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
+import { Loader2 } from 'lucide-react';
 import { UserStockTableProps } from '@/state/stock';
 import { toast } from 'sonner';
 
@@ -13,7 +14,8 @@ const StocksActions: React.FC<UserStockTableProps> = ({
                                                           selectedItems,
                                                           handleSelectItem,
                                                           handleSelectAll,
-                                                          handleExportCsv,
+                                                          handleExportXlsv,
+                                                          isExporting,
                                                           viewMode,
                                                           loading,
                                                           isCreatingFavorite,
@@ -23,11 +25,16 @@ const StocksActions: React.FC<UserStockTableProps> = ({
     const { t } = useTranslation(['stocks', 'general']);
     const router = useRouter();
 
-    const handleCsvExport = async () => {
+    const handleExcelExport = async () => {
         try {
-            await handleExportCsv();
+            const selectedStocks = stocks.filter((stock) => selectedItems.includes(stock.id));
+            if (selectedStocks.length === 0) {
+                toast.warning(t('stocks:errors.noItemsSelected', { defaultValue: 'No items selected' }));
+                return;
+            }
+            await handleExportXlsv;
         } catch (error) {
-            toast.error(t('stocks:errors.csvError', { defaultValue: 'Failed to export CSV' }));
+            toast.error(t('stocks:errors.excelError', { defaultValue: 'Failed to export Excel' }));
         }
     };
 
@@ -63,11 +70,14 @@ const StocksActions: React.FC<UserStockTableProps> = ({
                         : t('stocks:selectAll', { defaultValue: 'Select All' })}
                 </Button>
                 <Button
-                    onClick={handleCsvExport}
-                    disabled={loading || selectedItems.length === 0}
-                    className="bg-indigo-600 text-white hover:bg-indigo-700"
+                    onClick={handleExcelExport}
+                    disabled={loading || isExporting || selectedItems.length === 0}
+                    className="bg-green-600 text-white hover:bg-green-700"
                 >
-                    {t('stocks:exportCsv', { defaultValue: 'Export CSV' })}
+                    {isExporting ? (
+                        <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                    ) : null}
+                    {t('stocks:exportExcel', { defaultValue: 'Export Excel' })}
                 </Button>
                 <Button
                     variant="outline"

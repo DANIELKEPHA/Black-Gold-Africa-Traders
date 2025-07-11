@@ -338,7 +338,7 @@ export class PrismaClient<
     * Example usage:
     * ```ts
     * // Fetch zero or more Users
-    * const users = await prisma.user.findMany()
+    * const contact-forms = await prisma.user.findMany()
     * ```
     */
   get user(): Prisma.UserDelegate<ExtArgs, ClientOptions>;
@@ -2994,7 +2994,7 @@ export namespace Prisma {
      * @example
      * // Ordered by age ascending
      * // Where email contains prisma.io
-     * // Limited to the 10 users
+     * // Limited to the 10 contact-forms
      * const aggregations = await prisma.user.aggregate({
      *   _avg: {
      *     age: true,
@@ -4116,10 +4116,10 @@ export namespace Prisma {
      * @param {UserFindManyArgs} args - Arguments to filter and select certain fields only.
      * @example
      * // Get all Users
-     * const users = await prisma.user.findMany()
+     * const contact-forms = await prisma.user.findMany()
      * 
      * // Get first 10 Users
-     * const users = await prisma.user.findMany({ take: 10 })
+     * const contact-forms = await prisma.user.findMany({ take: 10 })
      * 
      * // Only select the `id`
      * const userWithIdOnly = await prisma.user.findMany({ select: { id: true } })
@@ -4324,7 +4324,7 @@ export namespace Prisma {
      * @example
      * // Ordered by age ascending
      * // Where email contains prisma.io
-     * // Limited to the 10 users
+     * // Limited to the 10 contact-forms
      * const aggregations = await prisma.user.aggregate({
      *   _avg: {
      *     age: true,
@@ -5744,7 +5744,7 @@ export namespace Prisma {
      * @example
      * // Ordered by age ascending
      * // Where email contains prisma.io
-     * // Limited to the 10 users
+     * // Limited to the 10 contact-forms
      * const aggregations = await prisma.user.aggregate({
      *   _avg: {
      *     age: true,
@@ -7069,7 +7069,7 @@ export namespace Prisma {
      * @example
      * // Ordered by age ascending
      * // Where email contains prisma.io
-     * // Limited to the 10 users
+     * // Limited to the 10 contact-forms
      * const aggregations = await prisma.user.aggregate({
      *   _avg: {
      *     age: true,
@@ -8343,7 +8343,7 @@ export namespace Prisma {
      * @example
      * // Ordered by age ascending
      * // Where email contains prisma.io
-     * // Limited to the 10 users
+     * // Limited to the 10 contact-forms
      * const aggregations = await prisma.user.aggregate({
      *   _avg: {
      *     age: true,
@@ -9743,7 +9743,7 @@ export namespace Prisma {
      * @example
      * // Ordered by age ascending
      * // Where email contains prisma.io
-     * // Limited to the 10 users
+     * // Limited to the 10 contact-forms
      * const aggregations = await prisma.user.aggregate({
      *   _avg: {
      *     age: true,
@@ -10968,7 +10968,7 @@ export namespace Prisma {
      * @example
      * // Ordered by age ascending
      * // Where email contains prisma.io
-     * // Limited to the 10 users
+     * // Limited to the 10 contact-forms
      * const aggregations = await prisma.user.aggregate({
      *   _avg: {
      *     age: true,
@@ -12151,7 +12151,7 @@ export namespace Prisma {
      * @example
      * // Ordered by age ascending
      * // Where email contains prisma.io
-     * // Limited to the 10 users
+     * // Limited to the 10 contact-forms
      * const aggregations = await prisma.user.aggregate({
      *   _avg: {
      *     age: true,
@@ -13351,7 +13351,7 @@ export namespace Prisma {
      * @example
      * // Ordered by age ascending
      * // Where email contains prisma.io
-     * // Limited to the 10 users
+     * // Limited to the 10 contact-forms
      * const aggregations = await prisma.user.aggregate({
      *   _avg: {
      *     age: true,
@@ -14504,7 +14504,7 @@ export namespace Prisma {
      * @example
      * // Ordered by age ascending
      * // Where email contains prisma.io
-     * // Limited to the 10 users
+     * // Limited to the 10 contact-forms
      * const aggregations = await prisma.user.aggregate({
      *   _avg: {
      *     age: true,
@@ -15697,7 +15697,7 @@ export namespace Prisma {
      * @example
      * // Ordered by age ascending
      * // Where email contains prisma.io
-     * // Limited to the 10 users
+     * // Limited to the 10 contact-forms
      * const aggregations = await prisma.user.aggregate({
      *   _avg: {
      *     age: true,
@@ -16827,7 +16827,7 @@ export namespace Prisma {
      * @example
      * // Ordered by age ascending
      * // Where email contains prisma.io
-     * // Limited to the 10 users
+     * // Limited to the 10 contact-forms
      * const aggregations = await prisma.user.aggregate({
      *   _avg: {
      *     age: true,
@@ -17955,7 +17955,7 @@ export namespace Prisma {
      * @example
      * // Ordered by age ascending
      * // Where email contains prisma.io
-     * // Limited to the 10 users
+     * // Limited to the 10 contact-forms
      * const aggregations = await prisma.user.aggregate({
      *   _avg: {
      *     age: true,
@@ -19068,7 +19068,7 @@ export namespace Prisma {
      * @example
      * // Ordered by age ascending
      * // Where email contains prisma.io
-     * // Limited to the 10 users
+     * // Limited to the 10 contact-forms
      * const aggregations = await prisma.user.aggregate({
      *   _avg: {
      *     age: true,

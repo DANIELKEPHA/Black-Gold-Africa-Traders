@@ -9,7 +9,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.updateShipmentStatus = exports.removeShipment = exports.updateShipment = exports.getShipmentHistory = exports.createShipment = exports.getShipments = void 0;
+exports.updateShipmentStatus = exports.removeShipment = exports.updateShipment = exports.getShipmentHistory = exports.createShipment = exports.getShipmentById = exports.getShipments = void 0;
 const client_1 = require("@prisma/client");
 const shipmentSchemas_1 = require("../schemas/shipmentSchemas");
 const database_1 = require("../utils/database");
@@ -35,7 +35,7 @@ const getShipments = (req, res) => __awaiter(void 0, void 0, void 0, function* (
         const { stocksId, status, page, limit, search } = parsed.data;
         if (!isAdminRoute && userCognitoId) {
             if (authenticatedUser.role.toLowerCase() === 'user' && userCognitoId !== authenticatedUser.userId) {
-                res.status(403).json({ message: "Forbidden: Cannot access other users' shipments" });
+                res.status(403).json({ message: "Forbidden: Cannot access other contact-forms' shipments" });
                 return;
             }
         }
@@ -85,6 +85,103 @@ const getShipments = (req, res) => __awaiter(void 0, void 0, void 0, function* (
     }
 });
 exports.getShipments = getShipments;
+const getShipmentById = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const time = new Date().toLocaleString('en-US', { timeZone: 'Africa/Nairobi' });
+    try {
+        console.log(`[${time}] getShipmentById Request:`, {
+            url: req.originalUrl,
+            method: req.method,
+            params: req.params,
+        });
+        const authenticatedUser = (0, controllerUtils_1.authenticateUser)(req, res);
+        if (!authenticatedUser) {
+            console.log(`[${time}] Authentication failed: No authenticated user`);
+            return;
+        }
+        const { id } = req.params;
+        const shipmentId = parseInt(id, 10);
+        if (isNaN(shipmentId)) {
+            console.log(`[${time}] Invalid shipmentId: ${id}`);
+            res.status(400).json({ message: 'Invalid shipment ID' });
+            return;
+        }
+        const isAdminRoute = req.path.includes('/admin/shipments');
+        const userCognitoId = req.params.userCognitoId;
+        if (!isAdminRoute && userCognitoId && authenticatedUser.role.toLowerCase() === 'user' && userCognitoId !== authenticatedUser.userId) {
+            console.log(`[${time}] Forbidden: userCognitoId=${userCognitoId}, authenticatedUserId=${authenticatedUser.userId}`);
+            res.status(403).json({ message: "Forbidden: Cannot access other users' shipments" });
+            return;
+        }
+        const where = { id: shipmentId };
+        if (!isAdminRoute && userCognitoId) {
+            where.userCognitoId = userCognitoId;
+        }
+        const shipment = yield prisma.shipment.findUnique({
+            where,
+            include: {
+                user: {
+                    select: {
+                        id: true,
+                        userCognitoId: true,
+                        name: true,
+                        email: true,
+                        phoneNumber: true,
+                    },
+                },
+                stocks: {
+                    include: {
+                        stocks: {
+                            select: {
+                                id: true,
+                                lotNo: true,
+                                mark: true,
+                                bags: true,
+                                weight: true,
+                                purchaseValue: true,
+                                grade: true,
+                                broker: true,
+                                saleCode: true,
+                            },
+                        },
+                    },
+                },
+            },
+        });
+        if (!shipment) {
+            console.log(`[${time}] Shipment not found: ID=${shipmentId}`);
+            res.status(404).json({ message: `Shipment with ID ${shipmentId} not found` });
+            return;
+        }
+        console.log(`[${time}] Fetched shipment:`, { id: shipment.id, shipmark: shipment.shipmark });
+        res.status(200).json({ data: (0, controllerUtils_1.formatSingleShipmentResponse)(shipment) });
+    }
+    catch (error) {
+        const time = new Date().toISOString();
+        if (error instanceof Error) {
+            console.error(`[${time}] Error in getShipmentById:`, {
+                message: error.message,
+                stack: error.stack,
+                params: req.params,
+            });
+            (0, controllerUtils_1.logError)('Error fetching shipment by ID', error);
+            (0, controllerUtils_1.sendErrorResponse)(res, error);
+        }
+        else {
+            // Handle non-Error cases (e.g., strings, objects)
+            console.error(`[${time}] Unknown error in getShipmentById:`, {
+                error,
+                params: req.params,
+            });
+            (0, controllerUtils_1.logError)('Unknown error fetching shipment by ID', error);
+            (0, controllerUtils_1.sendErrorResponse)(res, new Error('An unknown error occurred'));
+        }
+    }
+    finally {
+        console.log(`[${time}] Disconnecting Prisma client`);
+        yield prisma.$disconnect();
+    }
+});
+exports.getShipmentById = getShipmentById;
 const createShipment = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const time = new Date().toLocaleString('en-US', { timeZone: 'Africa/Nairobi' });
     try {
@@ -115,7 +212,7 @@ const createShipment = (req, res) => __awaiter(void 0, void 0, void 0, function*
         }
         if (authenticatedUser.role.toLowerCase() !== 'user') {
             console.log(`[${time}] Forbidden: Role=${authenticatedUser.role}, expected 'user'`);
-            res.status(403).json({ message: 'Forbidden: Only users can create shipments' });
+            res.status(403).json({ message: 'Forbidden: Only contact-forms can create shipments' });
             return;
         }
         if (userCognitoId !== authenticatedUser.userId) {
@@ -285,7 +382,7 @@ const getShipmentHistory = (req, res) => __awaiter(void 0, void 0, void 0, funct
         const { shipmentId, page = '1', limit = '10' } = req.query;
         if (authenticatedUser.role.toLowerCase() === 'user' && userCognitoId !== authenticatedUser.userId) {
             console.log(`[${time}] Forbidden: userCognitoId=${userCognitoId}, authenticatedUserId=${authenticatedUser.userId}`);
-            res.status(403).json({ message: "Forbidden: Cannot access other users' shipment history" });
+            res.status(403).json({ message: "Forbidden: Cannot access other contact-forms' shipment history" });
             return;
         }
         const pageNum = parseInt(page, 10);
@@ -370,7 +467,7 @@ const updateShipment = (req, res) => __awaiter(void 0, void 0, void 0, function*
         }
         if (authenticatedUser.role.toLowerCase() !== 'user') {
             console.log(`[${time}] Forbidden: Only users can update shipments`);
-            res.status(403).json({ message: 'Forbidden: Only users can update shipments' });
+            res.status(403).json({ message: 'Forbidden: Only contact-forms can update shipments' });
             return;
         }
         const updatedShipment = yield (0, database_1.retryTransaction)((tx) => __awaiter(void 0, void 0, void 0, function* () {

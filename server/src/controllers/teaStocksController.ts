@@ -70,9 +70,12 @@ const fieldNameMapping: { [key: string]: string } = {
     admincognitoid: "adminCognitoId",
 };
 
-export const getStock = async (req: Request, res: Response): Promise<void> => {
+export const getStocks = async (req: Request, res: Response): Promise<void> => {
     try {
-        const parsedQuery = getStockQuerySchema.safeParse(req.query);
+        const parsedQuery = getStockQuerySchema.safeParse({
+            ...req.query,
+            assignmentStatus: req.query.assignmentStatus || "all",
+        });
         if (!parsedQuery.success) {
             res.status(400).json({
                 message: "Invalid query parameters",
@@ -85,12 +88,13 @@ export const getStock = async (req: Request, res: Response): Promise<void> => {
             minWeight,
             batchNumber,
             lotNo,
-            page,
-            limit,
+            page = 1,
+            limit = 10,
             grade,
             broker,
             search,
             onlyFavorites,
+            assignmentStatus,
         } = parsedQuery.data;
 
         const authenticatedUser = authenticateUser(req, res);
@@ -112,20 +116,25 @@ export const getStock = async (req: Request, res: Response): Promise<void> => {
         if (lotNo) {
             where.lotNo = lotNo;
         }
-        if (grade) {
+        if (grade && grade !== "any") {
             where.grade = grade as TeaGrade;
         }
-        if (broker) {
+        if (broker && broker !== "any") {
             where.broker = broker as Broker;
         }
         if (search) {
             where.OR = [
                 { lotNo: { contains: search, mode: "insensitive" } },
                 { mark: { contains: search, mode: "insensitive" } },
+                { saleCode: { contains: search, mode: "insensitive" } },
+                { invoiceNo: { contains: search, mode: "insensitive" } },
             ];
         }
         if (onlyFavorites) {
             where.favorites = { some: { userCognitoId: userId } };
+        }
+        if (assignmentStatus !== "all") {
+            where.assignments = assignmentStatus === "assigned" ? { some: {} } : { none: {} };
         }
         if (!isAdmin) {
             where.assignments = {
@@ -138,13 +147,20 @@ export const getStock = async (req: Request, res: Response): Promise<void> => {
                 where,
                 include: {
                     assignments: {
-                        where: { userCognitoId: userId },
-                        select: { assignedWeight: true, assignedAt: true },
+                        take: 1, // Ensure only one assignment per stock
+                        include: {
+                            user: {
+                                select: {
+                                    name: true,
+                                    email: true,
+                                },
+                            },
+                        },
                     },
                 },
                 orderBy: { updatedAt: "desc" },
-                skip: (page - 1) * limit,
-                take: limit,
+                skip: (Number(page) - 1) * Number(limit),
+                take: Number(limit),
             }),
             prisma.stocks.count({ where }),
         ]);
@@ -173,14 +189,23 @@ export const getStock = async (req: Request, res: Response): Promise<void> => {
                 lowStockThreshold: stock.lowStockThreshold ? Number(stock.lowStockThreshold) : null,
                 createdAt: stock.createdAt.toISOString(),
                 updatedAt: stock.updatedAt.toISOString(),
-                assignedWeight: stock.assignments[0]?.assignedWeight ?? null,
-                assignedAt: stock.assignments[0]?.assignedAt?.toISOString() ?? null,
+                assignments: stock.assignments.map((assignment) => ({
+                    userCognitoId: assignment.userCognitoId,
+                    assignedWeight: Number(assignment.assignedWeight),
+                    assignedAt: assignment.assignedAt?.toISOString() ?? null,
+                    user: assignment.user
+                        ? {
+                            name: assignment.user.name,
+                            email: assignment.user.email,
+                        }
+                        : null,
+                })),
             })),
             meta: {
-                page,
-                limit,
+                page: Number(page),
+                limit: Number(limit),
                 total,
-                totalPages: Math.ceil(total / limit),
+                totalPages: Math.ceil(total / Number(limit)),
             },
         });
     } catch (error) {

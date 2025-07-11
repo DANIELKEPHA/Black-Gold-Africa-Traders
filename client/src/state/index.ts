@@ -123,11 +123,6 @@ export interface StocksResponse {
     lowStockThreshold: number | null;
     assignedWeight?: number | null;
     assignedAt?: string | null; // ← make optional
-    assignments?: Array<{
-        userCognitoId: string;
-        assignedWeight: number;
-        assignedAt: string;
-    }>;
     adminCognitoId: string;
     admin?: {
         id: number;
@@ -138,6 +133,15 @@ export interface StocksResponse {
     } | null; // ← make optional
     createdAt: string;
     updatedAt: string;
+    assignments: Array<{
+        userCognitoId: string;
+        assignedWeight: number;
+        assignedAt: string;
+        user?: {
+            name?: string;
+            email?: string;
+        };
+    }>;
 }
 
 export interface FilterOptions {
@@ -221,7 +225,8 @@ export interface FiltersState {
     batchNumber?: string;
     lowStockThreshold?: number;
     selectAll?: boolean;
-
+    assignmentStatus?: "all" | "assigned" | "unassigned";
+    user?: string;
 }
 
 export interface AdminDetails {

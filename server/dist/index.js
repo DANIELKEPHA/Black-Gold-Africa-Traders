@@ -38,6 +38,7 @@ app.get('/health', (req, res) => {
 console.log("Mounting routes...");
 app.use("/admin", adminRoutes_1.default);
 app.use("/users", userRoutes_1.default);
+app.use("/contact-forms", userRoutes_1.default);
 app.use("/catalogs", catalogRoutes_1.default);
 app.use("/outLots", outLotsRoutes_1.default);
 app.use("/sellingPrices", sellingPriceRouter_1.default);

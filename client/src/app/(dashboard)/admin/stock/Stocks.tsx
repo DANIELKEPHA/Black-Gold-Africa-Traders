@@ -1,18 +1,19 @@
 "use client";
 
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslation } from "react-i18next";
 import { Toaster, toast } from "sonner";
 import { useGetAuthUserQuery, useGetStocksQuery, useDeleteStocksMutation } from "@/state/api";
-import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Loader2 } from "lucide-react";
-import Loading from "@/components/Loading";
 import { useAppSelector } from "@/state/redux";
+import Loading from "@/components/Loading";
 import StocksActions from "@/app/(dashboard)/admin/stock/StocksActions";
 import StockTable from "@/app/(dashboard)/admin/stock/StockTable";
 import StockGrid from "@/app/(dashboard)/admin/stock/StockGrid";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {Button} from "@/components/ui/button";
+import {Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle} from "@/components/ui/dialog";
 
 const Stocks: React.FC = () => {
     const { t } = useTranslation(["stocks", "general"]);
@@ -32,6 +33,7 @@ const Stocks: React.FC = () => {
             ...filters,
             page,
             limit,
+            assignmentStatus: filters.assignmentStatus || "all",
         },
         { skip: !authUser?.cognitoInfo?.userId },
     );
@@ -40,6 +42,13 @@ const Stocks: React.FC = () => {
 
     const stocksData = stocksDataResponse?.data || [];
     const { totalPages = 1 } = stocksDataResponse?.meta || {};
+
+    // Calculate summary counts
+    const summary = useMemo(() => {
+        const assignedCount = stocksData.filter((stock) => stock.assignments && stock.assignments.length > 0).length;
+        const unassignedCount = stocksData.length - assignedCount;
+        return { assignedCount, unassignedCount };
+    }, [stocksData]);
 
     const handleSelectItem = useCallback(
         (itemId: number) => {
@@ -74,19 +83,6 @@ const Stocks: React.FC = () => {
         setIsDeleteBulkOpen(true);
     };
 
-    const handleDelete = async (id: number) => {
-        try {
-            setIsDeleting((prev) => ({ ...prev, [id]: true }));
-            await deleteStocks({ ids: [id] }).unwrap();
-            setSelectedItems((prev) => prev.filter((itemId) => itemId !== id));
-            toast.success(t("stocks:success.stockDeleted", { defaultValue: "Stock deleted" }));
-        } catch (error: any) {
-            toast.error(t("stocks:errors.deleteFailed", { defaultValue: "Deletion failed" }));
-        } finally {
-            setIsDeleting((prev) => ({ ...prev, [id]: false }));
-        }
-    };
-
     const confirmBulkDelete = async () => {
         try {
             setIsBulkDeleting(true);
@@ -108,13 +104,27 @@ const Stocks: React.FC = () => {
     return (
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-0">
             <Toaster richColors position="top-right" />
+            <Card className="mb-4">
+                <CardHeader>
+                    <CardTitle>{t("stocks:summary", { defaultValue: "Stock Summary" })}</CardTitle>
+                </CardHeader>
+                <CardContent className="flex gap-4">
+                    <div className="flex items-center gap-2">
+                        <span className="text-green-600">{t("stocks:assigned", { defaultValue: "Assigned" })}:</span>
+                        <span>{summary.assignedCount}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <span className="text-yellow-600">{t("stocks:unassigned", { defaultValue: "Unassigned" })}:</span>
+                        <span>{summary.unassignedCount}</span>
+                    </div>
+                </CardContent>
+            </Card>
             <StocksActions
                 stocksData={stocksData}
                 selectedItems={selectedItems}
                 handleSelectAll={handleSelectAll}
                 handleBulkDelete={handleBulkDelete}
             />
-
             {viewMode === "list" ? (
                 <StockTable
                     stocksData={stocksData}
@@ -126,7 +136,7 @@ const Stocks: React.FC = () => {
                     stocksData={stocksData}
                     selectedItems={selectedItems}
                     handleSelectItem={handleSelectItem}
-                    handleDelete={handleDelete}
+                    handleDelete={handleBulkDelete}
                     isDeleting={isDeleting}
                 />
             )}
@@ -140,8 +150,8 @@ const Stocks: React.FC = () => {
                         {t("general:pagination.previous", { defaultValue: "Previous" })}
                     </Button>
                     <span className="text-gray-700 dark:text-gray-200">
-                        {t("general:pagination.page", { page, totalPages })}
-                    </span>
+            {t("general:pagination.page", { page, totalPages })}
+          </span>
                     <Button
                         disabled={page === totalPages || isLoading}
                         onClick={() => setPage((prev) => prev + 1)}

@@ -1,7 +1,7 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 import { fetchAuthSession, getCurrentUser } from "aws-amplify/auth";
 import { cleanParams, createNewUserInDatabase, withToast } from "@/lib/utils";
-import { User, Admin } from "@/types/prismaTypes";
+import {User, Admin, Contact} from "@/types/prismaTypes";
 import { FetchArgs, BaseQueryFn, FetchBaseQueryError, TagDescription } from "@reduxjs/toolkit/query";
 import {
     AuthUserResponse,
@@ -85,6 +85,7 @@ export const api = createApi({
         "Stocks",
         "FilterPresets",
         "ShipmentHistory",
+        'Contacts',
     ],
     endpoints: (builder) => ({
         // Existing Endpoints (Unchanged)
@@ -167,6 +168,7 @@ export const api = createApi({
             providesTags: ["Admin"],
         }),
 
+        //users endpoints
         getLoggedInUsers: builder.query<GetLoggedInUsersResponse, GetLoggedInUsersParams>({
             query: ({ page, limit, search, includeShipments, includeFavoritedStocks, includeAssignedStocks }) => ({
                 url: "/users/logged-in",
@@ -206,6 +208,34 @@ export const api = createApi({
                 { type: "Users", id: userCognitoId },
             ],
         }),
+        createUser: builder.mutation<User, Partial<User>>({
+            query: (user) => ({
+                url: "/users/register",
+                method: "POST",
+                body: user,
+            }),
+            invalidatesTags: ["Users"],
+            async onQueryStarted(_, { queryFulfilled }) {
+                await withToast(queryFulfilled, {
+                    success: "User created successfully!",
+                    error: "Failed to create user.",
+                });
+            },
+        }),
+        updateUser: builder.mutation<User, { userCognitoId: string } & Partial<User>>({
+            query: ({ userCognitoId, ...updatedUser }) => ({
+                url: `/users/${userCognitoId}`,
+                method: "PUT",
+                body: updatedUser,
+            }),
+            invalidatesTags: (result) => [{ type: "Users", id: result?.id }],
+            async onQueryStarted(_, { queryFulfilled }) {
+                await withToast(queryFulfilled, {
+                    success: "Settings updated successfully!",
+                    error: "Failed to update settings.",
+                });
+            },
+        }),
 
         createAdminSettings: builder.mutation<Admin, Partial<Admin>>({
             query: (admin) => ({
@@ -241,34 +271,6 @@ export const api = createApi({
                 params: { includeShipments: true, includeFilterPresets: true },
             }),
             providesTags: ["Users"],
-        }),
-        createUser: builder.mutation<User, Partial<User>>({
-            query: (user) => ({
-                url: "/users/register",
-                method: "POST",
-                body: user,
-            }),
-            invalidatesTags: ["Users"],
-            async onQueryStarted(_, { queryFulfilled }) {
-                await withToast(queryFulfilled, {
-                    success: "User created successfully!",
-                    error: "Failed to create user.",
-                });
-            },
-        }),
-        updateUser: builder.mutation<User, { userCognitoId: string } & Partial<User>>({
-            query: ({ userCognitoId, ...updatedUser }) => ({
-                url: `/users/${userCognitoId}`,
-                method: "PUT",
-                body: updatedUser,
-            }),
-            invalidatesTags: (result) => [{ type: "Users", id: result?.id }],
-            async onQueryStarted(_, { queryFulfilled }) {
-                await withToast(queryFulfilled, {
-                    success: "Settings updated successfully!",
-                    error: "Failed to update settings.",
-                });
-            },
         }),
 
         // Catalog Endpoints
@@ -1235,6 +1237,7 @@ export const api = createApi({
             query: () => "/stocks/filters",
             providesTags: ["Stocks"],
         }),
+
         toggleFavorite: builder.mutation<
             { message: string; stocksId: number; userCognitoId: string; favorited: boolean },
             { userCognitoId: string; stocksId: number }
@@ -1255,6 +1258,7 @@ export const api = createApi({
                 });
             },
         }),
+
         assignStock: builder.mutation<
             {
                 message: string;
@@ -1354,6 +1358,7 @@ export const api = createApi({
             providesTags: ['Users'],
         }),
 
+        //shipment endpoints
         getShipments: builder.query<
             { data: Shipment[]; meta: { total: number; page: number; limit: number } },
             { page: number; limit: number; search?: string; status?: string; userCognitoId?: string; stocksId?: number }
@@ -1383,7 +1388,32 @@ export const api = createApi({
                 }
             },
         }),
-
+        getShipmentById: builder.query<{ data: Shipment }, string>({
+            query: (id) => ({
+                url: `/shipments/${id}`,
+                method: 'GET',
+            }),
+            providesTags: ['Shipments'],
+            async onQueryStarted(id, { queryFulfilled }) {
+                try {
+                    const { data } = await queryFulfilled;
+                    console.log(
+                        `[${new Date().toLocaleString('en-US', { timeZone: 'Africa/Nairobi' })}] getShipmentById: Shipment ${id}`
+                    );
+                } catch (error: any) {
+                    console.error(
+                        `[${new Date().toLocaleString('en-US', { timeZone: 'Africa/Nairobi' })}] getShipmentById error:`,
+                        {
+                            status: error?.error?.status,
+                            message: error?.error?.data?.message || 'Unknown error',
+                            details: error?.error?.data?.details || null,
+                            id,
+                            fullError: JSON.stringify(error, null, 2),
+                        }
+                    );
+                }
+            },
+        }),
         createShipment: builder.mutation<{ data: Shipment }, { items: { stocksId: number; totalWeight: number }[]; shipmentDate: string; status: string; consignee: string; vessel: string; shipmark: string; packagingInstructions: string; additionalInstructions?: string; userCognitoId: string }>({
             query: (body) => ({
                 url: `/shipments/users/${body.userCognitoId}/shipments`,
@@ -1459,6 +1489,8 @@ export const api = createApi({
                 }
             },
         }),
+
+        //contact endpoints
         createContact: builder.mutation<
             {
                 id: number;
@@ -1490,6 +1522,54 @@ export const api = createApi({
                 await withToast(queryFulfilled, {
                     success: "Message sent successfully!",
                     error: "Failed to send message.",
+                });
+            },
+        }),
+        getContacts: builder.query<
+            { data: Contact[]; meta: { page: number; limit: number; total: number; totalPages: number } },
+            { page?: number; limit?: number; search?: string }
+        >({
+            query: ({ page = 1, limit = 10, search }) => ({
+                url: '/users',
+                params: cleanParams({ page, limit, search }),
+            }),
+            providesTags: (result) =>
+                result?.data
+                    ? [
+                        ...result.data.map(({ id }) => ({ type: 'Contacts' as const, id })),
+                        { type: 'Contacts' as const, id: 'LIST' },
+                    ]
+                    : [{ type: 'Contacts' as const, id: 'LIST' }],
+            async onQueryStarted(params, { queryFulfilled }) {
+                try {
+                    const { data } = await queryFulfilled;
+                    console.log(
+                        `[${new Date().toLocaleString('en-US', { timeZone: 'Africa/Nairobi' })}] getContacts: ${JSON.stringify(data.meta)}`
+                    );
+                } catch (error: any) {
+                    console.error(
+                        `[${new Date().toLocaleString('en-US', { timeZone: 'Africa/Nairobi' })}] getContacts error:`,
+                        {
+                            status: error?.error?.status,
+                            message: error?.error?.data?.message,
+                            details: error?.error?.data?.details,
+                            params,
+                        }
+                    );
+                }
+            },
+        }),
+
+        deleteContact: builder.mutation<{ message: string }, { id: number }>({
+            query: ({ id }) => ({
+                url: `/contacts/${id}`,
+                method: 'DELETE',
+            }),
+            invalidatesTags: [{ type: 'Contacts', id: 'LIST' }],
+            async onQueryStarted(_, { queryFulfilled }) {
+                await withToast(queryFulfilled, {
+                    success: 'Contact submission deleted successfully!',
+                    error: 'Failed to delete contact submission.',
                 });
             },
         }),
@@ -1545,8 +1625,11 @@ export const {
     useUnassignStockMutation,
     useGetUserStockHistoryQuery,
     useGetShipmentsQuery,
+    useGetShipmentByIdQuery,
     useCreateShipmentMutation,
     useUpdateShipmentMutation,
     useUpdateShipmentStatusMutation,
     useCreateContactMutation,
+    useGetContactsQuery,
+    useDeleteContactMutation,
 } = api;

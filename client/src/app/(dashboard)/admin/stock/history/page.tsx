@@ -1,441 +1,259 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
-import { useRouter } from "next/navigation";
-import { useGetLoggedInUsersQuery, useGetUserStockHistoryQuery } from "@/state/api";
+import { useEffect, useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import { useTranslation } from "react-i18next";
+import { Toaster, toast } from "sonner";
+import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
-    Box,
-    Paper,
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select";
+import {
     Table,
     TableBody,
     TableCell,
-    TableContainer,
     TableHead,
+    TableHeader,
     TableRow,
-    TablePagination,
-    TextField,
-    Button,
-    Typography,
-    CircularProgress,
-    Alert,
-    Fade,
-    TableSortLabel,
-    InputAdornment,
-    Skeleton,
-    createTheme,
-    ThemeProvider,
-} from "@mui/material";
-import { Search as SearchIcon, ArrowBack as ArrowBackIcon } from "@mui/icons-material";
-import { Line } from "react-chartjs-2";
-import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend, Filler } from "chart.js";
-import { skipToken } from "@reduxjs/toolkit/query";
-import debounce from "lodash.debounce";
-import {ApiError} from "@/state/stock";
+} from "@/components/ui/table";
+import { Filter, Search, ChevronLeft, ChevronRight } from "lucide-react";
+import { FiltersState, setFilters } from "@/state";
+import { useGetStocksQuery } from "@/state/api";
+import { format } from "date-fns";
 
-ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend, Filler);
+// Assuming formatBrokerName is defined in your utils
+const formatBrokerName = (broker: string | null) => (broker ? broker.replace(/_/g, " ") : null);
 
-const theme = createTheme({
-    palette: {
-        primary: { main: "#1976d2" },
-        secondary: { main: "#757575" },
-        background: { default: "#f5f7fa", paper: "#ffffff" },
-    },
-    typography: {
-        fontFamily: "Roboto, Arial, sans-serif",
-        h4: { fontWeight: 700 },
-        h5: { fontWeight: 600 },
-        h6: { fontWeight: 500 },
-    },
-    components: {
-        MuiPaper: {
-            styleOverrides: { root: { borderRadius: 12, boxShadow: "0 4px 12px rgba(0,0,0,0.1)" } },
-        },
-        MuiButton: {
-            styleOverrides: { root: { borderRadius: 8, textTransform: "none", padding: "8px 16px" } },
-        },
-        MuiTableCell: {
-            styleOverrides: { head: { fontWeight: 600, color: "#424242" } },
-        },
-    },
-});
+// Define filter fields for the assignment history
+interface FilterField {
+    key: keyof FiltersState;
+    placeholder: string;
+    options?: string[];
+    type?: "text" | "select";
+}
 
-const AdminStockHistoryPage = () => {
-    const router = useRouter();
-    const [page, setPage] = useState(0);
-    const [rowsPerPage, setRowsPerPage] = useState(10);
-    const [search, setSearch] = useState("");
-    const [selectedUser, setSelectedUser] = useState<string | null>(null);
-    const [historyPage, setHistoryPage] = useState(0);
-    const [historyRowsPerPage, setHistoryRowsPerPage] = useState(10);
-    const [historySearch, setHistorySearch] = useState("");
-    const [sortBy, setSortBy] = useState<"assignedAt" | "stocksId" | "assignedWeight">("assignedAt");
-    const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
+const StockAssignmentHistoryPage: React.FC = () => {
+    const { t } = useTranslation(["stocks", "general"]);
+    const dispatch = useDispatch();
+    const filters = useSelector((state: any) => state.global.filters);
+    const [page, setPage] = useState(1);
+    const limit = 10;
 
-    const debouncedSetSearch = useMemo(() => debounce((value: string) => setSearch(value), 300), []);
-    const debouncedSetHistorySearch = useMemo(() => debounce((value: string) => setHistorySearch(value), 300), []);
-
-    const { data: usersResponse, isLoading: usersLoading, error: usersError } = useGetLoggedInUsersQuery({
-        page: page + 1,
-        limit: rowsPerPage,
-        search,
-        includeAssignedStocks: true,
-        includeShipments: false,
-        includeFavoritedStocks: false,
+    const { data, isLoading, error } = useGetStocksQuery({
+        ...filters,
+        page,
+        limit,
+        assignmentStatus: "assigned", // Only show assigned stocks
     });
 
-    const { data: historyResponse, isLoading: historyLoading, error: historyError } = useGetUserStockHistoryQuery(
-        selectedUser
-            ? {
-                userCognitoId: selectedUser,
-                page: historyPage + 1,
-                limit: historyRowsPerPage,
-                search: historySearch,
-                sortBy,
-                sortOrder,
-            }
-            : skipToken
-    );
+    const filterFields: FilterField[] = [
+        {
+            key: "lotNo",
+            placeholder: "Lot Number",
+            type: "text",
+        },
+        {
+            key: "saleCode",
+            placeholder: "Sale Code",
+            type: "text",
+        },
+        {
+            key: "user",
+            placeholder: "User",
+            type: "text",
+        },
+    ];
 
-    const handleChangePage = (event: unknown, newPage: number) => {
-        setPage(newPage);
+    const handleFilterChange = (key: keyof FiltersState, value: string | undefined) => {
+        dispatch(setFilters({ [key]: value || undefined }));
     };
 
-    const handleChangeRowsPerPage = (event: React.ChangeEvent<HTMLInputElement>) => {
-        setRowsPerPage(parseInt(event.target.value, 10));
-        setPage(0);
+    const getInputValue = (key: keyof FiltersState): string => {
+        return filters[key] ?? "";
     };
 
-    const handleHistoryChangePage = (event: unknown, newPage: number) => {
-        setHistoryPage(newPage);
-    };
-
-    const handleHistoryChangeRowsPerPage = (event: React.ChangeEvent<HTMLInputElement>) => {
-        setHistoryRowsPerPage(parseInt(event.target.value, 10));
-        setHistoryPage(0);
-    };
-
-    const handleSort = (newSortBy: typeof sortBy) => {
-        if (newSortBy === sortBy) {
-            setSortOrder(sortOrder === "asc" ? "desc" : "asc");
-        } else {
-            setSortBy(newSortBy);
-            setSortOrder("desc");
-        }
-    };
-
-    const chartData = {
-        labels: Array.isArray(historyResponse)
-            ? historyResponse.map((a) =>
-                new Date(a.assignedAt).toLocaleDateString("en-US", {
-                    timeZone: "Africa/Nairobi",
+    useEffect(() => {
+        if (error) {
+            toast.error(
+                t("stocks:errors.fetchAssignments", {
+                    defaultValue: "Failed to fetch assignment history",
                 }),
-            )
-            : [],
-        datasets: [
-            {
-                label: "Assigned Weight Over Time",
-                data: Array.isArray(historyResponse)
-                    ? historyResponse.map((a) => a.assignedWeight)
-                    : [],
-                borderColor: "#1976d2",
-                backgroundColor: "rgba(25, 118, 210, 0.2)",
-                fill: true,
-                tension: 0.4,
-                pointRadius: 4,
-                pointHoverRadius: 6,
-            },
-        ],
-    };
-
-
-    const chartOptions = {
-        responsive: true,
-        plugins: {
-            legend: { position: "top" as const, labels: { font: { size: 14 } } },
-            tooltip: { enabled: true },
-            title: { display: false },
-        },
-        scales: {
-            x: { grid: { display: false } },
-            y: { beginAtZero: true, grid: { color: "rgba(0, 0, 0, 0.05)" } },
-        },
-    };
-
-    const selectedUserName = usersResponse?.data?.data?.find((user) => user.userCognitoId === selectedUser)?.name || selectedUser || "N/A";
-
-    const handleBackToStocks = () => {
-        router.push("/admin/stock");
-    };
-
-    const isFetchBaseQueryError = (error: unknown): error is ApiError => {
-        return typeof error === "object" && error !== null && "status" in error && "data" in error;
-    };
-
-    if (usersLoading) {
-        return (
-            <Box sx={{ p: 3, maxWidth: 1200, mx: "auto" }}>
-                <Skeleton variant="rectangular" height={60} sx={{ mb: 2, borderRadius: 2 }} />
-                <Skeleton variant="rectangular" height={400} sx={{ borderRadius: 2 }} />
-            </Box>
-        );
-    }
-
-    if (usersError) {
-        return (
-            <Box sx={{ p: 3, maxWidth: 1200, mx: "auto" }}>
-                <Alert severity="error" sx={{ borderRadius: 2 }}>
-                    {isFetchBaseQueryError(usersError)
-                        ? usersError.data.message || usersError.data.error || "Failed to load users."
-                        : "An unexpected error occurred while loading users."}
-                </Alert>
-            </Box>
-        );
-    }
+            );
+        }
+    }, [error, t]);
 
     return (
-        <ThemeProvider theme={theme}>
-            <Box sx={{ p: { xs: 2, md: 3 }, maxWidth: 1200, mx: "auto", bgcolor: "background.default", minHeight: "100vh" }}>
-                <Fade in timeout={500}>
-                    <Box sx={{ mb: 4, py: 2, px: 3, bgcolor: "primary.main", color: "white", borderRadius: 2 }}>
-                        <Typography variant="h4" sx={{ fontWeight: 700 }}>
-                            User Stock Assignment History
-                        </Typography>
-                    </Box>
-                </Fade>
+        <div className="container mx-auto p-6">
+            <Toaster position="top-right" richColors />
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-6">
+                {t("stocks:assignmentHistory", { defaultValue: "Stock Assignment History" })}
+            </h1>
 
-                <TextField
-                    label="Search Users"
-                    variant="outlined"
-                    value={search}
-                    onChange={(e) => debouncedSetSearch(e.target.value)}
-                    InputProps={{
-                        startAdornment: (
-                            <InputAdornment position="start">
-                                <SearchIcon />
-                            </InputAdornment>
-                        ),
-                    }}
-                    sx={{ mb: 3, width: { xs: "100%", sm: 300 }, bgcolor: "white", borderRadius: 1 }}
-                    aria-label="Search users by name, email, or cognito ID"
-                    inputProps={{ "data-testid": "user-search-input" }}
-                />
+            {/* Filters */}
+            <div className="bg-white dark:bg-gray-900 rounded-lg shadow-md p-4 mb-6">
+                <div className="flex flex-wrap gap-4">
+                    {filterFields.map(({ key, placeholder, type, options }) => (
+                        <div key={key} className="flex flex-col w-60">
+                            <Label className="font-medium text-gray-700 dark:text-gray-300 mb-1.5">
+                                {t(`stocks:${key}`, { defaultValue: placeholder })}
+                            </Label>
+                            {type === "select" ? (
+                                <Select
+                                    value={filters[key] ?? "any"}
+                                    onValueChange={(value) =>
+                                        handleFilterChange(key, value === "any" ? undefined : value)
+                                    }
+                                    disabled={isLoading}
+                                >
+                                    <SelectTrigger className="rounded-md border-indigo-500 dark:border-indigo-600 bg-white dark:bg-gray-900 focus:ring-indigo-500">
+                                        <SelectValue
+                                            placeholder={t(`stocks:${placeholder}`, { defaultValue: placeholder })}
+                                        />
+                                    </SelectTrigger>
+                                    <SelectContent className="bg-white dark:bg-gray-900 border-indigo-500">
+                                        <SelectItem value="any">
+                                            {t(`stocks:any${key.charAt(0).toUpperCase() + key.slice(1)}`, {
+                                                defaultValue: `Any ${key}`,
+                                            })}
+                                        </SelectItem>
+                                        {options?.map((option) => (
+                                            <SelectItem key={option} value={option}>
+                                                {option}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            ) : (
+                                <Input
+                                    type={type}
+                                    placeholder={t(`stocks:${placeholder}`, { defaultValue: placeholder })}
+                                    value={getInputValue(key)}
+                                    onChange={(e) => handleFilterChange(key, e.target.value)}
+                                    className="rounded-md border-indigo-500 dark:border-indigo-600 bg-white dark:bg-gray-900 focus:ring-indigo-500"
+                                    disabled={isLoading}
+                                />
+                            )}
+                        </div>
+                    ))}
+                </div>
+            </div>
 
-                <Fade in timeout={500}>
-                    <TableContainer component={Paper} sx={{ mb: 4 }}>
-                        <Table aria-label="Users table">
-                            <TableHead>
-                                <TableRow sx={{ bgcolor: "grey.100" }}>
-                                    <TableCell>Name</TableCell>
-                                    <TableCell>Email</TableCell>
-                                    <TableCell>Cognito ID</TableCell>
-                                    <TableCell>Actions</TableCell>
+            {/* Table */}
+            <div className="bg-white dark:bg-gray-900 rounded-lg shadow-md p-4 overflow-x-auto">
+                {isLoading ? (
+                    <div className="text-center text-gray-500 dark:text-gray-400">
+                        {t("stocks:loading", { defaultValue: "Loading..." })}
+                    </div>
+                ) : data?.data.length ? (
+                    <>
+                        <Table>
+                            <TableHeader>
+                                <TableRow>
+                                    <TableHead>{t("stocks:lotNo", { defaultValue: "Lot No" })}</TableHead>
+                                    <TableHead>{t("stocks:mark", { defaultValue: "Mark" })}</TableHead>
+                                    <TableHead>{t("stocks:grade", { defaultValue: "Grade" })}</TableHead>
+                                    <TableHead>{t("stocks:broker", { defaultValue: "Broker" })}</TableHead>
+                                    <TableHead>{t("stocks:saleCode", { defaultValue: "Sale Code" })}</TableHead>
+                                    <TableHead>{t("stocks:bags", { defaultValue: "Bags" })}</TableHead>
+                                    <TableHead>{t("stocks:weight", { defaultValue: "Weight" })}</TableHead>
+                                    <TableHead>{t("stocks:purchaseValue", { defaultValue: "Purchase Value" })}</TableHead>
+                                    <TableHead>{t("stocks:totalPurchaseValue", { defaultValue: "Total Purchase Value" })}</TableHead>
+                                    <TableHead>{t("stocks:agingDays", { defaultValue: "Aging Days" })}</TableHead>
+                                    <TableHead>{t("stocks:penalty", { defaultValue: "Penalty" })}</TableHead>
+                                    <TableHead>{t("stocks:bgtCommission", { defaultValue: "BGT Commission" })}</TableHead>
+                                    <TableHead>{t("stocks:maerskFee", { defaultValue: "Maersk Fee" })}</TableHead>
+                                    <TableHead>{t("stocks:commission", { defaultValue: "Commission" })}</TableHead>
+                                    <TableHead>{t("stocks:netPrice", { defaultValue: "Net Price" })}</TableHead>
+                                    <TableHead>{t("stocks:total", { defaultValue: "Total" })}</TableHead>
+                                    <TableHead>{t("stocks:invoiceNo", { defaultValue: "Invoice No" })}</TableHead>
+                                    <TableHead>{t("stocks:assignedWeight", { defaultValue: "Assigned Weight" })}</TableHead>
+                                    <TableHead>{t("stocks:assignedAt", { defaultValue: "Assigned At" })}</TableHead>
+                                    <TableHead>{t("stocks:user", { defaultValue: "Assigned To" })}</TableHead>
                                 </TableRow>
-                            </TableHead>
+                            </TableHeader>
                             <TableBody>
-                                {usersResponse?.data?.data?.length ? (
-                                    usersResponse.data.data.map((user, index) => (
-                                        <TableRow
-                                            key={user.userCognitoId}
-                                            sx={{
-                                                bgcolor: index % 2 === 0 ? "white" : "grey.50",
-                                                "&:hover": { bgcolor: "grey.100" },
-                                                transition: "background-color 0.2s",
-                                            }}
-                                            data-testid={`user-row-${user.userCognitoId}`}
-                                        >
-                                            <TableCell>{user.name || "N/A"}</TableCell>
-                                            <TableCell>{user.email || "N/A"}</TableCell>
-                                            <TableCell>{user.userCognitoId}</TableCell>
-                                            <TableCell>
-                                                <Button
-                                                    variant="contained"
-                                                    color="primary"
-                                                    size="small"
-                                                    onClick={() => {
-                                                        setSelectedUser(user.userCognitoId);
-                                                        setHistoryPage(0);
-                                                        setHistorySearch("");
-                                                    }}
-                                                    aria-label={`View stock history for ${user.name || user.userCognitoId}`}
-                                                    data-testid={`view-history-${user.userCognitoId}`}
-                                                >
-                                                    View Stock History
-                                                </Button>
+                                {data.data.map((stock) =>
+                                    stock.assignments.map((assignment) => (
+                                        <TableRow key={`${stock.id}-${assignment.userCognitoId}`}>
+                                            <TableCell className="text-gray-800 dark:text-gray-200">{stock.lotNo}</TableCell>
+                                            <TableCell className="text-gray-800 dark:text-gray-200">{stock.mark ?? "N/A"}</TableCell>
+                                            <TableCell className="text-gray-800 dark:text-gray-200">{stock.grade ?? "N/A"}</TableCell>
+                                            <TableCell className="text-gray-800 dark:text-gray-200">{formatBrokerName(stock.broker) ?? "N/A"}</TableCell>
+                                            <TableCell className="text-gray-800 dark:text-gray-200">{stock.saleCode ?? "N/A"}</TableCell>
+                                            <TableCell className="text-gray-800 dark:text-gray-200">{stock.bags}</TableCell>
+                                            <TableCell className="text-gray-800 dark:text-gray-200">{stock.weight.toFixed(2)} kg</TableCell>
+                                            <TableCell className="text-gray-800 dark:text-gray-200">${stock.purchaseValue.toFixed(2)}</TableCell>
+                                            <TableCell className="text-gray-800 dark:text-gray-200">${stock.totalPurchaseValue.toFixed(2)}</TableCell>
+                                            <TableCell className="text-red-600 dark:text-red-800">{stock.agingDays}</TableCell>
+                                            <TableCell className="text-gray-800 dark:text-gray-200">${stock.penalty.toFixed(2)}</TableCell>
+                                            <TableCell className="text-gray-800 dark:text-gray-200">${stock.bgtCommission.toFixed(2)}</TableCell>
+                                            <TableCell className="text-gray-800 dark:text-gray-200">${stock.maerskFee.toFixed(2)}</TableCell>
+                                            <TableCell className="text-gray-800 dark:text-gray-200">${stock.commission.toFixed(2)}</TableCell>
+                                            <TableCell className="text-gray-800 dark:text-gray-200">${stock.netPrice.toFixed(2)}</TableCell>
+                                            <TableCell className="text-gray-800 dark:text-gray-200">${stock.total.toFixed(2)}</TableCell>
+                                            <TableCell className="text-gray-800 dark:text-gray-200">{stock.invoiceNo ?? "N/A"}</TableCell>
+                                            <TableCell className="text-gray-800 dark:text-gray-200">{assignment.assignedWeight.toFixed(2)} kg</TableCell>
+                                            <TableCell className="text-gray-800 dark:text-gray-200">
+                                                {assignment.assignedAt
+                                                    ? format(new Date(assignment.assignedAt), "PPp")
+                                                    : t("stocks:notAvailable", { defaultValue: "N/A" })}
+                                            </TableCell>
+                                            <TableCell className="text-gray-800 dark:text-gray-200">
+                                                {assignment.user?.name ||
+                                                    assignment.user?.email ||
+                                                    assignment.userCognitoId ||
+                                                    t("stocks:notAvailable", { defaultValue: "N/A" })}
                                             </TableCell>
                                         </TableRow>
-                                    ))
-                                ) : (
-                                    <TableRow>
-                                        <TableCell colSpan={4} align="center">
-                                            <Typography color="textSecondary">No users found.</Typography>
-                                        </TableCell>
-                                    </TableRow>
+                                    )),
                                 )}
                             </TableBody>
                         </Table>
-                        <TablePagination
-                            rowsPerPageOptions={[5, 10, 25]}
-                            component="div"
-                            count={usersResponse?.data?.meta?.total || 0}
-                            rowsPerPage={rowsPerPage}
-                            page={page}
-                            onPageChange={handleChangePage}
-                            onRowsPerPageChange={handleChangeRowsPerPage}
-                            sx={{ bgcolor: "grey.100" }}
-                            aria-label="User table pagination"
-                        />
-                    </TableContainer>
-                </Fade>
-
-                {selectedUser && (
-                    <Fade in timeout={500}>
-                        <Box sx={{ mt: 4 }}>
-                            <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 3, flexWrap: "wrap", gap: 2 }}>
-                                <Typography variant="h5">Stock Assignment History for {selectedUserName}</Typography>
+                        {/* Pagination */}
+                        <div className="flex justify-between items-center mt-4">
+                            <div className="text-gray-600 dark:text-gray-400">
+                                {t("stocks:showing", {
+                                    defaultValue: "Showing {{start}} to {{end}} of {{total}}",
+                                    start: (page - 1) * limit + 1,
+                                    end: Math.min(page * limit, data?.meta.total || 0),
+                                    total: data?.meta.total || 0,
+                                })}
+                            </div>
+                            <div className="flex gap-2">
                                 <Button
-                                    variant="contained"
-                                    color="secondary"
-                                    startIcon={<ArrowBackIcon />}
-                                    onClick={handleBackToStocks}
-                                    aria-label="Back to stock management"
-                                    data-testid="back-to-stocks"
+                                    variant="outline"
+                                    onClick={() => setPage((p) => Math.max(p - 1, 1))}
+                                    disabled={page === 1 || isLoading}
+                                    aria-label={t("stocks:previousPage", { defaultValue: "Previous Page" })}
                                 >
-                                    Back to Stocks
+                                    <ChevronLeft className="w-4 h-4" />
                                 </Button>
-                            </Box>
-
-                            <TextField
-                                label="Search Stock Assignments"
-                                variant="outlined"
-                                value={historySearch}
-                                onChange={(e) => debouncedSetHistorySearch(e.target.value)}
-                                InputProps={{
-                                    startAdornment: (
-                                        <InputAdornment position="start">
-                                            <SearchIcon />
-                                        </InputAdornment>
-                                    ),
-                                }}
-                                sx={{ mb: 3, width: { xs: "100%", sm: 300 }, bgcolor: "white", borderRadius: 1 }}
-                                aria-label="Search stock assignments by lot number or other fields"
-                                inputProps={{ "data-testid": "history-search-input" }}
-                            />
-
-                            {historyLoading ? (
-                                <Box>
-                                    <Skeleton variant="rectangular" height={60} sx={{ mb: 2, borderRadius: 2 }} />
-                                    {[...Array(5)].map((_, i) => (
-                                        <Skeleton key={i} variant="rectangular" height={48} sx={{ mb: 1, borderRadius: 1 }} />
-                                    ))}
-                                </Box>
-                            ) : historyError ? (
-                                <Alert severity="error" sx={{ borderRadius: 2, mb: 3 }} data-testid="history-error">
-                                    {isFetchBaseQueryError(historyError)
-                                        ? historyError.data.message || historyError.data.error || "Failed to load stock history."
-                                        : "An unexpected error occurred while loading stock history."}
-                                </Alert>
-                            ) : !Array.isArray(historyResponse) || historyResponse.length === 0
-                                ? (
-                                <Alert severity="info" sx={{ borderRadius: 2, mb: 3 }} data-testid="no-history">
-                                    No stock assignments found for this user.
-                                </Alert>
-                            ) : (
-                                <>
-                                    <TableContainer component={Paper} sx={{ mb: 4 }}>
-                                        <Table aria-label="Stock assignment history table">
-                                            <TableHead>
-                                                <TableRow sx={{ bgcolor: "grey.100" }}>
-                                                    <TableCell>
-                                                        <TableSortLabel
-                                                            active={sortBy === "stocksId"}
-                                                            direction={sortBy === "stocksId" ? sortOrder : "asc"}
-                                                            onClick={() => handleSort("stocksId")}
-                                                            aria-label="Sort by Stock ID"
-                                                        >
-                                                            Stock ID
-                                                        </TableSortLabel>
-                                                    </TableCell>
-                                                    <TableCell>Sale Code</TableCell>
-                                                    <TableCell>Lot No</TableCell>
-                                                    <TableCell>Grade</TableCell>
-                                                    <TableCell>Broker</TableCell>
-                                                    <TableCell>Invoice No</TableCell>
-                                                    <TableCell>Bags</TableCell>
-                                                    <TableCell>
-                                                        <TableSortLabel
-                                                            active={sortBy === "assignedWeight"}
-                                                            direction={sortBy === "assignedWeight" ? sortOrder : "asc"}
-                                                            onClick={() => handleSort("assignedWeight")}
-                                                            aria-label="Sort by Assigned Weight"
-                                                        >
-                                                            Assigned Weight (kg)
-                                                        </TableSortLabel>
-                                                    </TableCell>
-                                                    <TableCell>
-                                                        <TableSortLabel
-                                                            active={sortBy === "assignedAt"}
-                                                            direction={sortBy === "assignedAt" ? sortOrder : "asc"}
-                                                            onClick={() => handleSort("assignedAt")}
-                                                            aria-label="Sort by Assigned At"
-                                                        >
-                                                            Assigned At
-                                                        </TableSortLabel>
-                                                    </TableCell>
-                                                </TableRow>
-                                            </TableHead>
-                                            <TableBody>
-                                                {historyResponse.map((assignment, index) => (
-                                                    <TableRow
-                                                        key={assignment.id}
-                                                        sx={{
-                                                            bgcolor: index % 2 === 0 ? "white" : "grey.50",
-                                                            "&:hover": { bgcolor: "grey.100" },
-                                                            transition: "background-color 0.2s",
-                                                        }}
-                                                        data-testid={`history-row-${assignment.id}`}
-                                                    >
-
-                                                    <TableCell>{assignment.stocksId}</TableCell>
-                                                        <TableCell>{assignment.details.saleCode || "N/A"}</TableCell>
-                                                        <TableCell>{assignment.details.lotNo || "N/A"}</TableCell>
-                                                        <TableCell>{assignment.details.grade || "N/A"}</TableCell>
-                                                        <TableCell>{assignment.details.broker || "N/A"}</TableCell>
-                                                        <TableCell>{assignment.details.invoiceNo || "N/A"}</TableCell>
-                                                        <TableCell>{assignment.details.bags || "N/A"}</TableCell>
-                                                        <TableCell>{assignment.assignedWeight.toFixed(2)}</TableCell>
-                                                        <TableCell>
-                                                            {new Date(assignment.assignedAt).toLocaleString("en-US", { timeZone: "Africa/Nairobi" })}
-                                                        </TableCell>
-                                                    </TableRow>
-                                                ))}
-                                            </TableBody>
-                                        </Table>
-                                        <TablePagination
-                                            rowsPerPageOptions={[5, 10, 25]}
-                                            component="div"
-                                            count={historyResponse?.length || 0}
-                                            rowsPerPage={historyRowsPerPage}
-                                            page={historyPage}
-                                            onPageChange={handleHistoryChangePage}
-                                            onRowsPerPageChange={handleHistoryChangeRowsPerPage}
-                                            sx={{ bgcolor: "grey.100" }}
-                                            aria-label="Stock history table pagination"
-                                        />
-                                    </TableContainer>
-                                    <Paper sx={{ p: 3, borderRadius: 2 }}>
-                                        <Typography variant="h6" sx={{ mb: 2 }}>
-                                            Assignment Weight Trend
-                                        </Typography>
-                                        <Line data={chartData} options={chartOptions} />
-                                    </Paper>
-                                </>
-                            )}
-                        </Box>
-                    </Fade>
+                                <Button
+                                    variant="outline"
+                                    onClick={() => setPage((p) => p + 1)}
+                                    disabled={page >= (data?.meta.totalPages || 1) || isLoading}
+                                    aria-label={t("stocks:nextPage", { defaultValue: "Next Page" })}
+                                >
+                                    <ChevronRight className="w-4 h-4" />
+                                </Button>
+                            </div>
+                        </div>
+                    </>
+                ) : (
+                    <div className="text-center text-gray-500 dark:text-gray-400">
+                        {t("stocks:noAssignments", { defaultValue: "No assignments found" })}
+                    </div>
                 )}
-            </Box>
-        </ThemeProvider>
+            </div>
+        </div>
     );
 };
 
-export default AdminStockHistoryPage;
+export default StockAssignmentHistoryPage;
