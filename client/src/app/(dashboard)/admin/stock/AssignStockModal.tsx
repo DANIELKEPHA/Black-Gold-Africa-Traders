@@ -74,6 +74,7 @@ const mapStocksResponseToStock = (stock: StocksResponse): Stock => ({
     adminCognitoId: stock.adminCognitoId,
     assignments: stock.assignments,
     admin: stock.admin ?? null,
+    isFavorited: false
 });
 
 interface AssignStockModalProps {
