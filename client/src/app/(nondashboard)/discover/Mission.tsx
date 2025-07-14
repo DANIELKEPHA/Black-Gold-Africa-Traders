@@ -70,11 +70,20 @@ const Mission = () => {
                         <h3 className="text-xl font-semibold text-green-700 mb-4">Collaborations</h3>
                         <div className="grid grid-cols-2 gap-4">
                             <div className="bg-white p-4 rounded-lg shadow-md flex items-center justify-center">
+                            <Image
+                                src="/eatta-logo.png"
+                                alt="EATTA"
+                                width={146} // Adjust based on your image dimensions
+                                height={68} // Adjust based on your image dimensions
+                                className="object-contain"
+                            />
+                        </div>
+                            <div className="bg-white p-4 rounded-lg shadow-md flex items-center justify-center">
                                 <Image
-                                    src="/eatta-logo.png"
-                                    alt="EATTA"
-                                    width={96} // Adjust based on your image dimensions
-                                    height={48} // Adjust based on your image dimensions
+                                    src="/eatta-logo.jpg"
+                                    alt="KEPHIS"
+                                    width={146} // Adjust based on your image dimensions
+                                    height={68} // Adjust based on your image dimensions
                                     className="object-contain"
                                 />
                             </div>
@@ -82,8 +91,26 @@ const Mission = () => {
                                 <Image
                                     src="/tea-board-kenya-logo.png"
                                     alt="Tea Board of Kenya"
-                                    width={96} // Adjust based on your image dimensions
-                                    height={48} // Adjust based on your image dimensions
+                                    width={146} // Adjust based on your image dimensions
+                                    height={68} // Adjust based on your image dimensions
+                                    className="object-contain"
+                                />
+                            </div>
+                            <div className="bg-white p-4 rounded-lg shadow-md flex items-center justify-center">
+                                <Image
+                                    src="/kpa.jpg"
+                                    alt="KPA"
+                                    width={146} // Adjust based on your image dimensions
+                                    height={68} // Adjust based on your image dimensions
+                                    className="object-contain"
+                                />
+                            </div>
+                            <div className="bg-white p-4 rounded-lg shadow-md flex items-center justify-center">
+                                <Image
+                                    src="/kncci.jpg"
+                                    alt="KNCCI"
+                                    width={146} // Adjust based on your image dimensions
+                                    height={68} // Adjust based on your image dimensions
                                     className="object-contain"
                                 />
                             </div>
