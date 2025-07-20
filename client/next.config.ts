@@ -1,6 +1,12 @@
-import type { NextConfig } from "next";
+import withPWA from "next-pwa";
 
-const nextConfig: NextConfig = {
+const nextConfig = {
+    reactStrictMode: true,
+    experimental: {
+        serverActions: {
+            bodySizeLimit: "2mb",
+        },
+    },
     images: {
         remotePatterns: [
             {
@@ -17,6 +23,19 @@ const nextConfig: NextConfig = {
             },
         ],
     },
+    pwa: {
+        dest: "public",
+        register: true,
+        skipWaiting: true,
+        disable: process.env.NODE_ENV === "development",
+        workboxOpts: {
+            exclude: [
+                /\.map$/,
+                /_buildManifest\.js$/,
+                /_ssgManifest\.js$/,
+            ],
+        },
+    },
 };
 
-export default nextConfig;
+export default withPWA(nextConfig); // ✅ Do NOT pass two arguments

@@ -17,11 +17,24 @@ import {
 } from "./ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
 import { SidebarTrigger } from "./ui/sidebar";
-import { Home, LayoutDashboard, Building, NotebookPen, BarChart, Settings, Package, Heart, User, DollarSign, ShoppingCart } from "lucide-react";
+import {
+    Home,
+    LayoutDashboard,
+    Building,
+    NotebookPen,
+    BarChart,
+    Settings,
+    Package,
+    Heart,
+    User,
+    DollarSign,
+    ShoppingCart,
+} from "lucide-react";
 
 interface NavLink {
     href: string;
     label: string;
+    shortLabel: string;
     icon: React.ComponentType<{ className?: string }>;
 }
 
@@ -38,27 +51,25 @@ const Navbar = () => {
     };
 
     const publicLinks: NavLink[] = [
-        { href: "/", label: "Home", icon: Home },
-        { href: "/discover", label: "About", icon: Building },
-        { href: "/explore", label: "Products", icon: Package },
+        { href: "/", label: "Home", shortLabel: "Home", icon: Home },
+        { href: "/discover", label: "About", shortLabel: "About", icon: Building },
+        { href: "/explore", label: "Products", shortLabel: "Prod", icon: Package },
     ];
 
     const adminLinks: NavLink[] = [
-        // { href: "/admin/dashboard", label: "Dashboard", icon: LayoutDashboard },
-        { href: "/admin/catalog", label: "Catalogs", icon: Building },
-        { href: "/admin/stock", label: "Stock", icon: NotebookPen },
-        { href: "/admin/outLots", label: "Out Lots", icon: ShoppingCart },
-        { href: "/admin/sellingPrices", label: "Selling Prices", icon: DollarSign },
-        { href: "/admin/reports", label: "Reports", icon: BarChart },
+        { href: "/admin/catalog", label: "Catalogs", shortLabel: "CAT", icon: Building },
+        { href: "/admin/stock", label: "Stock", shortLabel: "STK", icon: NotebookPen },
+        { href: "/admin/outLots", label: "Out Lots", shortLabel: "OL", icon: ShoppingCart },
+        { href: "/admin/sellingPrices", label: "Selling Prices", shortLabel: "SP", icon: DollarSign },
+        { href: "/admin/reports", label: "Reports", shortLabel: "RPT", icon: BarChart },
     ];
 
     const userLinks: NavLink[] = [
-        // { href: "/user/dashboard", label: "Dashboard", icon: LayoutDashboard },
-        { href: "/user/catalog", label: "Catalogs", icon: Building },
-        { href: "/user/stocks", label: "Stocks", icon: NotebookPen },
-        { href: "/user/outLots", label: "Out Lots", icon: ShoppingCart },
-        { href: "/user/sellingPrices", label: "Selling Prices", icon: DollarSign },
-        { href: "/user/shipments", label: "Shipments", icon: User },
+        { href: "/user/catalog", label: "Catalogs", shortLabel: "CAT", icon: Building },
+        { href: "/user/stocks", label: "Stocks", shortLabel: "STK", icon: NotebookPen },
+        { href: "/user/outLots", label: "Out Lots", shortLabel: "OL", icon: ShoppingCart },
+        { href: "/user/sellingPrices", label: "Selling Prices", shortLabel: "SP", icon: DollarSign },
+        { href: "/user/shipments", label: "Shipments", shortLabel: "SHP", icon: User },
     ];
 
     const navLinks = authUser
@@ -93,17 +104,17 @@ const Navbar = () => {
                                 className="w-6 h-6"
                             />
                             <div className="text-xl font-bold">
-                                Black Gold&nbsp;
-                                <span className="text-yellow-500 font-light hover:!text-yellow-300"
-                                >
-                                    Africa Traders Ltd
-                                </span>
+                                Black Gold
+                                <span className="text-yellow-500 font-light hover:!text-yellow-300">
+                  &nbsp;Africa Traders Ltd
+                </span>
                             </div>
                         </div>
                     </Link>
                 </div>
 
                 <div className="flex items-center gap-5">
+                    {/* Desktop Navigation */}
                     <nav className="hidden md:flex gap-6">
                         {navLinks.map((link) => (
                             <Link
@@ -163,6 +174,55 @@ const Navbar = () => {
                         </>
                     )}
                 </div>
+            </div>
+
+            {/* Mobile Menu (Always Visible on Mobile) */}
+            <div
+                className="md:hidden fixed left-0 w-full bg-primary-700 text-white z-40 flex flex-row flex-nowrap overflow-x-auto gap-3 py-3 px-4 whitespace-nowrap"
+                style={{ top: `${NAVBAR_HEIGHT}px` }}
+            >
+                <nav className="flex flex-row gap-3">
+                    {navLinks.map((link) => (
+                        <Link
+                            key={link.href}
+                            href={link.href}
+                            className={`flex items-center gap-2 px-3 py-1 text-sm transition-colors duration-200 ${
+                                pathname === link.href
+                                    ? "bg-secondary-500 text-white font-semibold"
+                                    : "hover:bg-primary-600"
+                            }`}
+                        >
+                            <link.icon className="h-4 w-4" />
+                            {link.shortLabel}
+                        </Link>
+                    ))}
+                </nav>
+                {authUser ? (
+                    <button
+                        onClick={handleSignOut}
+                        className="flex items-center gap-2 px-3 py-1 text-sm hover:bg-primary-600"
+                    >
+                        <User className="h-4 w-4" />
+                        Sign out
+                    </button>
+                ) : (
+                    <>
+                        <Link
+                            href="/signin"
+                            className="flex items-center gap-2 px-3 py-1 text-sm hover:bg-primary-600"
+                        >
+                            <User className="h-4 w-4" />
+                            Sign In
+                        </Link>
+                        <Link
+                            href="/signup"
+                            className="flex items-center gap-2 px-3 py-1 text-sm hover:bg-primary-600"
+                        >
+                            <User className="h-4 w-4" />
+                            Sign Up
+                        </Link>
+                    </>
+                )}
             </div>
         </div>
     );

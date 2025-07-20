@@ -14,8 +14,8 @@ const Landing = () => {
       <FeaturesSection />
       <DiscoverSection />
       <CallToActionSection />
-        <CTA/>
-        <NewsLetter/>
+      <CTA/>
+      <NewsLetter/>
       <FooterSection />
     </div>
   );

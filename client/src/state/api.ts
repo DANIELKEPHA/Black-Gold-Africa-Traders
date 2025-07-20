@@ -48,12 +48,12 @@ const baseQueryWithAuth: BaseQueryFn<string | FetchArgs, unknown, FetchBaseQuery
         const token = session.tokens?.idToken?.toString();
         if (token) {
             headers.set("Authorization", `Bearer ${token}`);
-            // console.log(`[${new Date().toLocaleString('en-US', { timeZone: 'Africa/Nairobi' })}] ✅ Attached token to headers`);
+            // // console.log(`[${new Date().toLocaleString('en-US', { timeZone: 'Africa/Nairobi' })}] ✅ Attached token to headers`);
         } else {
-            // console.warn(`[${new Date().toLocaleString('en-US', { timeZone: 'Africa/Nairobi' })}] ⚠️ No ID token found in session`);
+            // // console.warn(`[${new Date().toLocaleString('en-US', { timeZone: 'Africa/Nairobi' })}] ⚠️ No ID token found in session`);
         }
     } catch (error) {
-        // console.error(`[${new Date().toLocaleString('en-US', { timeZone: 'Africa/Nairobi' })}] ❌ Failed to fetch Cognito session:`, error);
+        // // console.error(`[${new Date().toLocaleString('en-US', { timeZone: 'Africa/Nairobi' })}] ❌ Failed to fetch Cognito session:`, error);
     }
 
     const modifiedArgs = typeof args === "string"
@@ -67,7 +67,7 @@ const baseQueryWithAuth: BaseQueryFn<string | FetchArgs, unknown, FetchBaseQuery
         };
 
     const result = await rawBaseQuery(modifiedArgs, api, extraOptions);
-    console.log(`[${new Date().toLocaleString('en-US', { timeZone: 'Africa/Nairobi' })}] Raw API Response:`, result);
+    // console.log(`[${new Date().toLocaleString('en-US', { timeZone: 'Africa/Nairobi' })}] Raw API Response:`, result);
     return result;
 };
 
@@ -102,10 +102,10 @@ export const api = createApi({
                     const rawRole = idToken?.payload?.['custom:role'];
                     const userRole = typeof rawRole === 'string' ? rawRole.toLowerCase() : 'user';
 
-                    // console.log(
-                    //     `[${new Date().toLocaleString('en-US', { timeZone: 'Africa/Nairobi' })}] Cognito session:`,
-                    //     JSON.stringify({ userId: user.userId, role: userRole }, null, 4)
-                    // );
+                    // // console.log(
+                    // //     `[${new Date().toLocaleString('en-US', { timeZone: 'Africa/Nairobi' })}] Cognito session:`,
+                    // //     JSON.stringify({ userId: user.userId, role: userRole }, null, 4)
+                    // // );
 
                     const endpoint = userRole === 'admin' ? `/admin/${user.userId}` : `/users/${user.userId}`;
                     let userDetailsResponse = await fetchWithBQ({
@@ -113,16 +113,16 @@ export const api = createApi({
                         params: { includeShipments: true, includeAssignedStocks: true, includeFavoritedStocks: true },
                     });
 
-                    // console.log(
-                    //     `[${new Date().toLocaleString('en-US', { timeZone: 'Africa/Nairobi' })}] getAuthUser API Response:`,
-                    //     JSON.stringify(userDetailsResponse, null, 4)
-                    // );
+                    // // console.log(
+                    // //     `[${new Date().toLocaleString('en-US', { timeZone: 'Africa/Nairobi' })}] getAuthUser API Response:`,
+                    // //     JSON.stringify(userDetailsResponse, null, 4)
+                    // // );
 
                     if (userDetailsResponse.error) {
                         if (userDetailsResponse.error.status === 404) {
-                            console.log(
-                                `[${new Date().toLocaleString('en-US', { timeZone: 'Africa/Nairobi' })}] User not found, creating new user...`
-                            );
+                            // console.log(
+                            //     `[${new Date().toLocaleString('en-US', { timeZone: 'Africa/Nairobi' })}] User not found, creating new user...`
+                            // );
                             userDetailsResponse = await createNewUserInDatabase(user, idToken, userRole, fetchWithBQ);
                         } else {
                             throw new Error(`API error: ${JSON.stringify(userDetailsResponse.error)}`);
@@ -146,10 +146,10 @@ export const api = createApi({
                     };
 
                 } catch (error: any) {
-                    console.error(
-                        `[${new Date().toLocaleString('en-US', { timeZone: 'Africa/Nairobi' })}] getAuthUser error:`,
-                        error
-                    );
+                    // console.error(
+                    //     `[${new Date().toLocaleString('en-US', { timeZone: 'Africa/Nairobi' })}] getAuthUser error:`,
+                    //     error
+                    // );
                     return {
                         error: {
                             status: 'CUSTOM_ERROR',
@@ -276,7 +276,7 @@ export const api = createApi({
         // Catalog Endpoints
         getCatalog: builder.query<{ data: CatalogResponse[]; meta: { page: number; limit: number; total: number; totalPages: number } }, Partial<FiltersState> & { page?: number; limit?: number }>({
             query: (filters) => {
-                // console.log(`[${new Date().toLocaleString("en-US", { timeZone: "Africa/Nairobi" })}] getCatalog raw filters:`, filters);
+                // // console.log(`[${new Date().toLocaleString("en-US", { timeZone: "Africa/Nairobi" })}] getCatalog raw filters:`, filters);
                 const cleanedFilters = cleanParams({
                     lotNo: filters.lotNo,
                     sellingMark: filters.sellingMark,
@@ -296,7 +296,7 @@ export const api = createApi({
                     page: filters.page || 1,
                     limit: filters.limit || 100,
                 });
-                // console.log(`[${new Date().toLocaleString("en-US", { timeZone: "Africa/Nairobi" })}] getCatalog query params:`, cleanedFilters);
+                // // console.log(`[${new Date().toLocaleString("en-US", { timeZone: "Africa/Nairobi" })}] getCatalog query params:`, cleanedFilters);
                 return {
                     url: "/catalogs",
                     params: cleanedFilters,
@@ -313,18 +313,19 @@ export const api = createApi({
             async onQueryStarted(filters, { queryFulfilled }) {
                 try {
                     const { data } = await queryFulfilled;
-                    // console.log(`[${new Date().toLocaleString("en-US", { timeZone: "Africa/Nairobi" })}] getCatalog response:`, {
-                    //     total: data.meta.total,
-                    //     returned: data.data.length,
-                    //     reprintValues: data.data.map(c => c.reprint)
-                    // });
+                    // // console.log(`[${new Date().toLocaleString("en-US", { timeZone: "Africa/Nairobi" })}] getCatalog response:`, {
+                    // //     total: data.meta.total,
+                    // //     returned: data.data.length,
+                    // //     reprintValues: data.data.map(c => c.reprint)
+                    // // });
                 } catch (error: any) {
-                    console.error(`[${new Date().toLocaleString("en-US", { timeZone: "Africa/Nairobi" })}] getCatalog error:`, {
-                        status: error?.error?.status,
-                        message: error?.error?.data?.message,
-                        details: error?.error?.data?.details,
-                        params: filters,
-                    });
+                    // console.error(`[${ MANY LINES
+                    //     `[${new Date().toLocaleString("en-US", { timeZone: "Africa/Nairobi" })}] getCatalog error:`, {
+                    //         status: error?.error?.status,
+                    //         message: error?.error?.data?.message,
+                    //         details: error?.error?.data?.details,
+                    //         params: filters,
+                    //     });
                 }
             },
         }),
@@ -351,7 +352,7 @@ export const api = createApi({
             query: ({ file, duplicateAction }) => {
                 const time = new Date().toLocaleString("en-US", { timeZone: "Africa/Nairobi" });
                 if (!(file instanceof File)) {
-                    console.error(`[${time}] Invalid file object`);
+                    // console.error(`[${time}] Invalid file object`);
                     throw new Error("Invalid file object");
                 }
                 const formData = new FormData();
@@ -359,11 +360,11 @@ export const api = createApi({
                 if (duplicateAction && ["skip", "replace"].includes(duplicateAction)) {
                     formData.append("duplicateAction", duplicateAction);
                 }
-                console.log(`[${time}] Preparing createCatalogFromCsv request:`, {
-                    fileName: file.name,
-                    size: file.size,
-                    duplicateAction,
-                });
+                // console.log(`[${time}] Preparing createCatalogFromCsv request:`, {
+                //     fileName: file.name,
+                //     size: file.size,
+                //     duplicateAction,
+                // });
                 return {
                     url: "/catalogs/upload",
                     method: "POST",
@@ -371,7 +372,7 @@ export const api = createApi({
                     responseHandler: async (response) => {
                         if (!response.ok) {
                             const errorData = await response.json();
-                            console.error(`[${time}] Server error response:`, errorData);
+                            // console.error(`[${time}] Server error response:`, errorData);
                             throw new Error(errorData.message || "Failed to upload CSV");
                         }
                         return response.json();
@@ -383,18 +384,18 @@ export const api = createApi({
                 const time = new Date().toLocaleString("en-US", { timeZone: "Africa/Nairobi" });
                 try {
                     const { data } = await queryFulfilled;
-                    console.log(`[${time}] createCatalogFromCsv success:`, data);
+                    // console.log(`[${time}] createCatalogFromCsv success:`, data);
                     await withToast(queryFulfilled, {
                         success: `Successfully uploaded ${data.success.created} catalog(s)!`,
                         error: "Failed to upload CSV file.",
                     });
                 } catch (error: any) {
-                    console.error(`[${time}] createCatalogFromCsv error:`, {
-                        status: error?.error?.status,
-                        message: error?.error?.data?.message,
-                        details: error?.error?.data?.details,
-                        fileName: file.name,
-                    });
+                    // console.error(`[${time}] createCatalogFromCsv error:`, {
+                    //     status: error?.error?.status,
+                    //     message: error?.error?.data?.message,
+                    //     details: error?.error?.data?.details,
+                    //     fileName: file.name,
+                    // });
                 }
             },
         }),
@@ -423,10 +424,10 @@ export const api = createApi({
                     page: 1,
                     limit: 10000,
                 });
-                // console.log(
-                //     `[${new Date().toLocaleString("en-US", { timeZone: "Africa/Nairobi" })}] Sending XLSX export request with params:`,
-                //     params
-                // );
+                // // console.log(
+                // //     `[${new Date().toLocaleString("en-US", { timeZone: "Africa/Nairobi" })}] Sending XLSX export request with params:`,
+                // //     params
+                // // );
                 return {
                     url: "/catalogs/export/xlsx",
                     method: "POST",
@@ -455,12 +456,12 @@ export const api = createApi({
             },
             async onQueryStarted(arg, { queryFulfilled }) {
                 const time = new Date().toLocaleString("en-US", { timeZone: "Africa/Nairobi" });
-                // console.log(`[${time}] Starting XLSX download query:`, arg);
+                // // console.log(`[${time}] Starting XLSX download query:`, arg);
                 try {
                     await queryFulfilled;
-                    // console.log(`[${time}] XLSX export successful`);
+                    // // console.log(`[${time}] XLSX export successful`);
                 } catch (error) {
-                    console.error(`[${time}] XLSX download failed:`, error);
+                    // console.error(`[${time}] XLSX download failed:`, error);
                     throw error;
                 }
             },
@@ -531,7 +532,7 @@ export const api = createApi({
                     page: filters.page,
                     limit: filters.limit,
                 });
-                // console.log(`[${time}] Sending getSellingPrices request with params:`, params);
+                // // console.log(`[${time}] Sending getSellingPrices request with params:`, params);
                 return {
                     url: "/sellingPrices",
                     params,
@@ -548,15 +549,15 @@ export const api = createApi({
                 const time = new Date().toLocaleString("en-US", { timeZone: "Africa/Nairobi" });
                 try {
                     const { data } = await queryFulfilled;
-                    // console.log(`[${time}] getSellingPrices success:`, { meta: data.meta, dataLength: data.data.length });
+                    // // console.log(`[${time}] getSellingPrices success:`, { meta: data.meta, dataLength: data.data.length });
                 } catch (error: any) {
-                    console.error(`[${time}] getSellingPrices error:`, {
-                        status: error?.error?.status,
-                        message: error?.error?.data?.message,
-                        details: error?.error?.data?.details,
-                        params: filters,
-                        url: `/sellingPrices`,
-                    });
+                    // console.error(`[${time}] getSellingPrices error:`, {
+                    //     status: error?.error?.status,
+                    //     message: error?.error?.data?.message,
+                    //     details: error?.error?.data?.details,
+                    //     params: filters,
+                    //     url: `/sellingPrices`,
+                    // });
                 }
             },
         }),
@@ -638,13 +639,13 @@ export const api = createApi({
                 const time = new Date().toLocaleString("en-US", { timeZone: "Africa/Nairobi" });
                 try {
                     const { data } = await queryFulfilled;
-                    console.log(`[${time}] deleteAllSellingPrices success:`, { deletedCount: data.deletedCount });
+                    // console.log(`[${time}] deleteAllSellingPrices success:`, { deletedCount: data.deletedCount });
                 } catch (error: any) {
-                    console.error(`[${time}] deleteAllSellingPrices error:`, {
-                        status: error?.error?.status,
-                        message: error?.error?.data?.message,
-                        details: error?.error?.data?.details,
-                    });
+                    // console.error(`[${time}] deleteAllSellingPrices error:`, {
+                    //     status: error?.error?.status,
+                    //     message: error?.error?.data?.message,
+                    //     details: error?.error?.data?.details,
+                    // });
                 }
             },
         }),
@@ -654,7 +655,7 @@ export const api = createApi({
                 const time = new Date().toLocaleString("en-US", { timeZone: "Africa/Nairobi" });
 
                 if (!(file instanceof File)) {
-                    console.error(`[${time}] Invalid file object:`, { file });
+                    // console.error(`[${time}] Invalid file object:`, { file });
                     throw new Error("Invalid file object");
                 }
 
@@ -664,15 +665,15 @@ export const api = createApi({
                 if (duplicateAction && ["skip", "replace"].includes(duplicateAction)) {
                     formData.append("duplicateAction", duplicateAction);
                 } else if (duplicateAction) {
-                    console.warn(`[${time}] Invalid duplicateAction value:`, duplicateAction);
+                    // console.warn(`[${time}] Invalid duplicateAction value:`, duplicateAction);
                 }
 
-                console.log(`[${time}] Preparing uploadSellingPricesCsv request:`, {
-                    fileName: file.name,
-                    fileSize: file.size,
-                    fileType: file.type,
-                    duplicateAction,
-                });
+                // console.log(`[${time}] Preparing uploadSellingPricesCsv request:`, {
+                //     fileName: file.name,
+                //     fileSize: file.size,
+                //     fileType: file.type,
+                //     duplicateAction,
+                // });
 
                 return {
                     url: "/sellingPrices/upload",
@@ -685,19 +686,19 @@ export const api = createApi({
                         try {
                             errorData = JSON.parse(responseText);
                         } catch (e) {
-                            console.error(`[${time}] Failed to parse response as JSON:`, responseText);
+                            // console.error(`[${time}] Failed to parse response as JSON:`, responseText);
                         }
 
                         if (!response.ok) {
-                            console.error(`[${time}] Server error response:`, {
-                                status: response.status,
-                                statusText: response.statusText,
-                                data: errorData || responseText,
-                            });
+                            // console.error(`[${time}] Server error response:`, {
+                            //     status: response.status,
+                            //     statusText: response.statusText,
+                            //     data: errorData || responseText,
+                            // });
                             throw new Error(errorData?.message || "Failed to upload CSV");
                         }
 
-                        console.log(`[${time}] Server response:`, errorData);
+                        // console.log(`[${time}] Server response:`, errorData);
                         return errorData;
                     },
                 };
@@ -711,12 +712,12 @@ export const api = createApi({
                 try {
                     const { data } = await queryFulfilled;
 
-                    console.log(`[${time}] Upload success:`, {
-                        created: data.success.created,
-                        skipped: data.success.skipped,
-                        replaced: data.success.replaced,
-                        errors: data.errors,
-                    });
+                    // console.log(`[${time}] Upload success:`, {
+                    //     created: data.success.created,
+                    //     skipped: data.success.skipped,
+                    //     replaced: data.success.replaced,
+                    //     errors: data.errors,
+                    // });
 
                     await withToast(queryFulfilled, {
                         success: "Selling prices uploaded successfully!",
@@ -724,11 +725,11 @@ export const api = createApi({
                     });
                 } catch (error) {
                     if (error instanceof Error) {
-                        console.error(`[${time}] Upload error:`, {
-                            message: error.message,
-                        });
+                        // console.error(`[${time}] Upload error:`, {
+                        //     message: error.message,
+                        // });
                     } else {
-                        console.error(`[${time}] Upload error: Unknown error`, error);
+                        // console.error(`[${time}] Upload error: Unknown error`, error);
                     }
                 }
             },
@@ -776,7 +777,7 @@ export const api = createApi({
                 });
 
                 const time = new Date().toLocaleString("en-US", { timeZone: "Africa/Nairobi" });
-                // console.log(`[${time}] Sending Selling Prices XLSX export with params:`, params);
+                // // console.log(`[${time}] Sending Selling Prices XLSX export with params:`, params);
 
                 return {
                     url: "/sellingPrices/export-xlsx",
@@ -813,12 +814,12 @@ export const api = createApi({
             },
             async onQueryStarted(arg, { queryFulfilled }) {
                 const time = new Date().toLocaleString("en-US", { timeZone: "Africa/Nairobi" });
-                // console.log(`[${time}] Starting Selling Prices XLSX download:`, arg);
+                // // console.log(`[${time}] Starting Selling Prices XLSX download:`, arg);
                 try {
                     await queryFulfilled;
-                    // console.log(`[${time}] Selling Prices XLSX export successful`);
+                    // // console.log(`[${time}] Selling Prices XLSX export successful`);
                 } catch (error) {
-                    console.error(`[${time}] Selling Prices XLSX export failed:`, error);
+                    // console.error(`[${time}] Selling Prices XLSX export failed:`, error);
                     throw error;
                 }
             },
@@ -854,7 +855,7 @@ export const api = createApi({
                     page: filters.page,
                     limit: filters.limit,
                 });
-                console.log(`[${new Date().toLocaleString("en-US", { timeZone: "Africa/Nairobi" })}] getOutlots: Sending query params:`, params);
+                // console.log(`[${new Date().toLocaleString("en-US", { timeZone: "Africa/Nairobi" })}] getOutlots: Sending query params:`, params);
                 return {
                     url: "/outLots",
                     params,
@@ -870,16 +871,16 @@ export const api = createApi({
             async onQueryStarted(filters, { queryFulfilled }) {
                 try {
                     const { data } = await queryFulfilled;
-                    // console.log(`[${new Date().toLocaleString("en-US", { timeZone: "Africa/Nairobi" })}] getOutlots: Success:`, data.meta);
+                    // // console.log(`[${new Date().toLocaleString("en-US", { timeZone: "Africa/Nairobi" })}] getOutlots: Success:`, data.meta);
                 } catch (error: any) {
-                    console.error(`[${new Date().toLocaleString("en-US", { timeZone: "Africa/Nairobi" })}] getOutlots: Error:`, {
-                        status: error?.error?.status,
-                        message: error?.error?.data?.message,
-                        details: error?.error?.data?.details || error?.error?.data || "No details provided",
-                        params: filters,
-                        response: JSON.stringify(error?.error?.data, null, 2),
-                        fullError: JSON.stringify(error, Object.getOwnPropertyNames(error), 2),
-                    });
+                    // console.error(`[${new Date().toLocaleString("en-US", { timeZone: "Africa/Nairobi" })}] getOutlots: Error:`, {
+                    //     status: error?.error?.status,
+                    //     message: error?.error?.data?.message,
+                    //     details: error?.error?.data?.details || error?.error?.data || "No details provided",
+                    //     params: filters,
+                    //     response: JSON.stringify(error?.error?.data, null, 2),
+                    //     fullError: JSON.stringify(error, Object.getOwnPropertyNames(error), 2),
+                    // });
                 }
             },
         }),
@@ -991,13 +992,13 @@ export const api = createApi({
                         const time = new Date().toLocaleString("en-US", { timeZone: "Africa/Nairobi" });
                         if (!response.ok) {
                             const errorText = await response.text();
-                            console.error(`[${time}] Export failed:`, { status: response.status, text: errorText });
+                            // console.error(`[${time}] Export failed:`, { status: response.status, text: errorText });
                             throw new Error(`Export failed: ${response.status} ${response.statusText} - ${errorText}`);
                         }
 
                         const blob = await response.blob();
                         if (!blob || blob.type !== "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet") {
-                            console.error(`[${time}] Unexpected response format:`, { type: blob?.type });
+                            // console.error(`[${time}] Unexpected response format:`, { type: blob?.type });
                             throw new Error("Unexpected response format or empty XLSX");
                         }
 
@@ -1010,7 +1011,7 @@ export const api = createApi({
                         document.body.removeChild(link);
                         window.URL.revokeObjectURL(url);
 
-                        console.log(`[${time}] XLSX export successful`);
+                        // console.log(`[${time}] XLSX export successful`);
                         return { success: true };
                     },
                     cache: "no-cache",
@@ -1059,16 +1060,16 @@ export const api = createApi({
             async onQueryStarted(filters, { queryFulfilled }) {
                 try {
                     const { data } = await queryFulfilled;
-                    // console.log(
-                    //     `[${new Date().toLocaleString("en-US", { timeZone: "Africa/Nairobi" })}] getStocks: ${JSON.stringify(data.meta)}`
-                    // );
+                    // // console.log(
+                    // //     `[${new Date().toLocaleString("en-US", { timeZone: "Africa/Nairobi" })}] getStocks: ${JSON.stringify(data.meta)}`
+                    // // );
                 } catch (error: any) {
-                    console.error(`[${new Date().toLocaleString("en-US", { timeZone: "Africa/Nairobi" })}] getStocks error:`, {
-                        status: error?.error?.status,
-                        message: error?.error?.data?.message,
-                        details: error?.error?.data?.details,
-                        params: filters,
-                    });
+                    // console.error(`[${new Date().toLocaleString("en-US", { timeZone: "Africa/Nairobi" })}] getStocks error:`, {
+                    //     status: error?.error?.status,
+                    //     message: error?.error?.data?.message,
+                    //     details: error?.error?.data?.details,
+                    //     params: filters,
+                    // });
                 }
             },
         }),
@@ -1222,9 +1223,9 @@ export const api = createApi({
                 const time = new Date().toLocaleString("en-US", { timeZone: "Africa/Nairobi" });
                 try {
                     await queryFulfilled;
-                    // console.log(`[${time}] XLSX export successful`);
+                    // // console.log(`[${time}] XLSX export successful`);
                 } catch (error) {
-                    console.error(`[${time}] XLSX download failed:`, error);
+                    // console.error(`[${time}] XLSX download failed:`, error);
                     throw error;
                 }
             },
@@ -1371,20 +1372,20 @@ export const api = createApi({
             async onQueryStarted(params, { queryFulfilled }) {
                 try {
                     const { data } = await queryFulfilled;
-                    console.log(
-                        `[${new Date().toLocaleString("en-US", { timeZone: "Africa/Nairobi" })}] getShipments: ${JSON.stringify(data.meta)}`
-                    );
+                    // console.log(
+                    //     `[${new Date().toLocaleString("en-US", { timeZone: "Africa/Nairobi" })}] getShipments: ${JSON.stringify(data.meta)}`
+                    // );
                 } catch (error: any) {
-                    console.error(
-                        `[${new Date().toLocaleString("en-US", { timeZone: "Africa/Nairobi" })}] getShipments error:`,
-                        {
-                            status: error?.error?.status,
-                            message: error?.error?.data?.message || "Unknown error",
-                            details: error?.error?.data?.details || null,
-                            params,
-                            fullError: JSON.stringify(error, null, 2),
-                        }
-                    );
+                    // console.error(
+                    //     `[${new Date().toLocaleString("en-US", { timeZone: "Africa/Nairobi" })}] getShipments error:`,
+                    //     {
+                    //         status: error?.error?.status,
+                    //         message: error?.error?.data?.message || "Unknown error",
+                    //         details: error?.error?.data?.details || null,
+                    //         params,
+                    //         fullError: JSON.stringify(error, null, 2),
+                    //     }
+                    // );
                 }
             },
         }),
@@ -1397,20 +1398,20 @@ export const api = createApi({
             async onQueryStarted(id, { queryFulfilled }) {
                 try {
                     const { data } = await queryFulfilled;
-                    console.log(
-                        `[${new Date().toLocaleString('en-US', { timeZone: 'Africa/Nairobi' })}] getShipmentById: Shipment ${id}`
-                    );
+                    // console.log(
+                    //     `[${new Date().toLocaleString('en-US', { timeZone: 'Africa/Nairobi' })}] getShipmentById: Shipment ${id}`
+                    // );
                 } catch (error: any) {
-                    console.error(
-                        `[${new Date().toLocaleString('en-US', { timeZone: 'Africa/Nairobi' })}] getShipmentById error:`,
-                        {
-                            status: error?.error?.status,
-                            message: error?.error?.data?.message || 'Unknown error',
-                            details: error?.error?.data?.details || null,
-                            id,
-                            fullError: JSON.stringify(error, null, 2),
-                        }
-                    );
+                    // console.error(
+                    //     `[${new Date().toLocaleString('en-US', { timeZone: 'Africa/Nairobi' })}] getShipmentById error:`,
+                    //     {
+                    //         status: error?.error?.status,
+                    //         message: error?.error?.data?.message || 'Unknown error',
+                    //         details: error?.error?.data?.details || null,
+                    //         id,
+                    //         fullError: JSON.stringify(error, null, 2),
+                    //     }
+                    // );
                 }
             },
         }),
@@ -1442,19 +1443,19 @@ export const api = createApi({
             async onQueryStarted(params, { queryFulfilled }) {
                 try {
                     const { data } = await queryFulfilled;
-                    console.log(
-                        `[${new Date().toLocaleString("en-US", { timeZone: "Africa/Nairobi" })}] getAllShipments: ${JSON.stringify(data.meta)}`
-                    );
+                    // console.log(
+                    //     `[${new Date().toLocaleString("en-US", { timeZone: "Africa/Nairobi" })}] getAllShipments: ${JSON.stringify(data.meta)}`
+                    // );
                 } catch (error: any) {
-                    console.error(
-                        `[${new Date().toLocaleString("en-US", { timeZone: "Africa/Nairobi" })}] getAllShipments error:`,
-                        {
-                            status: error?.error?.status,
-                            message: error?.error?.data?.message,
-                            details: error?.error?.data?.details,
-                            params,
-                        }
-                    );
+                    // console.error(
+                    //     `[${new Date().toLocaleString("en-US", { timeZone: "Africa/Nairobi" })}] getAllShipments error:`,
+                    //     {
+                    //         status: error?.error?.status,
+                    //         message: error?.error?.data?.message,
+                    //         details: error?.error?.data?.details,
+                    //         params,
+                    //     }
+                    // );
                 }
             },
         }),
@@ -1471,21 +1472,21 @@ export const api = createApi({
             async onQueryStarted({ id, status }, { queryFulfilled }) {
                 try {
                     await queryFulfilled;
-                    console.log(
-                        `[${new Date().toLocaleString('en-US', { timeZone: 'Africa/Nairobi' })}] updateShipmentStatus: Shipment ${id} updated to ${status}`
-                    );
+                    // console.log(
+                    //     `[${new Date().toLocaleString('en-US', { timeZone: 'Africa/Nairobi' })}] updateShipmentStatus: Shipment ${id} updated to ${status}`
+                    // );
                 } catch (error: any) {
-                    console.error(
-                        `[${new Date().toLocaleString('en-US', { timeZone: 'Africa/Nairobi' })}] updateShipmentStatus error:`,
-                        {
-                            statusCode: error?.error?.status, // ✅ Renamed to avoid duplication
-                            message: error?.error?.data?.message || 'Unknown error',
-                            details: error?.error?.data?.details || null,
-                            id,
-                            status, // assuming this refers to shipment status, e.g., "Pending"
-                            fullError: JSON.stringify(error, null, 2),
-                        }
-                    );
+                    // console.error(
+                    //     `[${new Date().toLocaleString('en-US', { timeZone: 'Africa/Nairobi' })}] updateShipmentStatus error:`,
+                    //     {
+                    //         statusCode: error?.error?.status, // ✅ Renamed to avoid duplication
+                    //         message: error?.error?.data?.message || 'Unknown error',
+                    //         details: error?.error?.data?.details || null,
+                    //         id,
+                    //         status, // assuming this refers to shipment status, e.g., "Pending"
+                    //         fullError: JSON.stringify(error, null, 2),
+                    //     }
+                    // );
                 }
             },
         }),
@@ -1543,19 +1544,19 @@ export const api = createApi({
             async onQueryStarted(params, { queryFulfilled }) {
                 try {
                     const { data } = await queryFulfilled;
-                    console.log(
-                        `[${new Date().toLocaleString('en-US', { timeZone: 'Africa/Nairobi' })}] getContacts: ${JSON.stringify(data.meta)}`
-                    );
+                    // console.log(
+                    //     `[${new Date().toLocaleString('en-US', { timeZone: 'Africa/Nairobi' })}] getContacts: ${JSON.stringify(data.meta)}`
+                    // );
                 } catch (error: any) {
-                    console.error(
-                        `[${new Date().toLocaleString('en-US', { timeZone: 'Africa/Nairobi' })}] getContacts error:`,
-                        {
-                            status: error?.error?.status,
-                            message: error?.error?.data?.message,
-                            details: error?.error?.data?.details,
-                            params,
-                        }
-                    );
+                    // console.error(
+                    //     `[${new Date().toLocaleString('en-US', { timeZone: 'Africa/Nairobi' })}] getContacts error:`,
+                    //     {
+                    //         status: error?.error?.status,
+                    //         message: error?.error?.data?.message,
+                    //         details: error?.error?.data?.details,
+                    //         params,
+                    //     }
+                    // );
                 }
             },
         }),
