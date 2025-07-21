@@ -37,7 +37,7 @@ const DiscoverSection = () => {
                         Artisan Tea Experiences
                     </h2>
                     <p className="mt-4 max-w-3xl mx-auto text-lg text-gray-600">
-                        Curated from the world's most prestigious tea gardens, our collection represents centuries of
+                        Curated from the world&#39;s most prestigious tea gardens, our collection represents centuries of
                         tea-making tradition combined with modern sustainable practices.
                     </p>
                 </motion.div>
