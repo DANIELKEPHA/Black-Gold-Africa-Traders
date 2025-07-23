@@ -38,7 +38,7 @@ const CallToActionSection = () => {
                             viewport={{ once: true }}
                             className="text-4xl font-bold tracking-tight text-white sm:text-5xl lg:text-6xl"
                         >
-                            Direct from East Africa's Finest Tea Gardens
+                            Direct from East Africa&#39;s Finest Tea Gardens
                         </motion.h2>
                         <motion.p
                             initial={{ y: 30 }}
