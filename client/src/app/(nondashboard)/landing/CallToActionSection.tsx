@@ -20,8 +20,8 @@ const CallToActionSection = () => {
 
             {/* Content container */}
             <motion.div
-                initial={{ opacity: 0 }}
-                whileInView={{ opacity: 1 }}
+                initial={{ y: 50 }} // Keep some animation if desired
+                whileInView={{ y: 0 }}
                 transition={{ duration: 1, ease: "easeOut" }}
                 viewport={{ once: true, margin: "-100px" }}
                 className="mx-auto max-w-7xl px-6 lg:px-8"
@@ -29,8 +29,8 @@ const CallToActionSection = () => {
                 <div className="mx-auto max-w-2xl lg:max-w-none">
                     <div className="text-center">
                         <motion.h2
-                            initial={{ y: 40, opacity: 0 }}
-                            whileInView={{ y: 0, opacity: 1 }}
+                            initial={{ y: 40 }} // Remove opacity, keep y animation
+                            whileInView={{ y: 0 }}
                             transition={{
                                 duration: 0.8,
                                 ease: "backOut",
@@ -42,8 +42,8 @@ const CallToActionSection = () => {
                             Direct from East Africa&#39;s Finest Tea Gardens
                         </motion.h2>
                         <motion.p
-                            initial={{ y: 30, opacity: 0 }}
-                            whileInView={{ y: 0, opacity: 1 }}
+                            initial={{ y: 30 }} // Remove opacity, keep y animation
+                            whileInView={{ y: 0 }}
                             transition={{
                                 duration: 0.6,
                                 ease: "easeOut",
@@ -80,7 +80,7 @@ const CallToActionSection = () => {
                                 value: "5+",
                                 description: "In premium tea cultivation and export"
                             }
-                        ].map((stat, index) => (
+                        ].map((stat) => (
                             <motion.div
                                 key={stat.name}
                                 variants={{
@@ -106,58 +106,58 @@ const CallToActionSection = () => {
                     </motion.div>
 
                     {/* CTA buttons */}
-                    {/*<motion.div*/}
-                    {/*    initial={{ opacity: 0 }}*/}
-                    {/*    whileInView={{ opacity: 1 }}*/}
-                    {/*    transition={{ staggerChildren: 0.1 }}*/}
-                    {/*    viewport={{ once: true }}*/}
-                    {/*    className="mt-16 flex flex-col sm:flex-row justify-center gap-4 sm:gap-6"*/}
-                    {/*>*/}
-                    {/*    <motion.div*/}
-                    {/*        variants={{*/}
-                    {/*            hidden: { opacity: 0, x: -40 },*/}
-                    {/*            visible: {*/}
-                    {/*                opacity: 1,*/}
-                    {/*                x: 0,*/}
-                    {/*                transition: {*/}
-                    {/*                    duration: 0.6,*/}
-                    {/*                    ease: "backOut",*/}
-                    {/*                    delay: 0.4*/}
-                    {/*                }*/}
-                    {/*            }*/}
-                    {/*        }}*/}
-                    {/*    >*/}
-                    {/*        <Link*/}
-                    {/*            href="/explore"*/}
-                    {/*            className="inline-flex items-center justify-center rounded-md bg-emerald-600 px-6 py-3 sm:py-4 text-base sm:text-lg font-semibold text-white shadow-lg hover:bg-emerald-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-600 transition-all duration-200 hover:shadow-emerald-500/20 hover:-translate-y-0.5"*/}
-                    {/*        >*/}
-                    {/*            Explore Our Tea Catalog*/}
-                    {/*            <span aria-hidden="true" className="ml-2 transition-transform group-hover:translate-x-1">→</span>*/}
-                    {/*        </Link>*/}
-                    {/*    </motion.div>*/}
-                    {/*    <motion.div*/}
-                    {/*        variants={{*/}
-                    {/*            hidden: { opacity: 0, x: 40 },*/}
-                    {/*            visible: {*/}
-                    {/*                opacity: 1,*/}
-                    {/*                x: 0,*/}
-                    {/*                transition: {*/}
-                    {/*                    duration: 0.6,*/}
-                    {/*                    ease: "backOut",*/}
-                    {/*                    delay: 0.4*/}
-                    {/*                }*/}
-                    {/*            }*/}
-                    {/*        }}*/}
-                    {/*    >*/}
-                    {/*        <Link*/}
-                    {/*            href="/contact"*/}
-                    {/*            className="inline-flex items-center justify-center rounded-md bg-white px-6 py-3 sm:py-4 text-base sm:text-lg font-semibold text-gray-900 shadow-lg hover:bg-gray-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white transition-all duration-200 hover:shadow-white/20 hover:-translate-y-0.5"*/}
-                    {/*        >*/}
-                    {/*            Request Wholesale Pricing*/}
-                    {/*            <span aria-hidden="true" className="ml-2 transition-transform group-hover:translate-x-1">↗</span>*/}
-                    {/*        </Link>*/}
-                    {/*    </motion.div>*/}
-                    {/*</motion.div>*/}
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        whileInView={{ opacity: 1 }}
+                        transition={{ staggerChildren: 0.1 }}
+                        viewport={{ once: true }}
+                        className="mt-16 flex flex-col sm:flex-row justify-center gap-4 sm:gap-6"
+                    >
+                        <motion.div
+                            variants={{
+                                hidden: { opacity: 0, x: -40 },
+                                visible: {
+                                    opacity: 1,
+                                    x: 0,
+                                    transition: {
+                                        duration: 0.6,
+                                        ease: "backOut",
+                                        delay: 0.4
+                                    }
+                                }
+                            }}
+                        >
+                            <Link
+                                href="/explore"
+                                className="inline-flex items-center justify-center rounded-md bg-emerald-600 px-6 py-3 sm:py-4 text-base sm:text-lg font-semibold text-white shadow-lg hover:bg-emerald-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-600 transition-all duration-200 hover:shadow-emerald-500/20 hover:-translate-y-0.5"
+                            >
+                                Explore Our Tea Catalog
+                                <span aria-hidden="true" className="ml-2 transition-transform group-hover:translate-x-1">→</span>
+                            </Link>
+                        </motion.div>
+                        <motion.div
+                            variants={{
+                                hidden: { opacity: 0, x: 40 },
+                                visible: {
+                                    opacity: 1,
+                                    x: 0,
+                                    transition: {
+                                        duration: 0.6,
+                                        ease: "backOut",
+                                        delay: 0.4
+                                    }
+                                }
+                            }}
+                        >
+                            <Link
+                                href="/discover"
+                                className="inline-flex items-center justify-center rounded-md bg-white px-6 py-3 sm:py-4 text-base sm:text-lg font-semibold text-gray-900 shadow-lg hover:bg-gray-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white transition-all duration-200 hover:shadow-white/20 hover:-translate-y-0.5"
+                            >
+                                Discover Black Gold Africa
+                                <span aria-hidden="true" className="ml-2 transition-transform group-hover:translate-x-1">↗</span>
+                            </Link>
+                        </motion.div>
+                    </motion.div>
                 </div>
             </motion.div>
         </section>
