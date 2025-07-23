@@ -7,7 +7,7 @@ import { Suspense } from "react";
 
 // Import i18n to ensure initialization
 import "../i18n";
-// import ServiceWorkerRegistration from "@/components/ServiceWorkerRegistration";
+import ServiceWorkerRegistration from "@/components/ServiceWorkerRegistration";
 
 const defaultUrl =
     process.env.NEXT_PUBLIC_API_BASE_URL ?? "https://bgatltd.com";
@@ -225,7 +225,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 {children}
             </Suspense>
         </Providers>
-        {/*<ServiceWorkerRegistration />*/}
+        <ServiceWorkerRegistration />
         <Toaster closeButton position="top-right" richColors />
         </body>
         </html>

@@ -26,23 +26,23 @@ const DiscoverSection = () => {
             whileInView="visible"
             viewport={{ once: true, amount: 0.5 }}
             variants={containerVariants}
-            className="py-12 sm:py-16 bg-gradient-to-b from-white to-gray-50"
+            className="py-8 sm:py-12 md:py-16 bg-gradient-to-b from-white to-gray-50"
         >
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                <motion.div variants={itemVariants} className="mb-12 text-center">
-                    <span className="text-sm font-semibold tracking-wider text-blue-600 uppercase">
+                <motion.div variants={itemVariants} className="mb-8 sm:mb-12 text-center">
+                    <span className="text-xs sm:text-sm font-semibold tracking-wider text-blue-600 uppercase">
                         World-Class Tea Selection
                     </span>
-                    <h2 className="mt-2 text-3xl sm:text-4xl lg:text-5xl font-bold text-gray-900">
+                    <h2 className="mt-2 text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-gray-900">
                         Artisan Tea Experiences
                     </h2>
-                    <p className="mt-4 max-w-3xl mx-auto text-lg text-gray-600">
+                    <p className="mt-3 sm:mt-4 max-w-3xl mx-auto text-base sm:text-lg text-gray-600">
                         Curated from the world&#39;s most prestigious tea gardens, our collection represents centuries of
                         tea-making tradition combined with modern sustainable practices.
                     </p>
                 </motion.div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div className="grid grid-cols-1 gap-5 sm:gap-6 md:gap-8 md:grid-cols-2">
                     {[
                         {
                             imageSrc: "/tea-varieties.jpg",
@@ -77,7 +77,7 @@ const DiscoverSection = () => {
                             key={index}
                             variants={itemVariants}
                             whileHover={{ y: -5 }}
-                            className="group h-96" // Added fixed height for testing
+                            className="group h-72 sm:h-80 md:h-96"
                         >
                             <DiscoverCard {...card} />
                         </motion.div>
@@ -101,7 +101,7 @@ const DiscoverCard = ({
     stats: string;
     cta: string;
 }) => (
-    <div className="relative h-full rounded-xl overflow-hidden shadow-md hover:shadow-xl transition-all duration-300 bg-gray-200"> {/* Added fallback bg */}
+    <div className="relative h-full rounded-lg sm:rounded-xl overflow-hidden shadow-md hover:shadow-xl transition-all duration-300 bg-gray-200">
         <div className="absolute inset-0 bg-gradient-to-t from-gray-900/80 to-gray-900/20 z-10" />
         {imageSrc && (
             <Image
@@ -111,20 +111,23 @@ const DiscoverCard = ({
                 className="object-cover w-full h-full"
                 alt={title}
                 sizes="(max-width: 768px) 100vw, 50vw"
-                loading="lazy"
+                priority={false}
             />
         )}
-        <div className="absolute bottom-0 left-0 z-20 p-6 text-white">
-            <span className="inline-block px-2 py-1 text-xs font-medium bg-blue-500 rounded-md mb-2">
+        <div className="absolute bottom-0 left-0 z-20 p-4 sm:p-6 text-white">
+            <span className="inline-block px-2 py-1 text-xs font-medium bg-blue-500 rounded-md mb-1 sm:mb-2">
                 {stats}
             </span>
-            <h3 className="text-2xl font-bold mb-2 group-hover:text-blue-300 transition-colors">
+            <h3 className="text-lg sm:text-xl md:text-2xl font-bold mb-1 sm:mb-2 group-hover:text-blue-300 transition-colors">
                 {title}
             </h3>
-            <p className="text-gray-200 mb-4">{description}</p>
-            <button className="text-sm font-medium text-white hover:text-blue-300 transition-colors flex items-center">
+            <p className="text-sm sm:text-base text-gray-200 mb-2 sm:mb-4 line-clamp-2">{description}</p>
+            <button
+                className="text-xs sm:text-sm font-medium text-white hover:text-blue-300 transition-colors flex items-center"
+                aria-label={cta}
+            >
                 {cta}
-                <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-3 h-3 sm:w-4 sm:h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                 </svg>
             </button>

@@ -105,9 +105,9 @@ const Navbar = () => {
                             />
                             <div className="text-xl font-bold">
                                 Black Gold
-                                <span className="text-yellow-500 font-light hover:!text-yellow-300">
-                  &nbsp;Africa Traders Ltd
-                </span>
+                                <span className="hidden md:inline text-yellow-500 font-light hover:!text-yellow-300">
+                                    &nbsp;Africa Traders Ltd
+                                </span>
                             </div>
                         </div>
                     </Link>
@@ -197,7 +197,7 @@ const Navbar = () => {
                         </Link>
                     ))}
                 </nav>
-                {authUser ? (
+                {authUser && (
                     <button
                         onClick={handleSignOut}
                         className="flex items-center gap-2 px-3 py-1 text-sm hover:bg-primary-600"
@@ -205,23 +205,6 @@ const Navbar = () => {
                         <User className="h-4 w-4" />
                         Sign out
                     </button>
-                ) : (
-                    <>
-                        <Link
-                            href="/signin"
-                            className="flex items-center gap-2 px-3 py-1 text-sm hover:bg-primary-600"
-                        >
-                            <User className="h-4 w-4" />
-                            Sign In
-                        </Link>
-                        <Link
-                            href="/signup"
-                            className="flex items-center gap-2 px-3 py-1 text-sm hover:bg-primary-600"
-                        >
-                            <User className="h-4 w-4" />
-                            Sign Up
-                        </Link>
-                    </>
                 )}
             </div>
         </div>
