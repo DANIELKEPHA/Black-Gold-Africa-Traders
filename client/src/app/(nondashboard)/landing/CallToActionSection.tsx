@@ -8,28 +8,27 @@ import Link from "next/link";
 const CallToActionSection = () => {
     return (
         <section className="relative isolate overflow-hidden bg-gray-900 py-24 sm:py-32">
-            {/* Background with gradient overlay */}
+            {/* Background image */}
             <Image
                 src="/Tea.jpg"
                 alt="Tea plantation aerial view"
                 fill
-                className="absolute inset-0 -z-10 h-full w-full object-cover"
+                className="absolute inset-0 -z-10 h-full w-full object-cover pointer-events-none"
                 priority
             />
-            <div className="absolute inset-0 bg-gradient-to-t from-gray-900/90 via-gray-900/50 to-gray-900/20" />
 
             {/* Content container */}
             <motion.div
-                initial={{ y: 50 }} // Keep some animation if desired
+                initial={{ y: 50 }}
                 whileInView={{ y: 0 }}
                 transition={{ duration: 1, ease: "easeOut" }}
                 viewport={{ once: true, margin: "-100px" }}
-                className="mx-auto max-w-7xl px-6 lg:px-8"
+                className="mx-auto max-w-7xl px-6 lg:px-8 relative z-10"
             >
                 <div className="mx-auto max-w-2xl lg:max-w-none">
                     <div className="text-center">
                         <motion.h2
-                            initial={{ y: 40 }} // Remove opacity, keep y animation
+                            initial={{ y: 40 }}
                             whileInView={{ y: 0 }}
                             transition={{
                                 duration: 0.8,
@@ -39,10 +38,10 @@ const CallToActionSection = () => {
                             viewport={{ once: true }}
                             className="text-4xl font-bold tracking-tight text-white sm:text-5xl lg:text-6xl"
                         >
-                            Direct from East Africa&#39;s Finest Tea Gardens
+                            Direct from East Africa's Finest Tea Gardens
                         </motion.h2>
                         <motion.p
-                            initial={{ y: 30 }} // Remove opacity, keep y animation
+                            initial={{ y: 30 }}
                             whileInView={{ y: 0 }}
                             transition={{
                                 duration: 0.6,
