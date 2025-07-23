@@ -2,6 +2,3 @@ node_modules
 # Keep environment variables out of version control
 .env
 
-#PWA
-public/sw.js
-workbox-e43f5367.js
