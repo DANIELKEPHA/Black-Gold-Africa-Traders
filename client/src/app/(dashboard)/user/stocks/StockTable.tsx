@@ -36,8 +36,8 @@ const StockTable: React.FC<UserStockTableProps> = ({
     };
 
     return (
-        <div className="space-y-4">
-            <Table className="rounded-sm overflow-hidden border border-gray-200 dark:border-gray-700">
+        <div className="space-y-4 overflow-x-auto">
+            <Table className="rounded-sm overflow-hidden border border-gray-200 dark:border-gray-700 min-w-full">
                 <TableHeader>
                     <TableRow className="bg-gray-50 dark:bg-gray-800">
                         <TableHead className="w-[50px]">
@@ -49,24 +49,24 @@ const StockTable: React.FC<UserStockTableProps> = ({
                                 disabled={isExporting || loading || stocks.length === 0}
                             />
                         </TableHead>
-                        <TableHead>{t('stocks:favorite', { defaultValue: 'Favorite' })}</TableHead>
-                        <TableHead>{t('stocks:lotNo', { defaultValue: 'Lot Number' })}</TableHead>
-                        <TableHead>{t('stocks:mark', { defaultValue: 'Mark' })}</TableHead>
-                        <TableHead>{t('stocks:saleCode', { defaultValue: 'Sale Code' })}</TableHead>
-                        <TableHead>{t('stocks:grade', { defaultValue: 'Grade' })}</TableHead>
-                        <TableHead>{t('stocks:broker', { defaultValue: 'Broker' })}</TableHead>
-                        <TableHead>{t('stocks:invoiceNo', { defaultValue: 'Invoice Number' })}</TableHead>
-                        <TableHead>{t('stocks:bags', { defaultValue: 'Bags' })}</TableHead>
-                        <TableHead>{t('stocks:weight', { defaultValue: 'Weight' })}</TableHead>
-                        <TableHead>{t('stocks:purchaseValue', { defaultValue: 'Purchase Value' })}</TableHead>
-                        <TableHead>{t('stocks:totalPurchaseValue', { defaultValue: 'Total Purchase Value' })}</TableHead>
-                        <TableHead className="text-red-600 dark:text-red-800">{t('stocks:agingDays', { defaultValue: 'Aging Days' })}</TableHead>
-                        <TableHead>{t('stocks:penalty', { defaultValue: 'Penalty' })}</TableHead>
-                        <TableHead>{t('stocks:bgtCommission', { defaultValue: 'BGT Commission' })}</TableHead>
-                        <TableHead>{t('stocks:maerskFee', { defaultValue: 'Maersk Fee' })}</TableHead>
-                        <TableHead>{t('stocks:commission', { defaultValue: 'Commission' })}</TableHead>
-                        <TableHead>{t('stocks:netPrice', { defaultValue: 'Net Price' })}</TableHead>
-                        <TableHead>{t('stocks:total', { defaultValue: 'Total' })}</TableHead>
+                        <TableHead className="text-xs sm:text-sm">{t('stocks:favorite', { defaultValue: 'Favorite' })}</TableHead>
+                        <TableHead className="text-xs sm:text-sm">{t('stocks:lotNo', { defaultValue: 'Lot Number' })}</TableHead>
+                        <TableHead className="hidden sm:table-cell text-xs sm:text-sm">{t('stocks:mark', { defaultValue: 'Mark' })}</TableHead>
+                        <TableHead className="hidden md:table-cell text-xs sm:text-sm">{t('stocks:saleCode', { defaultValue: 'Sale Code' })}</TableHead>
+                        <TableHead className="text-xs sm:text-sm">{t('stocks:grade', { defaultValue: 'Grade' })}</TableHead>
+                        <TableHead className="hidden sm:table-cell text-xs sm:text-sm">{t('stocks:broker', { defaultValue: 'Broker' })}</TableHead>
+                        <TableHead className="hidden lg:table-cell text-xs sm:text-sm">{t('stocks:invoiceNo', { defaultValue: 'Invoice Number' })}</TableHead>
+                        <TableHead className="text-xs sm:text-sm">{t('stocks:bags', { defaultValue: 'Bags' })}</TableHead>
+                        <TableHead className="text-xs sm:text-sm">{t('stocks:weight', { defaultValue: 'Weight' })}</TableHead>
+                        <TableHead className="text-xs sm:text-sm">{t('stocks:purchaseValue', { defaultValue: 'Purchase Value' })}</TableHead>
+                        <TableHead className="text-xs sm:text-sm">{t('stocks:totalPurchaseValue', { defaultValue: 'Total Purchase Value' })}</TableHead>
+                        <TableHead className="text-xs sm:text-sm text-red-600 dark:text-red-800">{t('stocks:agingDays', { defaultValue: 'Aging Days' })}</TableHead>
+                        <TableHead className="hidden lg:table-cell text-xs sm:text-sm">{t('stocks:penalty', { defaultValue: 'Penalty' })}</TableHead>
+                        <TableHead className="hidden lg:table-cell text-xs sm:text-sm">{t('stocks:bgtCommission', { defaultValue: 'BGT Commission' })}</TableHead>
+                        <TableHead className="hidden lg:table-cell text-xs sm:text-sm">{t('stocks:maerskFee', { defaultValue: 'Maersk Fee' })}</TableHead>
+                        <TableHead className="hidden lg:table-cell text-xs sm:text-sm">{t('stocks:commission', { defaultValue: 'Commission' })}</TableHead>
+                        <TableHead className="hidden lg:table-cell text-xs sm:text-sm">{t('stocks:netPrice', { defaultValue: 'Net Price' })}</TableHead>
+                        <TableHead className="text-xs sm:text-sm">{t('stocks:total', { defaultValue: 'Total' })}</TableHead>
                     </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -82,7 +82,7 @@ const StockTable: React.FC<UserStockTableProps> = ({
                         ))
                     ) : stocks.length === 0 ? (
                         <TableRow>
-                            <TableCell colSpan={19} className="text-center py-4 text-gray-500 dark:text-gray-400">
+                            <TableCell colSpan={19} className="text-center py-4 text-gray-500 dark:text-gray-400 text-xs sm:text-sm">
                                 <AlertDescription>
                                     {t('stocks:noStocksFound', { defaultValue: 'No stocks found.' })}
                                 </AlertDescription>
@@ -135,27 +135,27 @@ const StockTable: React.FC<UserStockTableProps> = ({
                                         <Star className={cn('w-4 h-4', stock.isFavorited && 'fill-current')} />
                                     </Button>
                                 </TableCell>
-                                <TableCell className="text-gray-800 dark:text-gray-200">
-                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-200">
-                    {stock.lotNo}
-                  </span>
+                                <TableCell className="text-xs sm:text-sm text-gray-800 dark:text-gray-200">
+                                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-200">
+                                        {stock.lotNo}
+                                    </span>
                                 </TableCell>
-                                <TableCell className="text-gray-800 dark:text-gray-200">{stock.mark}</TableCell>
-                                <TableCell className="text-gray-800 dark:text-gray-200">{stock.saleCode}</TableCell>
-                                <TableCell className="text-gray-800 dark:text-gray-200">{stock.grade}</TableCell>
-                                <TableCell className="text-gray-800 dark:text-gray-200">{stock.broker.replace(/_/g, ' ')}</TableCell>
-                                <TableCell className="text-gray-800 dark:text-gray-200">{stock.invoiceNo}</TableCell>
-                                <TableCell className="text-gray-800 dark:text-gray-200">{stock.bags}</TableCell>
-                                <TableCell className="text-gray-800 dark:text-gray-200">{stock.weight.toFixed(2)} kg</TableCell>
-                                <TableCell className="text-gray-800 dark:text-gray-200">${stock.purchaseValue.toFixed(2)}</TableCell>
-                                <TableCell className="text-gray-800 dark:text-gray-200">${stock.totalPurchaseValue.toFixed(2)}</TableCell>
-                                <TableCell className="text-red-600 dark:text-red-800">{stock.agingDays}</TableCell>
-                                <TableCell className="text-gray-800 dark:text-gray-200">${stock.penalty.toFixed(2)}</TableCell>
-                                <TableCell className="text-gray-800 dark:text-gray-200">${stock.bgtCommission.toFixed(2)}</TableCell>
-                                <TableCell className="text-gray-800 dark:text-gray-200">${stock.maerskFee.toFixed(2)}</TableCell>
-                                <TableCell className="text-gray-800 dark:text-gray-200">${stock.commission.toFixed(2)}</TableCell>
-                                <TableCell className="text-gray-800 dark:text-gray-200">${stock.netPrice.toFixed(2)}</TableCell>
-                                <TableCell className="text-gray-800 dark:text-gray-200">${stock.total.toFixed(2)}</TableCell>
+                                <TableCell className="hidden sm:table-cell text-xs sm:text-sm text-gray-800 dark:text-gray-200">{stock.mark}</TableCell>
+                                <TableCell className="hidden md:table-cell text-xs sm:text-sm text-gray-800 dark:text-gray-200">{stock.saleCode}</TableCell>
+                                <TableCell className="text-xs sm:text-sm text-gray-800 dark:text-gray-200">{stock.grade}</TableCell>
+                                <TableCell className="hidden sm:table-cell text-xs sm:text-sm text-gray-800 dark:text-gray-200">{stock.broker.replace(/_/g, ' ')}</TableCell>
+                                <TableCell className="hidden lg:table-cell text-xs sm:text-sm text-gray-800 dark:text-gray-200">{stock.invoiceNo}</TableCell>
+                                <TableCell className="text-xs sm:text-sm text-gray-800 dark:text-gray-200">{stock.bags}</TableCell>
+                                <TableCell className="text-xs sm:text-sm text-gray-800 dark:text-gray-200">{stock.weight.toFixed(2)} kg</TableCell>
+                                <TableCell className="text-xs sm:text-sm text-gray-800 dark:text-gray-200">${stock.purchaseValue.toFixed(2)}</TableCell>
+                                <TableCell className="text-xs sm:text-sm text-gray-800 dark:text-gray-200">${stock.totalPurchaseValue.toFixed(2)}</TableCell>
+                                <TableCell className="text-xs sm:text-sm text-red-600 dark:text-red-800">{stock.agingDays}</TableCell>
+                                <TableCell className="hidden lg:table-cell text-xs sm:text-sm text-gray-800 dark:text-gray-200">${stock.penalty.toFixed(2)}</TableCell>
+                                <TableCell className="hidden lg:table-cell text-xs sm:text-sm text-gray-800 dark:text-gray-200">${stock.bgtCommission.toFixed(2)}</TableCell>
+                                <TableCell className="hidden lg:table-cell text-xs sm:text-sm text-gray-800 dark:text-gray-200">${stock.maerskFee.toFixed(2)}</TableCell>
+                                <TableCell className="hidden lg:table-cell text-xs sm:text-sm text-gray-800 dark:text-gray-200">${stock.commission.toFixed(2)}</TableCell>
+                                <TableCell className="hidden lg:table-cell text-xs sm:text-sm text-gray-800 dark:text-gray-200">${stock.netPrice.toFixed(2)}</TableCell>
+                                <TableCell className="text-xs sm:text-sm text-gray-800 dark:text-gray-200">${stock.total.toFixed(2)}</TableCell>
                             </TableRow>
                         ))
                     )}
