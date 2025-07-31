@@ -17,8 +17,7 @@ Amplify.configure({
     Auth: {
         Cognito: {
             userPoolId: process.env.NEXT_PUBLIC_AWS_COGNITO_USER_POOL_ID!,
-            userPoolClientId:
-                process.env.NEXT_PUBLIC_AWS_COGNITO_USER_POOL_CLIENT_ID!,
+            userPoolClientId: process.env.NEXT_PUBLIC_AWS_COGNITO_USER_POOL_CLIENT_ID!,
         },
     },
 });
@@ -42,8 +41,10 @@ const components = {
     SignIn: {
         Footer() {
             const { toSignUp } = useAuthenticator();
+            const router = useRouter();
+
             return (
-                <View className="text-center mt-4">
+                <View className="text-center mt-4 space-y-2">
                     <p className="text-muted-foreground">
                         Don&apos;t have an account?{" "}
                         <button
@@ -53,10 +54,19 @@ const components = {
                             Sign up here
                         </button>
                     </p>
+                    <p>
+                        <button
+                            onClick={() => router.push("/reset-password")}
+                            className="text-sm text-muted-foreground hover:underline"
+                        >
+                            Forgot your password?
+                        </button>
+                    </p>
                 </View>
             );
         },
     },
+
     SignUp: {
         FormFields() {
             const { validationErrors } = useAuthenticator();
@@ -123,7 +133,7 @@ const formFields = {
         },
         phone_number: {
             order: 3,
-            placeholder: "Enter your phone number (e.g., +1234567890)",
+            placeholder: "Enter your phone number (e.g., +254...)",
             label: "Phone Number",
             isRequired: true,
             dialCode: "+254",
@@ -141,22 +151,33 @@ const formFields = {
             isRequired: true,
         },
     },
+    forgotPassword: {
+        username: {
+            label: "Email",
+            placeholder: "Enter your email address",
+            isRequired: true,
+        },
+    },
 };
 
+
 const Auth = ({ children }: { children: React.ReactNode }) => {
-    const { user } = useAuthenticator((context) => [context.user]);
+    const { user, authStatus } = useAuthenticator((context) => [context.user, context.authStatus]);
     const router = useRouter();
     const pathname = usePathname();
 
     const isAuthPage = pathname.match(/^\/(signin|signup)$/);
-    const isDashboardPage =
-        pathname.startsWith("/admin") || pathname.startsWith("/user");
+    const isDashboardPage = pathname.startsWith("/admin") || pathname.startsWith("/user");
 
     useEffect(() => {
         if (user && isAuthPage) {
             router.push("/");
         }
     }, [user, isAuthPage, router]);
+
+    if (authStatus === "configuring") {
+        return <div className="text-center py-10">Loading authentication...</div>;
+    }
 
     if (!isAuthPage && !isDashboardPage) {
         return <>{children}</>;
