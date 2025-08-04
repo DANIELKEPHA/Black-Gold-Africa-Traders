@@ -12,8 +12,8 @@
     "createdAt": "2025-06-01T12:00:00Z",
     "stocks": [
       {
-        "stocksId": 1,
-        "assignedWeight": 2712.0
+        "lotNo": "12937",
+        "assignedWeight": 100
       }
     ]
   },
@@ -30,8 +30,8 @@
     "createdAt": "2025-06-02T15:30:00Z",
     "stocks": [
       {
-        "stocksId": 2,
-        "assignedWeight": 2720.0
+        "lotNo": "45165",
+        "assignedWeight": 200
       }
     ]
   }

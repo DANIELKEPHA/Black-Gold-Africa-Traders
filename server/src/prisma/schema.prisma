@@ -21,23 +21,25 @@ model Admin {
   shipments       Shipment[]     @relation("AdminShipments")
   stockHistory    StockHistory[] @relation("StockHistoryAdmin")
   shipmentHistory ShipmentHistory[] @relation("ShipmentHistoryAdmin")
+  reports         Report[]       @relation("AdminReports")
 }
 
 model User {
-  id                Int      @id @default(autoincrement())
-  userCognitoId     String   @unique
+  id                Int            @id @default(autoincrement())
+  userCognitoId     String         @unique
   name              String?
-  email             String?  @unique
-  role              String   @default("user")
+  email             String?        @unique
+  role              String         @default("user")
   phoneNumber       String?
   shipments         Shipment[]     @relation("UserShipments")
-  stockHistory      StockHistory[]  @relation("StockHistoryUser")
+  stockHistory      StockHistory[] @relation("StockHistoryUser")
   shipmentHistory   ShipmentHistory[] @relation("ShipmentHistoryUser")
-  favorites         Favorite[]      @relation("UserFavorites")
-  createdAt         DateTime   @default(now())
-  updatedAt         DateTime   @updatedAt
+  favorites         Favorite[]     @relation("UserFavorites")
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
   assignments       StockAssignment[]
   contacts          Contact[]      @relation("UserContacts")
+  reports           Report[]       @relation("UserReports")
 }
 
 model Catalog {
@@ -94,6 +96,7 @@ model OutLots {
   auction         String
   lotNo           String       @unique
   broker          Broker
+  sold            Boolean      @default(false)
   sellingMark     String
   grade           TeaGrade
   invoiceNo       String
@@ -140,6 +143,21 @@ model Stocks {
   createdAt         DateTime       @default(now())
   updatedAt         DateTime       @updatedAt
   @@index([lotNo, saleCode])
+}
+
+model Report {
+  id             Int      @id @default(autoincrement())
+  title          String
+  description    String?
+  fileUrl        String
+  fileType       String
+  uploadedAt     DateTime @default(now())
+  adminCognitoId String?
+  userCognitoId  String?
+  admin          Admin?   @relation("AdminReports", fields: [adminCognitoId], references: [adminCognitoId], onDelete: Cascade)
+  user           User?   @relation("UserReports", fields: [userCognitoId], references: [userCognitoId], onDelete: SetNull)
+  @@index([adminCognitoId, uploadedAt])
+  @@index([userCognitoId, uploadedAt])
 }
 
 model StockAssignment {

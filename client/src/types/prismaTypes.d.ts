@@ -44,6 +44,11 @@ export type OutLots = $Result.DefaultSelection<Prisma.$OutLotsPayload>
  */
 export type Stocks = $Result.DefaultSelection<Prisma.$StocksPayload>
 /**
+ * Model Report
+ * 
+ */
+export type Report = $Result.DefaultSelection<Prisma.$ReportPayload>
+/**
  * Model StockAssignment
  * 
  */
@@ -338,7 +343,7 @@ export class PrismaClient<
     * Example usage:
     * ```ts
     * // Fetch zero or more Users
-    * const contact-forms = await prisma.user.findMany()
+    * const users = await prisma.user.findMany()
     * ```
     */
   get user(): Prisma.UserDelegate<ExtArgs, ClientOptions>;
@@ -382,6 +387,16 @@ export class PrismaClient<
     * ```
     */
   get stocks(): Prisma.StocksDelegate<ExtArgs, ClientOptions>;
+
+  /**
+   * `prisma.report`: Exposes CRUD operations for the **Report** model.
+    * Example usage:
+    * ```ts
+    * // Fetch zero or more Reports
+    * const reports = await prisma.report.findMany()
+    * ```
+    */
+  get report(): Prisma.ReportDelegate<ExtArgs, ClientOptions>;
 
   /**
    * `prisma.stockAssignment`: Exposes CRUD operations for the **StockAssignment** model.
@@ -908,6 +923,7 @@ export namespace Prisma {
     SellingPrice: 'SellingPrice',
     OutLots: 'OutLots',
     Stocks: 'Stocks',
+    Report: 'Report',
     StockAssignment: 'StockAssignment',
     Shipment: 'Shipment',
     ShipmentItem: 'ShipmentItem',
@@ -934,7 +950,7 @@ export namespace Prisma {
       omit: GlobalOmitOptions
     }
     meta: {
-      modelProps: "admin" | "user" | "catalog" | "sellingPrice" | "outLots" | "stocks" | "stockAssignment" | "shipment" | "shipmentItem" | "stockHistory" | "shipmentHistory" | "adminNotification" | "contact" | "favorite"
+      modelProps: "admin" | "user" | "catalog" | "sellingPrice" | "outLots" | "stocks" | "report" | "stockAssignment" | "shipment" | "shipmentItem" | "stockHistory" | "shipmentHistory" | "adminNotification" | "contact" | "favorite"
       txIsolationLevel: Prisma.TransactionIsolationLevel
     }
     model: {
@@ -1379,6 +1395,80 @@ export namespace Prisma {
           count: {
             args: Prisma.StocksCountArgs<ExtArgs>
             result: $Utils.Optional<StocksCountAggregateOutputType> | number
+          }
+        }
+      }
+      Report: {
+        payload: Prisma.$ReportPayload<ExtArgs>
+        fields: Prisma.ReportFieldRefs
+        operations: {
+          findUnique: {
+            args: Prisma.ReportFindUniqueArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ReportPayload> | null
+          }
+          findUniqueOrThrow: {
+            args: Prisma.ReportFindUniqueOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ReportPayload>
+          }
+          findFirst: {
+            args: Prisma.ReportFindFirstArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ReportPayload> | null
+          }
+          findFirstOrThrow: {
+            args: Prisma.ReportFindFirstOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ReportPayload>
+          }
+          findMany: {
+            args: Prisma.ReportFindManyArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ReportPayload>[]
+          }
+          create: {
+            args: Prisma.ReportCreateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ReportPayload>
+          }
+          createMany: {
+            args: Prisma.ReportCreateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          createManyAndReturn: {
+            args: Prisma.ReportCreateManyAndReturnArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ReportPayload>[]
+          }
+          delete: {
+            args: Prisma.ReportDeleteArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ReportPayload>
+          }
+          update: {
+            args: Prisma.ReportUpdateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ReportPayload>
+          }
+          deleteMany: {
+            args: Prisma.ReportDeleteManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateMany: {
+            args: Prisma.ReportUpdateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateManyAndReturn: {
+            args: Prisma.ReportUpdateManyAndReturnArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ReportPayload>[]
+          }
+          upsert: {
+            args: Prisma.ReportUpsertArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ReportPayload>
+          }
+          aggregate: {
+            args: Prisma.ReportAggregateArgs<ExtArgs>
+            result: $Utils.Optional<AggregateReport>
+          }
+          groupBy: {
+            args: Prisma.ReportGroupByArgs<ExtArgs>
+            result: $Utils.Optional<ReportGroupByOutputType>[]
+          }
+          count: {
+            args: Prisma.ReportCountArgs<ExtArgs>
+            result: $Utils.Optional<ReportCountAggregateOutputType> | number
           }
         }
       }
@@ -2064,6 +2154,7 @@ export namespace Prisma {
     sellingPrice?: SellingPriceOmit
     outLots?: OutLotsOmit
     stocks?: StocksOmit
+    report?: ReportOmit
     stockAssignment?: StockAssignmentOmit
     shipment?: ShipmentOmit
     shipmentItem?: ShipmentItemOmit
@@ -2174,6 +2265,7 @@ export namespace Prisma {
     shipments: number
     stockHistory: number
     shipmentHistory: number
+    reports: number
   }
 
   export type AdminCountOutputTypeSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
@@ -2185,6 +2277,7 @@ export namespace Prisma {
     shipments?: boolean | AdminCountOutputTypeCountShipmentsArgs
     stockHistory?: boolean | AdminCountOutputTypeCountStockHistoryArgs
     shipmentHistory?: boolean | AdminCountOutputTypeCountShipmentHistoryArgs
+    reports?: boolean | AdminCountOutputTypeCountReportsArgs
   }
 
   // Custom InputTypes
@@ -2254,6 +2347,13 @@ export namespace Prisma {
     where?: ShipmentHistoryWhereInput
   }
 
+  /**
+   * AdminCountOutputType without action
+   */
+  export type AdminCountOutputTypeCountReportsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: ReportWhereInput
+  }
+
 
   /**
    * Count Type UserCountOutputType
@@ -2266,6 +2366,7 @@ export namespace Prisma {
     favorites: number
     assignments: number
     contacts: number
+    reports: number
   }
 
   export type UserCountOutputTypeSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
@@ -2275,6 +2376,7 @@ export namespace Prisma {
     favorites?: boolean | UserCountOutputTypeCountFavoritesArgs
     assignments?: boolean | UserCountOutputTypeCountAssignmentsArgs
     contacts?: boolean | UserCountOutputTypeCountContactsArgs
+    reports?: boolean | UserCountOutputTypeCountReportsArgs
   }
 
   // Custom InputTypes
@@ -2328,6 +2430,13 @@ export namespace Prisma {
    */
   export type UserCountOutputTypeCountContactsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     where?: ContactWhereInput
+  }
+
+  /**
+   * UserCountOutputType without action
+   */
+  export type UserCountOutputTypeCountReportsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: ReportWhereInput
   }
 
 
@@ -2648,6 +2757,7 @@ export namespace Prisma {
     shipments?: boolean | Admin$shipmentsArgs<ExtArgs>
     stockHistory?: boolean | Admin$stockHistoryArgs<ExtArgs>
     shipmentHistory?: boolean | Admin$shipmentHistoryArgs<ExtArgs>
+    reports?: boolean | Admin$reportsArgs<ExtArgs>
     _count?: boolean | AdminCountOutputTypeDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["admin"]>
 
@@ -2685,6 +2795,7 @@ export namespace Prisma {
     shipments?: boolean | Admin$shipmentsArgs<ExtArgs>
     stockHistory?: boolean | Admin$stockHistoryArgs<ExtArgs>
     shipmentHistory?: boolean | Admin$shipmentHistoryArgs<ExtArgs>
+    reports?: boolean | Admin$reportsArgs<ExtArgs>
     _count?: boolean | AdminCountOutputTypeDefaultArgs<ExtArgs>
   }
   export type AdminIncludeCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {}
@@ -2701,6 +2812,7 @@ export namespace Prisma {
       shipments: Prisma.$ShipmentPayload<ExtArgs>[]
       stockHistory: Prisma.$StockHistoryPayload<ExtArgs>[]
       shipmentHistory: Prisma.$ShipmentHistoryPayload<ExtArgs>[]
+      reports: Prisma.$ReportPayload<ExtArgs>[]
     }
     scalars: $Extensions.GetPayloadResult<{
       id: number
@@ -2994,7 +3106,7 @@ export namespace Prisma {
      * @example
      * // Ordered by age ascending
      * // Where email contains prisma.io
-     * // Limited to the 10 contact-forms
+     * // Limited to the 10 users
      * const aggregations = await prisma.user.aggregate({
      *   _avg: {
      *     age: true,
@@ -3110,6 +3222,7 @@ export namespace Prisma {
     shipments<T extends Admin$shipmentsArgs<ExtArgs> = {}>(args?: Subset<T, Admin$shipmentsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$ShipmentPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     stockHistory<T extends Admin$stockHistoryArgs<ExtArgs> = {}>(args?: Subset<T, Admin$stockHistoryArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$StockHistoryPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     shipmentHistory<T extends Admin$shipmentHistoryArgs<ExtArgs> = {}>(args?: Subset<T, Admin$shipmentHistoryArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$ShipmentHistoryPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+    reports<T extends Admin$reportsArgs<ExtArgs> = {}>(args?: Subset<T, Admin$reportsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$ReportPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     /**
      * Attaches callbacks for the resolution and/or rejection of the Promise.
      * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -3724,6 +3837,30 @@ export namespace Prisma {
   }
 
   /**
+   * Admin.reports
+   */
+  export type Admin$reportsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Report
+     */
+    select?: ReportSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the Report
+     */
+    omit?: ReportOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ReportInclude<ExtArgs> | null
+    where?: ReportWhereInput
+    orderBy?: ReportOrderByWithRelationInput | ReportOrderByWithRelationInput[]
+    cursor?: ReportWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: ReportScalarFieldEnum | ReportScalarFieldEnum[]
+  }
+
+  /**
    * Admin without action
    */
   export type AdminDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
@@ -3970,6 +4107,7 @@ export namespace Prisma {
     favorites?: boolean | User$favoritesArgs<ExtArgs>
     assignments?: boolean | User$assignmentsArgs<ExtArgs>
     contacts?: boolean | User$contactsArgs<ExtArgs>
+    reports?: boolean | User$reportsArgs<ExtArgs>
     _count?: boolean | UserCountOutputTypeDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["user"]>
 
@@ -4014,6 +4152,7 @@ export namespace Prisma {
     favorites?: boolean | User$favoritesArgs<ExtArgs>
     assignments?: boolean | User$assignmentsArgs<ExtArgs>
     contacts?: boolean | User$contactsArgs<ExtArgs>
+    reports?: boolean | User$reportsArgs<ExtArgs>
     _count?: boolean | UserCountOutputTypeDefaultArgs<ExtArgs>
   }
   export type UserIncludeCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {}
@@ -4028,6 +4167,7 @@ export namespace Prisma {
       favorites: Prisma.$FavoritePayload<ExtArgs>[]
       assignments: Prisma.$StockAssignmentPayload<ExtArgs>[]
       contacts: Prisma.$ContactPayload<ExtArgs>[]
+      reports: Prisma.$ReportPayload<ExtArgs>[]
     }
     scalars: $Extensions.GetPayloadResult<{
       id: number
@@ -4116,10 +4256,10 @@ export namespace Prisma {
      * @param {UserFindManyArgs} args - Arguments to filter and select certain fields only.
      * @example
      * // Get all Users
-     * const contact-forms = await prisma.user.findMany()
+     * const users = await prisma.user.findMany()
      * 
      * // Get first 10 Users
-     * const contact-forms = await prisma.user.findMany({ take: 10 })
+     * const users = await prisma.user.findMany({ take: 10 })
      * 
      * // Only select the `id`
      * const userWithIdOnly = await prisma.user.findMany({ select: { id: true } })
@@ -4324,7 +4464,7 @@ export namespace Prisma {
      * @example
      * // Ordered by age ascending
      * // Where email contains prisma.io
-     * // Limited to the 10 contact-forms
+     * // Limited to the 10 users
      * const aggregations = await prisma.user.aggregate({
      *   _avg: {
      *     age: true,
@@ -4438,6 +4578,7 @@ export namespace Prisma {
     favorites<T extends User$favoritesArgs<ExtArgs> = {}>(args?: Subset<T, User$favoritesArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$FavoritePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     assignments<T extends User$assignmentsArgs<ExtArgs> = {}>(args?: Subset<T, User$assignmentsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$StockAssignmentPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     contacts<T extends User$contactsArgs<ExtArgs> = {}>(args?: Subset<T, User$contactsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$ContactPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+    reports<T extends User$reportsArgs<ExtArgs> = {}>(args?: Subset<T, User$reportsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$ReportPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     /**
      * Attaches callbacks for the resolution and/or rejection of the Promise.
      * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -5004,6 +5145,30 @@ export namespace Prisma {
     take?: number
     skip?: number
     distinct?: ContactScalarFieldEnum | ContactScalarFieldEnum[]
+  }
+
+  /**
+   * User.reports
+   */
+  export type User$reportsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Report
+     */
+    select?: ReportSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the Report
+     */
+    omit?: ReportOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ReportInclude<ExtArgs> | null
+    where?: ReportWhereInput
+    orderBy?: ReportOrderByWithRelationInput | ReportOrderByWithRelationInput[]
+    cursor?: ReportWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: ReportScalarFieldEnum | ReportScalarFieldEnum[]
   }
 
   /**
@@ -5744,7 +5909,7 @@ export namespace Prisma {
      * @example
      * // Ordered by age ascending
      * // Where email contains prisma.io
-     * // Limited to the 10 contact-forms
+     * // Limited to the 10 users
      * const aggregations = await prisma.user.aggregate({
      *   _avg: {
      *     age: true,
@@ -7069,7 +7234,7 @@ export namespace Prisma {
      * @example
      * // Ordered by age ascending
      * // Where email contains prisma.io
-     * // Limited to the 10 contact-forms
+     * // Limited to the 10 users
      * const aggregations = await prisma.user.aggregate({
      *   _avg: {
      *     age: true,
@@ -7693,6 +7858,7 @@ export namespace Prisma {
     auction: string | null
     lotNo: string | null
     broker: $Enums.Broker | null
+    sold: boolean | null
     sellingMark: string | null
     grade: $Enums.TeaGrade | null
     invoiceNo: string | null
@@ -7712,6 +7878,7 @@ export namespace Prisma {
     auction: string | null
     lotNo: string | null
     broker: $Enums.Broker | null
+    sold: boolean | null
     sellingMark: string | null
     grade: $Enums.TeaGrade | null
     invoiceNo: string | null
@@ -7731,6 +7898,7 @@ export namespace Prisma {
     auction: number
     lotNo: number
     broker: number
+    sold: number
     sellingMark: number
     grade: number
     invoiceNo: number
@@ -7768,6 +7936,7 @@ export namespace Prisma {
     auction?: true
     lotNo?: true
     broker?: true
+    sold?: true
     sellingMark?: true
     grade?: true
     invoiceNo?: true
@@ -7787,6 +7956,7 @@ export namespace Prisma {
     auction?: true
     lotNo?: true
     broker?: true
+    sold?: true
     sellingMark?: true
     grade?: true
     invoiceNo?: true
@@ -7806,6 +7976,7 @@ export namespace Prisma {
     auction?: true
     lotNo?: true
     broker?: true
+    sold?: true
     sellingMark?: true
     grade?: true
     invoiceNo?: true
@@ -7912,6 +8083,7 @@ export namespace Prisma {
     auction: string
     lotNo: string
     broker: $Enums.Broker
+    sold: boolean
     sellingMark: string
     grade: $Enums.TeaGrade
     invoiceNo: string
@@ -7950,6 +8122,7 @@ export namespace Prisma {
     auction?: boolean
     lotNo?: boolean
     broker?: boolean
+    sold?: boolean
     sellingMark?: boolean
     grade?: boolean
     invoiceNo?: boolean
@@ -7970,6 +8143,7 @@ export namespace Prisma {
     auction?: boolean
     lotNo?: boolean
     broker?: boolean
+    sold?: boolean
     sellingMark?: boolean
     grade?: boolean
     invoiceNo?: boolean
@@ -7990,6 +8164,7 @@ export namespace Prisma {
     auction?: boolean
     lotNo?: boolean
     broker?: boolean
+    sold?: boolean
     sellingMark?: boolean
     grade?: boolean
     invoiceNo?: boolean
@@ -8010,6 +8185,7 @@ export namespace Prisma {
     auction?: boolean
     lotNo?: boolean
     broker?: boolean
+    sold?: boolean
     sellingMark?: boolean
     grade?: boolean
     invoiceNo?: boolean
@@ -8024,7 +8200,7 @@ export namespace Prisma {
     updatedAt?: boolean
   }
 
-  export type OutLotsOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "auction" | "lotNo" | "broker" | "sellingMark" | "grade" | "invoiceNo" | "bags" | "netWeight" | "totalWeight" | "baselinePrice" | "manufactureDate" | "adminCognitoId" | "userCognitoId" | "createdAt" | "updatedAt", ExtArgs["result"]["outLots"]>
+  export type OutLotsOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "auction" | "lotNo" | "broker" | "sold" | "sellingMark" | "grade" | "invoiceNo" | "bags" | "netWeight" | "totalWeight" | "baselinePrice" | "manufactureDate" | "adminCognitoId" | "userCognitoId" | "createdAt" | "updatedAt", ExtArgs["result"]["outLots"]>
   export type OutLotsInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     admin?: boolean | OutLots$adminArgs<ExtArgs>
   }
@@ -8045,6 +8221,7 @@ export namespace Prisma {
       auction: string
       lotNo: string
       broker: $Enums.Broker
+      sold: boolean
       sellingMark: string
       grade: $Enums.TeaGrade
       invoiceNo: string
@@ -8343,7 +8520,7 @@ export namespace Prisma {
      * @example
      * // Ordered by age ascending
      * // Where email contains prisma.io
-     * // Limited to the 10 contact-forms
+     * // Limited to the 10 users
      * const aggregations = await prisma.user.aggregate({
      *   _avg: {
      *     age: true,
@@ -8485,6 +8662,7 @@ export namespace Prisma {
     readonly auction: FieldRef<"OutLots", 'String'>
     readonly lotNo: FieldRef<"OutLots", 'String'>
     readonly broker: FieldRef<"OutLots", 'Broker'>
+    readonly sold: FieldRef<"OutLots", 'Boolean'>
     readonly sellingMark: FieldRef<"OutLots", 'String'>
     readonly grade: FieldRef<"OutLots", 'TeaGrade'>
     readonly invoiceNo: FieldRef<"OutLots", 'String'>
@@ -9743,7 +9921,7 @@ export namespace Prisma {
      * @example
      * // Ordered by age ascending
      * // Where email contains prisma.io
-     * // Limited to the 10 contact-forms
+     * // Limited to the 10 users
      * const aggregations = await prisma.user.aggregate({
      *   _avg: {
      *     age: true,
@@ -10419,6 +10597,1183 @@ export namespace Prisma {
 
 
   /**
+   * Model Report
+   */
+
+  export type AggregateReport = {
+    _count: ReportCountAggregateOutputType | null
+    _avg: ReportAvgAggregateOutputType | null
+    _sum: ReportSumAggregateOutputType | null
+    _min: ReportMinAggregateOutputType | null
+    _max: ReportMaxAggregateOutputType | null
+  }
+
+  export type ReportAvgAggregateOutputType = {
+    id: number | null
+  }
+
+  export type ReportSumAggregateOutputType = {
+    id: number | null
+  }
+
+  export type ReportMinAggregateOutputType = {
+    id: number | null
+    title: string | null
+    description: string | null
+    fileUrl: string | null
+    fileType: string | null
+    uploadedAt: Date | null
+    adminCognitoId: string | null
+    userCognitoId: string | null
+  }
+
+  export type ReportMaxAggregateOutputType = {
+    id: number | null
+    title: string | null
+    description: string | null
+    fileUrl: string | null
+    fileType: string | null
+    uploadedAt: Date | null
+    adminCognitoId: string | null
+    userCognitoId: string | null
+  }
+
+  export type ReportCountAggregateOutputType = {
+    id: number
+    title: number
+    description: number
+    fileUrl: number
+    fileType: number
+    uploadedAt: number
+    adminCognitoId: number
+    userCognitoId: number
+    _all: number
+  }
+
+
+  export type ReportAvgAggregateInputType = {
+    id?: true
+  }
+
+  export type ReportSumAggregateInputType = {
+    id?: true
+  }
+
+  export type ReportMinAggregateInputType = {
+    id?: true
+    title?: true
+    description?: true
+    fileUrl?: true
+    fileType?: true
+    uploadedAt?: true
+    adminCognitoId?: true
+    userCognitoId?: true
+  }
+
+  export type ReportMaxAggregateInputType = {
+    id?: true
+    title?: true
+    description?: true
+    fileUrl?: true
+    fileType?: true
+    uploadedAt?: true
+    adminCognitoId?: true
+    userCognitoId?: true
+  }
+
+  export type ReportCountAggregateInputType = {
+    id?: true
+    title?: true
+    description?: true
+    fileUrl?: true
+    fileType?: true
+    uploadedAt?: true
+    adminCognitoId?: true
+    userCognitoId?: true
+    _all?: true
+  }
+
+  export type ReportAggregateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which Report to aggregate.
+     */
+    where?: ReportWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of Reports to fetch.
+     */
+    orderBy?: ReportOrderByWithRelationInput | ReportOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the start position
+     */
+    cursor?: ReportWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` Reports from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` Reports.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Count returned Reports
+    **/
+    _count?: true | ReportCountAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to average
+    **/
+    _avg?: ReportAvgAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to sum
+    **/
+    _sum?: ReportSumAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the minimum value
+    **/
+    _min?: ReportMinAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the maximum value
+    **/
+    _max?: ReportMaxAggregateInputType
+  }
+
+  export type GetReportAggregateType<T extends ReportAggregateArgs> = {
+        [P in keyof T & keyof AggregateReport]: P extends '_count' | 'count'
+      ? T[P] extends true
+        ? number
+        : GetScalarType<T[P], AggregateReport[P]>
+      : GetScalarType<T[P], AggregateReport[P]>
+  }
+
+
+
+
+  export type ReportGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: ReportWhereInput
+    orderBy?: ReportOrderByWithAggregationInput | ReportOrderByWithAggregationInput[]
+    by: ReportScalarFieldEnum[] | ReportScalarFieldEnum
+    having?: ReportScalarWhereWithAggregatesInput
+    take?: number
+    skip?: number
+    _count?: ReportCountAggregateInputType | true
+    _avg?: ReportAvgAggregateInputType
+    _sum?: ReportSumAggregateInputType
+    _min?: ReportMinAggregateInputType
+    _max?: ReportMaxAggregateInputType
+  }
+
+  export type ReportGroupByOutputType = {
+    id: number
+    title: string
+    description: string | null
+    fileUrl: string
+    fileType: string
+    uploadedAt: Date
+    adminCognitoId: string | null
+    userCognitoId: string | null
+    _count: ReportCountAggregateOutputType | null
+    _avg: ReportAvgAggregateOutputType | null
+    _sum: ReportSumAggregateOutputType | null
+    _min: ReportMinAggregateOutputType | null
+    _max: ReportMaxAggregateOutputType | null
+  }
+
+  type GetReportGroupByPayload<T extends ReportGroupByArgs> = Prisma.PrismaPromise<
+    Array<
+      PickEnumerable<ReportGroupByOutputType, T['by']> &
+        {
+          [P in ((keyof T) & (keyof ReportGroupByOutputType))]: P extends '_count'
+            ? T[P] extends boolean
+              ? number
+              : GetScalarType<T[P], ReportGroupByOutputType[P]>
+            : GetScalarType<T[P], ReportGroupByOutputType[P]>
+        }
+      >
+    >
+
+
+  export type ReportSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    title?: boolean
+    description?: boolean
+    fileUrl?: boolean
+    fileType?: boolean
+    uploadedAt?: boolean
+    adminCognitoId?: boolean
+    userCognitoId?: boolean
+    admin?: boolean | Report$adminArgs<ExtArgs>
+    user?: boolean | Report$userArgs<ExtArgs>
+  }, ExtArgs["result"]["report"]>
+
+  export type ReportSelectCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    title?: boolean
+    description?: boolean
+    fileUrl?: boolean
+    fileType?: boolean
+    uploadedAt?: boolean
+    adminCognitoId?: boolean
+    userCognitoId?: boolean
+    admin?: boolean | Report$adminArgs<ExtArgs>
+    user?: boolean | Report$userArgs<ExtArgs>
+  }, ExtArgs["result"]["report"]>
+
+  export type ReportSelectUpdateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    title?: boolean
+    description?: boolean
+    fileUrl?: boolean
+    fileType?: boolean
+    uploadedAt?: boolean
+    adminCognitoId?: boolean
+    userCognitoId?: boolean
+    admin?: boolean | Report$adminArgs<ExtArgs>
+    user?: boolean | Report$userArgs<ExtArgs>
+  }, ExtArgs["result"]["report"]>
+
+  export type ReportSelectScalar = {
+    id?: boolean
+    title?: boolean
+    description?: boolean
+    fileUrl?: boolean
+    fileType?: boolean
+    uploadedAt?: boolean
+    adminCognitoId?: boolean
+    userCognitoId?: boolean
+  }
+
+  export type ReportOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "title" | "description" | "fileUrl" | "fileType" | "uploadedAt" | "adminCognitoId" | "userCognitoId", ExtArgs["result"]["report"]>
+  export type ReportInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    admin?: boolean | Report$adminArgs<ExtArgs>
+    user?: boolean | Report$userArgs<ExtArgs>
+  }
+  export type ReportIncludeCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    admin?: boolean | Report$adminArgs<ExtArgs>
+    user?: boolean | Report$userArgs<ExtArgs>
+  }
+  export type ReportIncludeUpdateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    admin?: boolean | Report$adminArgs<ExtArgs>
+    user?: boolean | Report$userArgs<ExtArgs>
+  }
+
+  export type $ReportPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    name: "Report"
+    objects: {
+      admin: Prisma.$AdminPayload<ExtArgs> | null
+      user: Prisma.$UserPayload<ExtArgs> | null
+    }
+    scalars: $Extensions.GetPayloadResult<{
+      id: number
+      title: string
+      description: string | null
+      fileUrl: string
+      fileType: string
+      uploadedAt: Date
+      adminCognitoId: string | null
+      userCognitoId: string | null
+    }, ExtArgs["result"]["report"]>
+    composites: {}
+  }
+
+  type ReportGetPayload<S extends boolean | null | undefined | ReportDefaultArgs> = $Result.GetResult<Prisma.$ReportPayload, S>
+
+  type ReportCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> =
+    Omit<ReportFindManyArgs, 'select' | 'include' | 'distinct' | 'omit'> & {
+      select?: ReportCountAggregateInputType | true
+    }
+
+  export interface ReportDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> {
+    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['Report'], meta: { name: 'Report' } }
+    /**
+     * Find zero or one Report that matches the filter.
+     * @param {ReportFindUniqueArgs} args - Arguments to find a Report
+     * @example
+     * // Get one Report
+     * const report = await prisma.report.findUnique({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUnique<T extends ReportFindUniqueArgs>(args: SelectSubset<T, ReportFindUniqueArgs<ExtArgs>>): Prisma__ReportClient<$Result.GetResult<Prisma.$ReportPayload<ExtArgs>, T, "findUnique", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find one Report that matches the filter or throw an error with `error.code='P2025'`
+     * if no matches were found.
+     * @param {ReportFindUniqueOrThrowArgs} args - Arguments to find a Report
+     * @example
+     * // Get one Report
+     * const report = await prisma.report.findUniqueOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUniqueOrThrow<T extends ReportFindUniqueOrThrowArgs>(args: SelectSubset<T, ReportFindUniqueOrThrowArgs<ExtArgs>>): Prisma__ReportClient<$Result.GetResult<Prisma.$ReportPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find the first Report that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ReportFindFirstArgs} args - Arguments to find a Report
+     * @example
+     * // Get one Report
+     * const report = await prisma.report.findFirst({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirst<T extends ReportFindFirstArgs>(args?: SelectSubset<T, ReportFindFirstArgs<ExtArgs>>): Prisma__ReportClient<$Result.GetResult<Prisma.$ReportPayload<ExtArgs>, T, "findFirst", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find the first Report that matches the filter or
+     * throw `PrismaKnownClientError` with `P2025` code if no matches were found.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ReportFindFirstOrThrowArgs} args - Arguments to find a Report
+     * @example
+     * // Get one Report
+     * const report = await prisma.report.findFirstOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirstOrThrow<T extends ReportFindFirstOrThrowArgs>(args?: SelectSubset<T, ReportFindFirstOrThrowArgs<ExtArgs>>): Prisma__ReportClient<$Result.GetResult<Prisma.$ReportPayload<ExtArgs>, T, "findFirstOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find zero or more Reports that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ReportFindManyArgs} args - Arguments to filter and select certain fields only.
+     * @example
+     * // Get all Reports
+     * const reports = await prisma.report.findMany()
+     * 
+     * // Get first 10 Reports
+     * const reports = await prisma.report.findMany({ take: 10 })
+     * 
+     * // Only select the `id`
+     * const reportWithIdOnly = await prisma.report.findMany({ select: { id: true } })
+     * 
+     */
+    findMany<T extends ReportFindManyArgs>(args?: SelectSubset<T, ReportFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$ReportPayload<ExtArgs>, T, "findMany", GlobalOmitOptions>>
+
+    /**
+     * Create a Report.
+     * @param {ReportCreateArgs} args - Arguments to create a Report.
+     * @example
+     * // Create one Report
+     * const Report = await prisma.report.create({
+     *   data: {
+     *     // ... data to create a Report
+     *   }
+     * })
+     * 
+     */
+    create<T extends ReportCreateArgs>(args: SelectSubset<T, ReportCreateArgs<ExtArgs>>): Prisma__ReportClient<$Result.GetResult<Prisma.$ReportPayload<ExtArgs>, T, "create", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Create many Reports.
+     * @param {ReportCreateManyArgs} args - Arguments to create many Reports.
+     * @example
+     * // Create many Reports
+     * const report = await prisma.report.createMany({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     *     
+     */
+    createMany<T extends ReportCreateManyArgs>(args?: SelectSubset<T, ReportCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create many Reports and returns the data saved in the database.
+     * @param {ReportCreateManyAndReturnArgs} args - Arguments to create many Reports.
+     * @example
+     * // Create many Reports
+     * const report = await prisma.report.createManyAndReturn({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * 
+     * // Create many Reports and only return the `id`
+     * const reportWithIdOnly = await prisma.report.createManyAndReturn({
+     *   select: { id: true },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * 
+     */
+    createManyAndReturn<T extends ReportCreateManyAndReturnArgs>(args?: SelectSubset<T, ReportCreateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$ReportPayload<ExtArgs>, T, "createManyAndReturn", GlobalOmitOptions>>
+
+    /**
+     * Delete a Report.
+     * @param {ReportDeleteArgs} args - Arguments to delete one Report.
+     * @example
+     * // Delete one Report
+     * const Report = await prisma.report.delete({
+     *   where: {
+     *     // ... filter to delete one Report
+     *   }
+     * })
+     * 
+     */
+    delete<T extends ReportDeleteArgs>(args: SelectSubset<T, ReportDeleteArgs<ExtArgs>>): Prisma__ReportClient<$Result.GetResult<Prisma.$ReportPayload<ExtArgs>, T, "delete", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Update one Report.
+     * @param {ReportUpdateArgs} args - Arguments to update one Report.
+     * @example
+     * // Update one Report
+     * const report = await prisma.report.update({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    update<T extends ReportUpdateArgs>(args: SelectSubset<T, ReportUpdateArgs<ExtArgs>>): Prisma__ReportClient<$Result.GetResult<Prisma.$ReportPayload<ExtArgs>, T, "update", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Delete zero or more Reports.
+     * @param {ReportDeleteManyArgs} args - Arguments to filter Reports to delete.
+     * @example
+     * // Delete a few Reports
+     * const { count } = await prisma.report.deleteMany({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     * 
+     */
+    deleteMany<T extends ReportDeleteManyArgs>(args?: SelectSubset<T, ReportDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more Reports.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ReportUpdateManyArgs} args - Arguments to update one or more rows.
+     * @example
+     * // Update many Reports
+     * const report = await prisma.report.updateMany({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    updateMany<T extends ReportUpdateManyArgs>(args: SelectSubset<T, ReportUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more Reports and returns the data updated in the database.
+     * @param {ReportUpdateManyAndReturnArgs} args - Arguments to update many Reports.
+     * @example
+     * // Update many Reports
+     * const report = await prisma.report.updateManyAndReturn({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * 
+     * // Update zero or more Reports and only return the `id`
+     * const reportWithIdOnly = await prisma.report.updateManyAndReturn({
+     *   select: { id: true },
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * 
+     */
+    updateManyAndReturn<T extends ReportUpdateManyAndReturnArgs>(args: SelectSubset<T, ReportUpdateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$ReportPayload<ExtArgs>, T, "updateManyAndReturn", GlobalOmitOptions>>
+
+    /**
+     * Create or update one Report.
+     * @param {ReportUpsertArgs} args - Arguments to update or create a Report.
+     * @example
+     * // Update or create a Report
+     * const report = await prisma.report.upsert({
+     *   create: {
+     *     // ... data to create a Report
+     *   },
+     *   update: {
+     *     // ... in case it already exists, update
+     *   },
+     *   where: {
+     *     // ... the filter for the Report we want to update
+     *   }
+     * })
+     */
+    upsert<T extends ReportUpsertArgs>(args: SelectSubset<T, ReportUpsertArgs<ExtArgs>>): Prisma__ReportClient<$Result.GetResult<Prisma.$ReportPayload<ExtArgs>, T, "upsert", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+
+    /**
+     * Count the number of Reports.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ReportCountArgs} args - Arguments to filter Reports to count.
+     * @example
+     * // Count the number of Reports
+     * const count = await prisma.report.count({
+     *   where: {
+     *     // ... the filter for the Reports we want to count
+     *   }
+     * })
+    **/
+    count<T extends ReportCountArgs>(
+      args?: Subset<T, ReportCountArgs>,
+    ): Prisma.PrismaPromise<
+      T extends $Utils.Record<'select', any>
+        ? T['select'] extends true
+          ? number
+          : GetScalarType<T['select'], ReportCountAggregateOutputType>
+        : number
+    >
+
+    /**
+     * Allows you to perform aggregations operations on a Report.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ReportAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
+     * @example
+     * // Ordered by age ascending
+     * // Where email contains prisma.io
+     * // Limited to the 10 users
+     * const aggregations = await prisma.user.aggregate({
+     *   _avg: {
+     *     age: true,
+     *   },
+     *   where: {
+     *     email: {
+     *       contains: "prisma.io",
+     *     },
+     *   },
+     *   orderBy: {
+     *     age: "asc",
+     *   },
+     *   take: 10,
+     * })
+    **/
+    aggregate<T extends ReportAggregateArgs>(args: Subset<T, ReportAggregateArgs>): Prisma.PrismaPromise<GetReportAggregateType<T>>
+
+    /**
+     * Group by Report.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ReportGroupByArgs} args - Group by arguments.
+     * @example
+     * // Group by city, order by createdAt, get count
+     * const result = await prisma.user.groupBy({
+     *   by: ['city', 'createdAt'],
+     *   orderBy: {
+     *     createdAt: true
+     *   },
+     *   _count: {
+     *     _all: true
+     *   },
+     * })
+     * 
+    **/
+    groupBy<
+      T extends ReportGroupByArgs,
+      HasSelectOrTake extends Or<
+        Extends<'skip', Keys<T>>,
+        Extends<'take', Keys<T>>
+      >,
+      OrderByArg extends True extends HasSelectOrTake
+        ? { orderBy: ReportGroupByArgs['orderBy'] }
+        : { orderBy?: ReportGroupByArgs['orderBy'] },
+      OrderFields extends ExcludeUnderscoreKeys<Keys<MaybeTupleToUnion<T['orderBy']>>>,
+      ByFields extends MaybeTupleToUnion<T['by']>,
+      ByValid extends Has<ByFields, OrderFields>,
+      HavingFields extends GetHavingFields<T['having']>,
+      HavingValid extends Has<ByFields, HavingFields>,
+      ByEmpty extends T['by'] extends never[] ? True : False,
+      InputErrors extends ByEmpty extends True
+      ? `Error: "by" must not be empty.`
+      : HavingValid extends False
+      ? {
+          [P in HavingFields]: P extends ByFields
+            ? never
+            : P extends string
+            ? `Error: Field "${P}" used in "having" needs to be provided in "by".`
+            : [
+                Error,
+                'Field ',
+                P,
+                ` in "having" needs to be provided in "by"`,
+              ]
+        }[HavingFields]
+      : 'take' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "take", you also need to provide "orderBy"'
+      : 'skip' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "skip", you also need to provide "orderBy"'
+      : ByValid extends True
+      ? {}
+      : {
+          [P in OrderFields]: P extends ByFields
+            ? never
+            : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+        }[OrderFields]
+    >(args: SubsetIntersection<T, ReportGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetReportGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
+  /**
+   * Fields of the Report model
+   */
+  readonly fields: ReportFieldRefs;
+  }
+
+  /**
+   * The delegate class that acts as a "Promise-like" for Report.
+   * Why is this prefixed with `Prisma__`?
+   * Because we want to prevent naming conflicts as mentioned in
+   * https://github.com/prisma/prisma-client-js/issues/707
+   */
+  export interface Prisma__ReportClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
+    readonly [Symbol.toStringTag]: "PrismaPromise"
+    admin<T extends Report$adminArgs<ExtArgs> = {}>(args?: Subset<T, Report$adminArgs<ExtArgs>>): Prisma__AdminClient<$Result.GetResult<Prisma.$AdminPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+    user<T extends Report$userArgs<ExtArgs> = {}>(args?: Subset<T, Report$userArgs<ExtArgs>>): Prisma__UserClient<$Result.GetResult<Prisma.$UserPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+    /**
+     * Attaches callbacks for the resolution and/or rejection of the Promise.
+     * @param onfulfilled The callback to execute when the Promise is resolved.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of which ever callback is executed.
+     */
+    then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): $Utils.JsPromise<TResult1 | TResult2>
+    /**
+     * Attaches a callback for only the rejection of the Promise.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of the callback.
+     */
+    catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): $Utils.JsPromise<T | TResult>
+    /**
+     * Attaches a callback that is invoked when the Promise is settled (fulfilled or rejected). The
+     * resolved value cannot be modified from the callback.
+     * @param onfinally The callback to execute when the Promise is settled (fulfilled or rejected).
+     * @returns A Promise for the completion of the callback.
+     */
+    finally(onfinally?: (() => void) | undefined | null): $Utils.JsPromise<T>
+  }
+
+
+
+
+  /**
+   * Fields of the Report model
+   */
+  interface ReportFieldRefs {
+    readonly id: FieldRef<"Report", 'Int'>
+    readonly title: FieldRef<"Report", 'String'>
+    readonly description: FieldRef<"Report", 'String'>
+    readonly fileUrl: FieldRef<"Report", 'String'>
+    readonly fileType: FieldRef<"Report", 'String'>
+    readonly uploadedAt: FieldRef<"Report", 'DateTime'>
+    readonly adminCognitoId: FieldRef<"Report", 'String'>
+    readonly userCognitoId: FieldRef<"Report", 'String'>
+  }
+    
+
+  // Custom InputTypes
+  /**
+   * Report findUnique
+   */
+  export type ReportFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Report
+     */
+    select?: ReportSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the Report
+     */
+    omit?: ReportOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ReportInclude<ExtArgs> | null
+    /**
+     * Filter, which Report to fetch.
+     */
+    where: ReportWhereUniqueInput
+  }
+
+  /**
+   * Report findUniqueOrThrow
+   */
+  export type ReportFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Report
+     */
+    select?: ReportSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the Report
+     */
+    omit?: ReportOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ReportInclude<ExtArgs> | null
+    /**
+     * Filter, which Report to fetch.
+     */
+    where: ReportWhereUniqueInput
+  }
+
+  /**
+   * Report findFirst
+   */
+  export type ReportFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Report
+     */
+    select?: ReportSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the Report
+     */
+    omit?: ReportOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ReportInclude<ExtArgs> | null
+    /**
+     * Filter, which Report to fetch.
+     */
+    where?: ReportWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of Reports to fetch.
+     */
+    orderBy?: ReportOrderByWithRelationInput | ReportOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for Reports.
+     */
+    cursor?: ReportWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` Reports from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` Reports.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of Reports.
+     */
+    distinct?: ReportScalarFieldEnum | ReportScalarFieldEnum[]
+  }
+
+  /**
+   * Report findFirstOrThrow
+   */
+  export type ReportFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Report
+     */
+    select?: ReportSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the Report
+     */
+    omit?: ReportOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ReportInclude<ExtArgs> | null
+    /**
+     * Filter, which Report to fetch.
+     */
+    where?: ReportWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of Reports to fetch.
+     */
+    orderBy?: ReportOrderByWithRelationInput | ReportOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for Reports.
+     */
+    cursor?: ReportWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` Reports from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` Reports.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of Reports.
+     */
+    distinct?: ReportScalarFieldEnum | ReportScalarFieldEnum[]
+  }
+
+  /**
+   * Report findMany
+   */
+  export type ReportFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Report
+     */
+    select?: ReportSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the Report
+     */
+    omit?: ReportOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ReportInclude<ExtArgs> | null
+    /**
+     * Filter, which Reports to fetch.
+     */
+    where?: ReportWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of Reports to fetch.
+     */
+    orderBy?: ReportOrderByWithRelationInput | ReportOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for listing Reports.
+     */
+    cursor?: ReportWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` Reports from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` Reports.
+     */
+    skip?: number
+    distinct?: ReportScalarFieldEnum | ReportScalarFieldEnum[]
+  }
+
+  /**
+   * Report create
+   */
+  export type ReportCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Report
+     */
+    select?: ReportSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the Report
+     */
+    omit?: ReportOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ReportInclude<ExtArgs> | null
+    /**
+     * The data needed to create a Report.
+     */
+    data: XOR<ReportCreateInput, ReportUncheckedCreateInput>
+  }
+
+  /**
+   * Report createMany
+   */
+  export type ReportCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to create many Reports.
+     */
+    data: ReportCreateManyInput | ReportCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * Report createManyAndReturn
+   */
+  export type ReportCreateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Report
+     */
+    select?: ReportSelectCreateManyAndReturn<ExtArgs> | null
+    /**
+     * Omit specific fields from the Report
+     */
+    omit?: ReportOmit<ExtArgs> | null
+    /**
+     * The data used to create many Reports.
+     */
+    data: ReportCreateManyInput | ReportCreateManyInput[]
+    skipDuplicates?: boolean
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ReportIncludeCreateManyAndReturn<ExtArgs> | null
+  }
+
+  /**
+   * Report update
+   */
+  export type ReportUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Report
+     */
+    select?: ReportSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the Report
+     */
+    omit?: ReportOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ReportInclude<ExtArgs> | null
+    /**
+     * The data needed to update a Report.
+     */
+    data: XOR<ReportUpdateInput, ReportUncheckedUpdateInput>
+    /**
+     * Choose, which Report to update.
+     */
+    where: ReportWhereUniqueInput
+  }
+
+  /**
+   * Report updateMany
+   */
+  export type ReportUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to update Reports.
+     */
+    data: XOR<ReportUpdateManyMutationInput, ReportUncheckedUpdateManyInput>
+    /**
+     * Filter which Reports to update
+     */
+    where?: ReportWhereInput
+    /**
+     * Limit how many Reports to update.
+     */
+    limit?: number
+  }
+
+  /**
+   * Report updateManyAndReturn
+   */
+  export type ReportUpdateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Report
+     */
+    select?: ReportSelectUpdateManyAndReturn<ExtArgs> | null
+    /**
+     * Omit specific fields from the Report
+     */
+    omit?: ReportOmit<ExtArgs> | null
+    /**
+     * The data used to update Reports.
+     */
+    data: XOR<ReportUpdateManyMutationInput, ReportUncheckedUpdateManyInput>
+    /**
+     * Filter which Reports to update
+     */
+    where?: ReportWhereInput
+    /**
+     * Limit how many Reports to update.
+     */
+    limit?: number
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ReportIncludeUpdateManyAndReturn<ExtArgs> | null
+  }
+
+  /**
+   * Report upsert
+   */
+  export type ReportUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Report
+     */
+    select?: ReportSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the Report
+     */
+    omit?: ReportOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ReportInclude<ExtArgs> | null
+    /**
+     * The filter to search for the Report to update in case it exists.
+     */
+    where: ReportWhereUniqueInput
+    /**
+     * In case the Report found by the `where` argument doesn't exist, create a new Report with this data.
+     */
+    create: XOR<ReportCreateInput, ReportUncheckedCreateInput>
+    /**
+     * In case the Report was found with the provided `where` argument, update it with this data.
+     */
+    update: XOR<ReportUpdateInput, ReportUncheckedUpdateInput>
+  }
+
+  /**
+   * Report delete
+   */
+  export type ReportDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Report
+     */
+    select?: ReportSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the Report
+     */
+    omit?: ReportOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ReportInclude<ExtArgs> | null
+    /**
+     * Filter which Report to delete.
+     */
+    where: ReportWhereUniqueInput
+  }
+
+  /**
+   * Report deleteMany
+   */
+  export type ReportDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which Reports to delete
+     */
+    where?: ReportWhereInput
+    /**
+     * Limit how many Reports to delete.
+     */
+    limit?: number
+  }
+
+  /**
+   * Report.admin
+   */
+  export type Report$adminArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Admin
+     */
+    select?: AdminSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the Admin
+     */
+    omit?: AdminOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: AdminInclude<ExtArgs> | null
+    where?: AdminWhereInput
+  }
+
+  /**
+   * Report.user
+   */
+  export type Report$userArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the User
+     */
+    select?: UserSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the User
+     */
+    omit?: UserOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: UserInclude<ExtArgs> | null
+    where?: UserWhereInput
+  }
+
+  /**
+   * Report without action
+   */
+  export type ReportDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Report
+     */
+    select?: ReportSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the Report
+     */
+    omit?: ReportOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ReportInclude<ExtArgs> | null
+  }
+
+
+  /**
    * Model StockAssignment
    */
 
@@ -10968,7 +12323,7 @@ export namespace Prisma {
      * @example
      * // Ordered by age ascending
      * // Where email contains prisma.io
-     * // Limited to the 10 contact-forms
+     * // Limited to the 10 users
      * const aggregations = await prisma.user.aggregate({
      *   _avg: {
      *     age: true,
@@ -12151,7 +13506,7 @@ export namespace Prisma {
      * @example
      * // Ordered by age ascending
      * // Where email contains prisma.io
-     * // Limited to the 10 contact-forms
+     * // Limited to the 10 users
      * const aggregations = await prisma.user.aggregate({
      *   _avg: {
      *     age: true,
@@ -13351,7 +14706,7 @@ export namespace Prisma {
      * @example
      * // Ordered by age ascending
      * // Where email contains prisma.io
-     * // Limited to the 10 contact-forms
+     * // Limited to the 10 users
      * const aggregations = await prisma.user.aggregate({
      *   _avg: {
      *     age: true,
@@ -14504,7 +15859,7 @@ export namespace Prisma {
      * @example
      * // Ordered by age ascending
      * // Where email contains prisma.io
-     * // Limited to the 10 contact-forms
+     * // Limited to the 10 users
      * const aggregations = await prisma.user.aggregate({
      *   _avg: {
      *     age: true,
@@ -15697,7 +17052,7 @@ export namespace Prisma {
      * @example
      * // Ordered by age ascending
      * // Where email contains prisma.io
-     * // Limited to the 10 contact-forms
+     * // Limited to the 10 users
      * const aggregations = await prisma.user.aggregate({
      *   _avg: {
      *     age: true,
@@ -16827,7 +18182,7 @@ export namespace Prisma {
      * @example
      * // Ordered by age ascending
      * // Where email contains prisma.io
-     * // Limited to the 10 contact-forms
+     * // Limited to the 10 users
      * const aggregations = await prisma.user.aggregate({
      *   _avg: {
      *     age: true,
@@ -17955,7 +19310,7 @@ export namespace Prisma {
      * @example
      * // Ordered by age ascending
      * // Where email contains prisma.io
-     * // Limited to the 10 contact-forms
+     * // Limited to the 10 users
      * const aggregations = await prisma.user.aggregate({
      *   _avg: {
      *     age: true,
@@ -19068,7 +20423,7 @@ export namespace Prisma {
      * @example
      * // Ordered by age ascending
      * // Where email contains prisma.io
-     * // Limited to the 10 contact-forms
+     * // Limited to the 10 users
      * const aggregations = await prisma.user.aggregate({
      *   _avg: {
      *     age: true,
@@ -19739,6 +21094,7 @@ export namespace Prisma {
     auction: 'auction',
     lotNo: 'lotNo',
     broker: 'broker',
+    sold: 'sold',
     sellingMark: 'sellingMark',
     grade: 'grade',
     invoiceNo: 'invoiceNo',
@@ -19783,6 +21139,20 @@ export namespace Prisma {
   };
 
   export type StocksScalarFieldEnum = (typeof StocksScalarFieldEnum)[keyof typeof StocksScalarFieldEnum]
+
+
+  export const ReportScalarFieldEnum: {
+    id: 'id',
+    title: 'title',
+    description: 'description',
+    fileUrl: 'fileUrl',
+    fileType: 'fileType',
+    uploadedAt: 'uploadedAt',
+    adminCognitoId: 'adminCognitoId',
+    userCognitoId: 'userCognitoId'
+  };
+
+  export type ReportScalarFieldEnum = (typeof ReportScalarFieldEnum)[keyof typeof ReportScalarFieldEnum]
 
 
   export const StockAssignmentScalarFieldEnum: {
@@ -20037,6 +21407,13 @@ export namespace Prisma {
 
 
   /**
+   * Reference to a field of type 'Boolean'
+   */
+  export type BooleanFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Boolean'>
+    
+
+
+  /**
    * Reference to a field of type 'ShipmentStatus'
    */
   export type EnumShipmentStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'ShipmentStatus'>
@@ -20090,13 +21467,6 @@ export namespace Prisma {
    */
   export type EnumQueryModeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'QueryMode'>
     
-
-
-  /**
-   * Reference to a field of type 'Boolean'
-   */
-  export type BooleanFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Boolean'>
-    
   /**
    * Deep Input Types
    */
@@ -20119,6 +21489,7 @@ export namespace Prisma {
     shipments?: ShipmentListRelationFilter
     stockHistory?: StockHistoryListRelationFilter
     shipmentHistory?: ShipmentHistoryListRelationFilter
+    reports?: ReportListRelationFilter
   }
 
   export type AdminOrderByWithRelationInput = {
@@ -20135,6 +21506,7 @@ export namespace Prisma {
     shipments?: ShipmentOrderByRelationAggregateInput
     stockHistory?: StockHistoryOrderByRelationAggregateInput
     shipmentHistory?: ShipmentHistoryOrderByRelationAggregateInput
+    reports?: ReportOrderByRelationAggregateInput
   }
 
   export type AdminWhereUniqueInput = Prisma.AtLeast<{
@@ -20154,6 +21526,7 @@ export namespace Prisma {
     shipments?: ShipmentListRelationFilter
     stockHistory?: StockHistoryListRelationFilter
     shipmentHistory?: ShipmentHistoryListRelationFilter
+    reports?: ReportListRelationFilter
   }, "id" | "adminCognitoId" | "email">
 
   export type AdminOrderByWithAggregationInput = {
@@ -20198,6 +21571,7 @@ export namespace Prisma {
     favorites?: FavoriteListRelationFilter
     assignments?: StockAssignmentListRelationFilter
     contacts?: ContactListRelationFilter
+    reports?: ReportListRelationFilter
   }
 
   export type UserOrderByWithRelationInput = {
@@ -20215,6 +21589,7 @@ export namespace Prisma {
     favorites?: FavoriteOrderByRelationAggregateInput
     assignments?: StockAssignmentOrderByRelationAggregateInput
     contacts?: ContactOrderByRelationAggregateInput
+    reports?: ReportOrderByRelationAggregateInput
   }
 
   export type UserWhereUniqueInput = Prisma.AtLeast<{
@@ -20235,6 +21610,7 @@ export namespace Prisma {
     favorites?: FavoriteListRelationFilter
     assignments?: StockAssignmentListRelationFilter
     contacts?: ContactListRelationFilter
+    reports?: ReportListRelationFilter
   }, "id" | "userCognitoId" | "email">
 
   export type UserOrderByWithAggregationInput = {
@@ -20534,6 +21910,7 @@ export namespace Prisma {
     auction?: StringFilter<"OutLots"> | string
     lotNo?: StringFilter<"OutLots"> | string
     broker?: EnumBrokerFilter<"OutLots"> | $Enums.Broker
+    sold?: BoolFilter<"OutLots"> | boolean
     sellingMark?: StringFilter<"OutLots"> | string
     grade?: EnumTeaGradeFilter<"OutLots"> | $Enums.TeaGrade
     invoiceNo?: StringFilter<"OutLots"> | string
@@ -20554,6 +21931,7 @@ export namespace Prisma {
     auction?: SortOrder
     lotNo?: SortOrder
     broker?: SortOrder
+    sold?: SortOrder
     sellingMark?: SortOrder
     grade?: SortOrder
     invoiceNo?: SortOrder
@@ -20577,6 +21955,7 @@ export namespace Prisma {
     NOT?: OutLotsWhereInput | OutLotsWhereInput[]
     auction?: StringFilter<"OutLots"> | string
     broker?: EnumBrokerFilter<"OutLots"> | $Enums.Broker
+    sold?: BoolFilter<"OutLots"> | boolean
     sellingMark?: StringFilter<"OutLots"> | string
     grade?: EnumTeaGradeFilter<"OutLots"> | $Enums.TeaGrade
     invoiceNo?: StringFilter<"OutLots"> | string
@@ -20597,6 +21976,7 @@ export namespace Prisma {
     auction?: SortOrder
     lotNo?: SortOrder
     broker?: SortOrder
+    sold?: SortOrder
     sellingMark?: SortOrder
     grade?: SortOrder
     invoiceNo?: SortOrder
@@ -20624,6 +22004,7 @@ export namespace Prisma {
     auction?: StringWithAggregatesFilter<"OutLots"> | string
     lotNo?: StringWithAggregatesFilter<"OutLots"> | string
     broker?: EnumBrokerWithAggregatesFilter<"OutLots"> | $Enums.Broker
+    sold?: BoolWithAggregatesFilter<"OutLots"> | boolean
     sellingMark?: StringWithAggregatesFilter<"OutLots"> | string
     grade?: EnumTeaGradeWithAggregatesFilter<"OutLots"> | $Enums.TeaGrade
     invoiceNo?: StringWithAggregatesFilter<"OutLots"> | string
@@ -20795,6 +22176,81 @@ export namespace Prisma {
     adminCognitoId?: StringWithAggregatesFilter<"Stocks"> | string
     createdAt?: DateTimeWithAggregatesFilter<"Stocks"> | Date | string
     updatedAt?: DateTimeWithAggregatesFilter<"Stocks"> | Date | string
+  }
+
+  export type ReportWhereInput = {
+    AND?: ReportWhereInput | ReportWhereInput[]
+    OR?: ReportWhereInput[]
+    NOT?: ReportWhereInput | ReportWhereInput[]
+    id?: IntFilter<"Report"> | number
+    title?: StringFilter<"Report"> | string
+    description?: StringNullableFilter<"Report"> | string | null
+    fileUrl?: StringFilter<"Report"> | string
+    fileType?: StringFilter<"Report"> | string
+    uploadedAt?: DateTimeFilter<"Report"> | Date | string
+    adminCognitoId?: StringNullableFilter<"Report"> | string | null
+    userCognitoId?: StringNullableFilter<"Report"> | string | null
+    admin?: XOR<AdminNullableScalarRelationFilter, AdminWhereInput> | null
+    user?: XOR<UserNullableScalarRelationFilter, UserWhereInput> | null
+  }
+
+  export type ReportOrderByWithRelationInput = {
+    id?: SortOrder
+    title?: SortOrder
+    description?: SortOrderInput | SortOrder
+    fileUrl?: SortOrder
+    fileType?: SortOrder
+    uploadedAt?: SortOrder
+    adminCognitoId?: SortOrderInput | SortOrder
+    userCognitoId?: SortOrderInput | SortOrder
+    admin?: AdminOrderByWithRelationInput
+    user?: UserOrderByWithRelationInput
+  }
+
+  export type ReportWhereUniqueInput = Prisma.AtLeast<{
+    id?: number
+    AND?: ReportWhereInput | ReportWhereInput[]
+    OR?: ReportWhereInput[]
+    NOT?: ReportWhereInput | ReportWhereInput[]
+    title?: StringFilter<"Report"> | string
+    description?: StringNullableFilter<"Report"> | string | null
+    fileUrl?: StringFilter<"Report"> | string
+    fileType?: StringFilter<"Report"> | string
+    uploadedAt?: DateTimeFilter<"Report"> | Date | string
+    adminCognitoId?: StringNullableFilter<"Report"> | string | null
+    userCognitoId?: StringNullableFilter<"Report"> | string | null
+    admin?: XOR<AdminNullableScalarRelationFilter, AdminWhereInput> | null
+    user?: XOR<UserNullableScalarRelationFilter, UserWhereInput> | null
+  }, "id">
+
+  export type ReportOrderByWithAggregationInput = {
+    id?: SortOrder
+    title?: SortOrder
+    description?: SortOrderInput | SortOrder
+    fileUrl?: SortOrder
+    fileType?: SortOrder
+    uploadedAt?: SortOrder
+    adminCognitoId?: SortOrderInput | SortOrder
+    userCognitoId?: SortOrderInput | SortOrder
+    _count?: ReportCountOrderByAggregateInput
+    _avg?: ReportAvgOrderByAggregateInput
+    _max?: ReportMaxOrderByAggregateInput
+    _min?: ReportMinOrderByAggregateInput
+    _sum?: ReportSumOrderByAggregateInput
+  }
+
+  export type ReportScalarWhereWithAggregatesInput = {
+    AND?: ReportScalarWhereWithAggregatesInput | ReportScalarWhereWithAggregatesInput[]
+    OR?: ReportScalarWhereWithAggregatesInput[]
+    NOT?: ReportScalarWhereWithAggregatesInput | ReportScalarWhereWithAggregatesInput[]
+    id?: IntWithAggregatesFilter<"Report"> | number
+    title?: StringWithAggregatesFilter<"Report"> | string
+    description?: StringNullableWithAggregatesFilter<"Report"> | string | null
+    fileUrl?: StringWithAggregatesFilter<"Report"> | string
+    fileType?: StringWithAggregatesFilter<"Report"> | string
+    uploadedAt?: DateTimeWithAggregatesFilter<"Report"> | Date | string
+    adminCognitoId?: StringNullableWithAggregatesFilter<"Report"> | string | null
+    userCognitoId?: StringNullableWithAggregatesFilter<"Report"> | string | null
   }
 
   export type StockAssignmentWhereInput = {
@@ -21365,6 +22821,7 @@ export namespace Prisma {
     shipments?: ShipmentCreateNestedManyWithoutAdminInput
     stockHistory?: StockHistoryCreateNestedManyWithoutAdminInput
     shipmentHistory?: ShipmentHistoryCreateNestedManyWithoutAdminInput
+    reports?: ReportCreateNestedManyWithoutAdminInput
   }
 
   export type AdminUncheckedCreateInput = {
@@ -21381,6 +22838,7 @@ export namespace Prisma {
     shipments?: ShipmentUncheckedCreateNestedManyWithoutAdminInput
     stockHistory?: StockHistoryUncheckedCreateNestedManyWithoutAdminInput
     shipmentHistory?: ShipmentHistoryUncheckedCreateNestedManyWithoutAdminInput
+    reports?: ReportUncheckedCreateNestedManyWithoutAdminInput
   }
 
   export type AdminUpdateInput = {
@@ -21396,6 +22854,7 @@ export namespace Prisma {
     shipments?: ShipmentUpdateManyWithoutAdminNestedInput
     stockHistory?: StockHistoryUpdateManyWithoutAdminNestedInput
     shipmentHistory?: ShipmentHistoryUpdateManyWithoutAdminNestedInput
+    reports?: ReportUpdateManyWithoutAdminNestedInput
   }
 
   export type AdminUncheckedUpdateInput = {
@@ -21412,6 +22871,7 @@ export namespace Prisma {
     shipments?: ShipmentUncheckedUpdateManyWithoutAdminNestedInput
     stockHistory?: StockHistoryUncheckedUpdateManyWithoutAdminNestedInput
     shipmentHistory?: ShipmentHistoryUncheckedUpdateManyWithoutAdminNestedInput
+    reports?: ReportUncheckedUpdateManyWithoutAdminNestedInput
   }
 
   export type AdminCreateManyInput = {
@@ -21451,6 +22911,7 @@ export namespace Prisma {
     favorites?: FavoriteCreateNestedManyWithoutUserInput
     assignments?: StockAssignmentCreateNestedManyWithoutUserInput
     contacts?: ContactCreateNestedManyWithoutUserInput
+    reports?: ReportCreateNestedManyWithoutUserInput
   }
 
   export type UserUncheckedCreateInput = {
@@ -21468,6 +22929,7 @@ export namespace Prisma {
     favorites?: FavoriteUncheckedCreateNestedManyWithoutUserInput
     assignments?: StockAssignmentUncheckedCreateNestedManyWithoutUserInput
     contacts?: ContactUncheckedCreateNestedManyWithoutUserInput
+    reports?: ReportUncheckedCreateNestedManyWithoutUserInput
   }
 
   export type UserUpdateInput = {
@@ -21484,6 +22946,7 @@ export namespace Prisma {
     favorites?: FavoriteUpdateManyWithoutUserNestedInput
     assignments?: StockAssignmentUpdateManyWithoutUserNestedInput
     contacts?: ContactUpdateManyWithoutUserNestedInput
+    reports?: ReportUpdateManyWithoutUserNestedInput
   }
 
   export type UserUncheckedUpdateInput = {
@@ -21501,6 +22964,7 @@ export namespace Prisma {
     favorites?: FavoriteUncheckedUpdateManyWithoutUserNestedInput
     assignments?: StockAssignmentUncheckedUpdateManyWithoutUserNestedInput
     contacts?: ContactUncheckedUpdateManyWithoutUserNestedInput
+    reports?: ReportUncheckedUpdateManyWithoutUserNestedInput
   }
 
   export type UserCreateManyInput = {
@@ -21846,6 +23310,7 @@ export namespace Prisma {
     auction: string
     lotNo: string
     broker: $Enums.Broker
+    sold?: boolean
     sellingMark: string
     grade: $Enums.TeaGrade
     invoiceNo: string
@@ -21865,6 +23330,7 @@ export namespace Prisma {
     auction: string
     lotNo: string
     broker: $Enums.Broker
+    sold?: boolean
     sellingMark: string
     grade: $Enums.TeaGrade
     invoiceNo: string
@@ -21883,6 +23349,7 @@ export namespace Prisma {
     auction?: StringFieldUpdateOperationsInput | string
     lotNo?: StringFieldUpdateOperationsInput | string
     broker?: EnumBrokerFieldUpdateOperationsInput | $Enums.Broker
+    sold?: BoolFieldUpdateOperationsInput | boolean
     sellingMark?: StringFieldUpdateOperationsInput | string
     grade?: EnumTeaGradeFieldUpdateOperationsInput | $Enums.TeaGrade
     invoiceNo?: StringFieldUpdateOperationsInput | string
@@ -21902,6 +23369,7 @@ export namespace Prisma {
     auction?: StringFieldUpdateOperationsInput | string
     lotNo?: StringFieldUpdateOperationsInput | string
     broker?: EnumBrokerFieldUpdateOperationsInput | $Enums.Broker
+    sold?: BoolFieldUpdateOperationsInput | boolean
     sellingMark?: StringFieldUpdateOperationsInput | string
     grade?: EnumTeaGradeFieldUpdateOperationsInput | $Enums.TeaGrade
     invoiceNo?: StringFieldUpdateOperationsInput | string
@@ -21921,6 +23389,7 @@ export namespace Prisma {
     auction: string
     lotNo: string
     broker: $Enums.Broker
+    sold?: boolean
     sellingMark: string
     grade: $Enums.TeaGrade
     invoiceNo: string
@@ -21939,6 +23408,7 @@ export namespace Prisma {
     auction?: StringFieldUpdateOperationsInput | string
     lotNo?: StringFieldUpdateOperationsInput | string
     broker?: EnumBrokerFieldUpdateOperationsInput | $Enums.Broker
+    sold?: BoolFieldUpdateOperationsInput | boolean
     sellingMark?: StringFieldUpdateOperationsInput | string
     grade?: EnumTeaGradeFieldUpdateOperationsInput | $Enums.TeaGrade
     invoiceNo?: StringFieldUpdateOperationsInput | string
@@ -21957,6 +23427,7 @@ export namespace Prisma {
     auction?: StringFieldUpdateOperationsInput | string
     lotNo?: StringFieldUpdateOperationsInput | string
     broker?: EnumBrokerFieldUpdateOperationsInput | $Enums.Broker
+    sold?: BoolFieldUpdateOperationsInput | boolean
     sellingMark?: StringFieldUpdateOperationsInput | string
     grade?: EnumTeaGradeFieldUpdateOperationsInput | $Enums.TeaGrade
     invoiceNo?: StringFieldUpdateOperationsInput | string
@@ -22163,6 +23634,78 @@ export namespace Prisma {
     adminCognitoId?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type ReportCreateInput = {
+    title: string
+    description?: string | null
+    fileUrl: string
+    fileType: string
+    uploadedAt?: Date | string
+    admin?: AdminCreateNestedOneWithoutReportsInput
+    user?: UserCreateNestedOneWithoutReportsInput
+  }
+
+  export type ReportUncheckedCreateInput = {
+    id?: number
+    title: string
+    description?: string | null
+    fileUrl: string
+    fileType: string
+    uploadedAt?: Date | string
+    adminCognitoId?: string | null
+    userCognitoId?: string | null
+  }
+
+  export type ReportUpdateInput = {
+    title?: StringFieldUpdateOperationsInput | string
+    description?: NullableStringFieldUpdateOperationsInput | string | null
+    fileUrl?: StringFieldUpdateOperationsInput | string
+    fileType?: StringFieldUpdateOperationsInput | string
+    uploadedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    admin?: AdminUpdateOneWithoutReportsNestedInput
+    user?: UserUpdateOneWithoutReportsNestedInput
+  }
+
+  export type ReportUncheckedUpdateInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    title?: StringFieldUpdateOperationsInput | string
+    description?: NullableStringFieldUpdateOperationsInput | string | null
+    fileUrl?: StringFieldUpdateOperationsInput | string
+    fileType?: StringFieldUpdateOperationsInput | string
+    uploadedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    adminCognitoId?: NullableStringFieldUpdateOperationsInput | string | null
+    userCognitoId?: NullableStringFieldUpdateOperationsInput | string | null
+  }
+
+  export type ReportCreateManyInput = {
+    id?: number
+    title: string
+    description?: string | null
+    fileUrl: string
+    fileType: string
+    uploadedAt?: Date | string
+    adminCognitoId?: string | null
+    userCognitoId?: string | null
+  }
+
+  export type ReportUpdateManyMutationInput = {
+    title?: StringFieldUpdateOperationsInput | string
+    description?: NullableStringFieldUpdateOperationsInput | string | null
+    fileUrl?: StringFieldUpdateOperationsInput | string
+    fileType?: StringFieldUpdateOperationsInput | string
+    uploadedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type ReportUncheckedUpdateManyInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    title?: StringFieldUpdateOperationsInput | string
+    description?: NullableStringFieldUpdateOperationsInput | string | null
+    fileUrl?: StringFieldUpdateOperationsInput | string
+    fileType?: StringFieldUpdateOperationsInput | string
+    uploadedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    adminCognitoId?: NullableStringFieldUpdateOperationsInput | string | null
+    userCognitoId?: NullableStringFieldUpdateOperationsInput | string | null
   }
 
   export type StockAssignmentCreateInput = {
@@ -22757,6 +24300,12 @@ export namespace Prisma {
     none?: ShipmentHistoryWhereInput
   }
 
+  export type ReportListRelationFilter = {
+    every?: ReportWhereInput
+    some?: ReportWhereInput
+    none?: ReportWhereInput
+  }
+
   export type SortOrderInput = {
     sort: SortOrder
     nulls?: NullsOrder
@@ -22791,6 +24340,10 @@ export namespace Prisma {
   }
 
   export type ShipmentHistoryOrderByRelationAggregateInput = {
+    _count?: SortOrder
+  }
+
+  export type ReportOrderByRelationAggregateInput = {
     _count?: SortOrder
   }
 
@@ -23226,11 +24779,17 @@ export namespace Prisma {
     purchasePrice?: SortOrder
   }
 
+  export type BoolFilter<$PrismaModel = never> = {
+    equals?: boolean | BooleanFieldRefInput<$PrismaModel>
+    not?: NestedBoolFilter<$PrismaModel> | boolean
+  }
+
   export type OutLotsCountOrderByAggregateInput = {
     id?: SortOrder
     auction?: SortOrder
     lotNo?: SortOrder
     broker?: SortOrder
+    sold?: SortOrder
     sellingMark?: SortOrder
     grade?: SortOrder
     invoiceNo?: SortOrder
@@ -23258,6 +24817,7 @@ export namespace Prisma {
     auction?: SortOrder
     lotNo?: SortOrder
     broker?: SortOrder
+    sold?: SortOrder
     sellingMark?: SortOrder
     grade?: SortOrder
     invoiceNo?: SortOrder
@@ -23277,6 +24837,7 @@ export namespace Prisma {
     auction?: SortOrder
     lotNo?: SortOrder
     broker?: SortOrder
+    sold?: SortOrder
     sellingMark?: SortOrder
     grade?: SortOrder
     invoiceNo?: SortOrder
@@ -23297,6 +24858,14 @@ export namespace Prisma {
     netWeight?: SortOrder
     totalWeight?: SortOrder
     baselinePrice?: SortOrder
+  }
+
+  export type BoolWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: boolean | BooleanFieldRefInput<$PrismaModel>
+    not?: NestedBoolWithAggregatesFilter<$PrismaModel> | boolean
+    _count?: NestedIntFilter<$PrismaModel>
+    _min?: NestedBoolFilter<$PrismaModel>
+    _max?: NestedBoolFilter<$PrismaModel>
   }
 
   export type FloatNullableFilter<$PrismaModel = never> = {
@@ -23449,6 +25018,52 @@ export namespace Prisma {
     _sum?: NestedFloatNullableFilter<$PrismaModel>
     _min?: NestedFloatNullableFilter<$PrismaModel>
     _max?: NestedFloatNullableFilter<$PrismaModel>
+  }
+
+  export type UserNullableScalarRelationFilter = {
+    is?: UserWhereInput | null
+    isNot?: UserWhereInput | null
+  }
+
+  export type ReportCountOrderByAggregateInput = {
+    id?: SortOrder
+    title?: SortOrder
+    description?: SortOrder
+    fileUrl?: SortOrder
+    fileType?: SortOrder
+    uploadedAt?: SortOrder
+    adminCognitoId?: SortOrder
+    userCognitoId?: SortOrder
+  }
+
+  export type ReportAvgOrderByAggregateInput = {
+    id?: SortOrder
+  }
+
+  export type ReportMaxOrderByAggregateInput = {
+    id?: SortOrder
+    title?: SortOrder
+    description?: SortOrder
+    fileUrl?: SortOrder
+    fileType?: SortOrder
+    uploadedAt?: SortOrder
+    adminCognitoId?: SortOrder
+    userCognitoId?: SortOrder
+  }
+
+  export type ReportMinOrderByAggregateInput = {
+    id?: SortOrder
+    title?: SortOrder
+    description?: SortOrder
+    fileUrl?: SortOrder
+    fileType?: SortOrder
+    uploadedAt?: SortOrder
+    adminCognitoId?: SortOrder
+    userCognitoId?: SortOrder
+  }
+
+  export type ReportSumOrderByAggregateInput = {
+    id?: SortOrder
   }
 
   export type StocksScalarRelationFilter = {
@@ -23682,11 +25297,6 @@ export namespace Prisma {
     not?: NestedIntNullableFilter<$PrismaModel> | number | null
   }
 
-  export type UserNullableScalarRelationFilter = {
-    is?: UserWhereInput | null
-    isNot?: UserWhereInput | null
-  }
-
   export type ShipmentNullableScalarRelationFilter = {
     is?: ShipmentWhereInput | null
     isNot?: ShipmentWhereInput | null
@@ -23894,11 +25504,6 @@ export namespace Prisma {
     _max?: NestedJsonFilter<$PrismaModel>
   }
 
-  export type BoolFilter<$PrismaModel = never> = {
-    equals?: boolean | BooleanFieldRefInput<$PrismaModel>
-    not?: NestedBoolFilter<$PrismaModel> | boolean
-  }
-
   export type ContactCountOrderByAggregateInput = {
     id?: SortOrder
     name?: SortOrder
@@ -23938,14 +25543,6 @@ export namespace Prisma {
 
   export type ContactSumOrderByAggregateInput = {
     id?: SortOrder
-  }
-
-  export type BoolWithAggregatesFilter<$PrismaModel = never> = {
-    equals?: boolean | BooleanFieldRefInput<$PrismaModel>
-    not?: NestedBoolWithAggregatesFilter<$PrismaModel> | boolean
-    _count?: NestedIntFilter<$PrismaModel>
-    _min?: NestedBoolFilter<$PrismaModel>
-    _max?: NestedBoolFilter<$PrismaModel>
   }
 
   export type StocksNullableScalarRelationFilter = {
@@ -24045,6 +25642,13 @@ export namespace Prisma {
     connect?: ShipmentHistoryWhereUniqueInput | ShipmentHistoryWhereUniqueInput[]
   }
 
+  export type ReportCreateNestedManyWithoutAdminInput = {
+    create?: XOR<ReportCreateWithoutAdminInput, ReportUncheckedCreateWithoutAdminInput> | ReportCreateWithoutAdminInput[] | ReportUncheckedCreateWithoutAdminInput[]
+    connectOrCreate?: ReportCreateOrConnectWithoutAdminInput | ReportCreateOrConnectWithoutAdminInput[]
+    createMany?: ReportCreateManyAdminInputEnvelope
+    connect?: ReportWhereUniqueInput | ReportWhereUniqueInput[]
+  }
+
   export type CatalogUncheckedCreateNestedManyWithoutAdminInput = {
     create?: XOR<CatalogCreateWithoutAdminInput, CatalogUncheckedCreateWithoutAdminInput> | CatalogCreateWithoutAdminInput[] | CatalogUncheckedCreateWithoutAdminInput[]
     connectOrCreate?: CatalogCreateOrConnectWithoutAdminInput | CatalogCreateOrConnectWithoutAdminInput[]
@@ -24099,6 +25703,13 @@ export namespace Prisma {
     connectOrCreate?: ShipmentHistoryCreateOrConnectWithoutAdminInput | ShipmentHistoryCreateOrConnectWithoutAdminInput[]
     createMany?: ShipmentHistoryCreateManyAdminInputEnvelope
     connect?: ShipmentHistoryWhereUniqueInput | ShipmentHistoryWhereUniqueInput[]
+  }
+
+  export type ReportUncheckedCreateNestedManyWithoutAdminInput = {
+    create?: XOR<ReportCreateWithoutAdminInput, ReportUncheckedCreateWithoutAdminInput> | ReportCreateWithoutAdminInput[] | ReportUncheckedCreateWithoutAdminInput[]
+    connectOrCreate?: ReportCreateOrConnectWithoutAdminInput | ReportCreateOrConnectWithoutAdminInput[]
+    createMany?: ReportCreateManyAdminInputEnvelope
+    connect?: ReportWhereUniqueInput | ReportWhereUniqueInput[]
   }
 
   export type StringFieldUpdateOperationsInput = {
@@ -24221,6 +25832,20 @@ export namespace Prisma {
     deleteMany?: ShipmentHistoryScalarWhereInput | ShipmentHistoryScalarWhereInput[]
   }
 
+  export type ReportUpdateManyWithoutAdminNestedInput = {
+    create?: XOR<ReportCreateWithoutAdminInput, ReportUncheckedCreateWithoutAdminInput> | ReportCreateWithoutAdminInput[] | ReportUncheckedCreateWithoutAdminInput[]
+    connectOrCreate?: ReportCreateOrConnectWithoutAdminInput | ReportCreateOrConnectWithoutAdminInput[]
+    upsert?: ReportUpsertWithWhereUniqueWithoutAdminInput | ReportUpsertWithWhereUniqueWithoutAdminInput[]
+    createMany?: ReportCreateManyAdminInputEnvelope
+    set?: ReportWhereUniqueInput | ReportWhereUniqueInput[]
+    disconnect?: ReportWhereUniqueInput | ReportWhereUniqueInput[]
+    delete?: ReportWhereUniqueInput | ReportWhereUniqueInput[]
+    connect?: ReportWhereUniqueInput | ReportWhereUniqueInput[]
+    update?: ReportUpdateWithWhereUniqueWithoutAdminInput | ReportUpdateWithWhereUniqueWithoutAdminInput[]
+    updateMany?: ReportUpdateManyWithWhereWithoutAdminInput | ReportUpdateManyWithWhereWithoutAdminInput[]
+    deleteMany?: ReportScalarWhereInput | ReportScalarWhereInput[]
+  }
+
   export type IntFieldUpdateOperationsInput = {
     set?: number
     increment?: number
@@ -24341,6 +25966,20 @@ export namespace Prisma {
     deleteMany?: ShipmentHistoryScalarWhereInput | ShipmentHistoryScalarWhereInput[]
   }
 
+  export type ReportUncheckedUpdateManyWithoutAdminNestedInput = {
+    create?: XOR<ReportCreateWithoutAdminInput, ReportUncheckedCreateWithoutAdminInput> | ReportCreateWithoutAdminInput[] | ReportUncheckedCreateWithoutAdminInput[]
+    connectOrCreate?: ReportCreateOrConnectWithoutAdminInput | ReportCreateOrConnectWithoutAdminInput[]
+    upsert?: ReportUpsertWithWhereUniqueWithoutAdminInput | ReportUpsertWithWhereUniqueWithoutAdminInput[]
+    createMany?: ReportCreateManyAdminInputEnvelope
+    set?: ReportWhereUniqueInput | ReportWhereUniqueInput[]
+    disconnect?: ReportWhereUniqueInput | ReportWhereUniqueInput[]
+    delete?: ReportWhereUniqueInput | ReportWhereUniqueInput[]
+    connect?: ReportWhereUniqueInput | ReportWhereUniqueInput[]
+    update?: ReportUpdateWithWhereUniqueWithoutAdminInput | ReportUpdateWithWhereUniqueWithoutAdminInput[]
+    updateMany?: ReportUpdateManyWithWhereWithoutAdminInput | ReportUpdateManyWithWhereWithoutAdminInput[]
+    deleteMany?: ReportScalarWhereInput | ReportScalarWhereInput[]
+  }
+
   export type ShipmentCreateNestedManyWithoutUserInput = {
     create?: XOR<ShipmentCreateWithoutUserInput, ShipmentUncheckedCreateWithoutUserInput> | ShipmentCreateWithoutUserInput[] | ShipmentUncheckedCreateWithoutUserInput[]
     connectOrCreate?: ShipmentCreateOrConnectWithoutUserInput | ShipmentCreateOrConnectWithoutUserInput[]
@@ -24383,6 +26022,13 @@ export namespace Prisma {
     connect?: ContactWhereUniqueInput | ContactWhereUniqueInput[]
   }
 
+  export type ReportCreateNestedManyWithoutUserInput = {
+    create?: XOR<ReportCreateWithoutUserInput, ReportUncheckedCreateWithoutUserInput> | ReportCreateWithoutUserInput[] | ReportUncheckedCreateWithoutUserInput[]
+    connectOrCreate?: ReportCreateOrConnectWithoutUserInput | ReportCreateOrConnectWithoutUserInput[]
+    createMany?: ReportCreateManyUserInputEnvelope
+    connect?: ReportWhereUniqueInput | ReportWhereUniqueInput[]
+  }
+
   export type ShipmentUncheckedCreateNestedManyWithoutUserInput = {
     create?: XOR<ShipmentCreateWithoutUserInput, ShipmentUncheckedCreateWithoutUserInput> | ShipmentCreateWithoutUserInput[] | ShipmentUncheckedCreateWithoutUserInput[]
     connectOrCreate?: ShipmentCreateOrConnectWithoutUserInput | ShipmentCreateOrConnectWithoutUserInput[]
@@ -24423,6 +26069,13 @@ export namespace Prisma {
     connectOrCreate?: ContactCreateOrConnectWithoutUserInput | ContactCreateOrConnectWithoutUserInput[]
     createMany?: ContactCreateManyUserInputEnvelope
     connect?: ContactWhereUniqueInput | ContactWhereUniqueInput[]
+  }
+
+  export type ReportUncheckedCreateNestedManyWithoutUserInput = {
+    create?: XOR<ReportCreateWithoutUserInput, ReportUncheckedCreateWithoutUserInput> | ReportCreateWithoutUserInput[] | ReportUncheckedCreateWithoutUserInput[]
+    connectOrCreate?: ReportCreateOrConnectWithoutUserInput | ReportCreateOrConnectWithoutUserInput[]
+    createMany?: ReportCreateManyUserInputEnvelope
+    connect?: ReportWhereUniqueInput | ReportWhereUniqueInput[]
   }
 
   export type DateTimeFieldUpdateOperationsInput = {
@@ -24513,6 +26166,20 @@ export namespace Prisma {
     deleteMany?: ContactScalarWhereInput | ContactScalarWhereInput[]
   }
 
+  export type ReportUpdateManyWithoutUserNestedInput = {
+    create?: XOR<ReportCreateWithoutUserInput, ReportUncheckedCreateWithoutUserInput> | ReportCreateWithoutUserInput[] | ReportUncheckedCreateWithoutUserInput[]
+    connectOrCreate?: ReportCreateOrConnectWithoutUserInput | ReportCreateOrConnectWithoutUserInput[]
+    upsert?: ReportUpsertWithWhereUniqueWithoutUserInput | ReportUpsertWithWhereUniqueWithoutUserInput[]
+    createMany?: ReportCreateManyUserInputEnvelope
+    set?: ReportWhereUniqueInput | ReportWhereUniqueInput[]
+    disconnect?: ReportWhereUniqueInput | ReportWhereUniqueInput[]
+    delete?: ReportWhereUniqueInput | ReportWhereUniqueInput[]
+    connect?: ReportWhereUniqueInput | ReportWhereUniqueInput[]
+    update?: ReportUpdateWithWhereUniqueWithoutUserInput | ReportUpdateWithWhereUniqueWithoutUserInput[]
+    updateMany?: ReportUpdateManyWithWhereWithoutUserInput | ReportUpdateManyWithWhereWithoutUserInput[]
+    deleteMany?: ReportScalarWhereInput | ReportScalarWhereInput[]
+  }
+
   export type ShipmentUncheckedUpdateManyWithoutUserNestedInput = {
     create?: XOR<ShipmentCreateWithoutUserInput, ShipmentUncheckedCreateWithoutUserInput> | ShipmentCreateWithoutUserInput[] | ShipmentUncheckedCreateWithoutUserInput[]
     connectOrCreate?: ShipmentCreateOrConnectWithoutUserInput | ShipmentCreateOrConnectWithoutUserInput[]
@@ -24597,6 +26264,20 @@ export namespace Prisma {
     deleteMany?: ContactScalarWhereInput | ContactScalarWhereInput[]
   }
 
+  export type ReportUncheckedUpdateManyWithoutUserNestedInput = {
+    create?: XOR<ReportCreateWithoutUserInput, ReportUncheckedCreateWithoutUserInput> | ReportCreateWithoutUserInput[] | ReportUncheckedCreateWithoutUserInput[]
+    connectOrCreate?: ReportCreateOrConnectWithoutUserInput | ReportCreateOrConnectWithoutUserInput[]
+    upsert?: ReportUpsertWithWhereUniqueWithoutUserInput | ReportUpsertWithWhereUniqueWithoutUserInput[]
+    createMany?: ReportCreateManyUserInputEnvelope
+    set?: ReportWhereUniqueInput | ReportWhereUniqueInput[]
+    disconnect?: ReportWhereUniqueInput | ReportWhereUniqueInput[]
+    delete?: ReportWhereUniqueInput | ReportWhereUniqueInput[]
+    connect?: ReportWhereUniqueInput | ReportWhereUniqueInput[]
+    update?: ReportUpdateWithWhereUniqueWithoutUserInput | ReportUpdateWithWhereUniqueWithoutUserInput[]
+    updateMany?: ReportUpdateManyWithWhereWithoutUserInput | ReportUpdateManyWithWhereWithoutUserInput[]
+    deleteMany?: ReportScalarWhereInput | ReportScalarWhereInput[]
+  }
+
   export type AdminCreateNestedOneWithoutCatalogsInput = {
     create?: XOR<AdminCreateWithoutCatalogsInput, AdminUncheckedCreateWithoutCatalogsInput>
     connectOrCreate?: AdminCreateOrConnectWithoutCatalogsInput
@@ -24653,6 +26334,10 @@ export namespace Prisma {
     create?: XOR<AdminCreateWithoutOutLotsInput, AdminUncheckedCreateWithoutOutLotsInput>
     connectOrCreate?: AdminCreateOrConnectWithoutOutLotsInput
     connect?: AdminWhereUniqueInput
+  }
+
+  export type BoolFieldUpdateOperationsInput = {
+    set?: boolean
   }
 
   export type AdminUpdateOneWithoutOutLotsNestedInput = {
@@ -24853,6 +26538,38 @@ export namespace Prisma {
     update?: FavoriteUpdateWithWhereUniqueWithoutStocksInput | FavoriteUpdateWithWhereUniqueWithoutStocksInput[]
     updateMany?: FavoriteUpdateManyWithWhereWithoutStocksInput | FavoriteUpdateManyWithWhereWithoutStocksInput[]
     deleteMany?: FavoriteScalarWhereInput | FavoriteScalarWhereInput[]
+  }
+
+  export type AdminCreateNestedOneWithoutReportsInput = {
+    create?: XOR<AdminCreateWithoutReportsInput, AdminUncheckedCreateWithoutReportsInput>
+    connectOrCreate?: AdminCreateOrConnectWithoutReportsInput
+    connect?: AdminWhereUniqueInput
+  }
+
+  export type UserCreateNestedOneWithoutReportsInput = {
+    create?: XOR<UserCreateWithoutReportsInput, UserUncheckedCreateWithoutReportsInput>
+    connectOrCreate?: UserCreateOrConnectWithoutReportsInput
+    connect?: UserWhereUniqueInput
+  }
+
+  export type AdminUpdateOneWithoutReportsNestedInput = {
+    create?: XOR<AdminCreateWithoutReportsInput, AdminUncheckedCreateWithoutReportsInput>
+    connectOrCreate?: AdminCreateOrConnectWithoutReportsInput
+    upsert?: AdminUpsertWithoutReportsInput
+    disconnect?: AdminWhereInput | boolean
+    delete?: AdminWhereInput | boolean
+    connect?: AdminWhereUniqueInput
+    update?: XOR<XOR<AdminUpdateToOneWithWhereWithoutReportsInput, AdminUpdateWithoutReportsInput>, AdminUncheckedUpdateWithoutReportsInput>
+  }
+
+  export type UserUpdateOneWithoutReportsNestedInput = {
+    create?: XOR<UserCreateWithoutReportsInput, UserUncheckedCreateWithoutReportsInput>
+    connectOrCreate?: UserCreateOrConnectWithoutReportsInput
+    upsert?: UserUpsertWithoutReportsInput
+    disconnect?: UserWhereInput | boolean
+    delete?: UserWhereInput | boolean
+    connect?: UserWhereUniqueInput
+    update?: XOR<XOR<UserUpdateToOneWithWhereWithoutReportsInput, UserUpdateWithoutReportsInput>, UserUncheckedUpdateWithoutReportsInput>
   }
 
   export type StocksCreateNestedOneWithoutAssignmentsInput = {
@@ -25215,10 +26932,6 @@ export namespace Prisma {
     connect?: UserWhereUniqueInput
   }
 
-  export type BoolFieldUpdateOperationsInput = {
-    set?: boolean
-  }
-
   export type UserUpdateOneWithoutContactsNestedInput = {
     create?: XOR<UserCreateWithoutContactsInput, UserUncheckedCreateWithoutContactsInput>
     connectOrCreate?: UserCreateOrConnectWithoutContactsInput
@@ -25462,6 +27175,19 @@ export namespace Prisma {
     _max?: NestedFloatFilter<$PrismaModel>
   }
 
+  export type NestedBoolFilter<$PrismaModel = never> = {
+    equals?: boolean | BooleanFieldRefInput<$PrismaModel>
+    not?: NestedBoolFilter<$PrismaModel> | boolean
+  }
+
+  export type NestedBoolWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: boolean | BooleanFieldRefInput<$PrismaModel>
+    not?: NestedBoolWithAggregatesFilter<$PrismaModel> | boolean
+    _count?: NestedIntFilter<$PrismaModel>
+    _min?: NestedBoolFilter<$PrismaModel>
+    _max?: NestedBoolFilter<$PrismaModel>
+  }
+
   export type NestedFloatNullableFilter<$PrismaModel = never> = {
     equals?: number | FloatFieldRefInput<$PrismaModel> | null
     in?: number[] | ListFloatFieldRefInput<$PrismaModel> | null
@@ -25600,19 +27326,6 @@ export namespace Prisma {
     gt?: InputJsonValue | JsonFieldRefInput<$PrismaModel>
     gte?: InputJsonValue | JsonFieldRefInput<$PrismaModel>
     not?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | JsonNullValueFilter
-  }
-
-  export type NestedBoolFilter<$PrismaModel = never> = {
-    equals?: boolean | BooleanFieldRefInput<$PrismaModel>
-    not?: NestedBoolFilter<$PrismaModel> | boolean
-  }
-
-  export type NestedBoolWithAggregatesFilter<$PrismaModel = never> = {
-    equals?: boolean | BooleanFieldRefInput<$PrismaModel>
-    not?: NestedBoolWithAggregatesFilter<$PrismaModel> | boolean
-    _count?: NestedIntFilter<$PrismaModel>
-    _min?: NestedBoolFilter<$PrismaModel>
-    _max?: NestedBoolFilter<$PrismaModel>
   }
 
   export type CatalogCreateWithoutAdminInput = {
@@ -25790,6 +27503,7 @@ export namespace Prisma {
     auction: string
     lotNo: string
     broker: $Enums.Broker
+    sold?: boolean
     sellingMark: string
     grade: $Enums.TeaGrade
     invoiceNo: string
@@ -25808,6 +27522,7 @@ export namespace Prisma {
     auction: string
     lotNo: string
     broker: $Enums.Broker
+    sold?: boolean
     sellingMark: string
     grade: $Enums.TeaGrade
     invoiceNo: string
@@ -25948,6 +27663,35 @@ export namespace Prisma {
 
   export type ShipmentHistoryCreateManyAdminInputEnvelope = {
     data: ShipmentHistoryCreateManyAdminInput | ShipmentHistoryCreateManyAdminInput[]
+    skipDuplicates?: boolean
+  }
+
+  export type ReportCreateWithoutAdminInput = {
+    title: string
+    description?: string | null
+    fileUrl: string
+    fileType: string
+    uploadedAt?: Date | string
+    user?: UserCreateNestedOneWithoutReportsInput
+  }
+
+  export type ReportUncheckedCreateWithoutAdminInput = {
+    id?: number
+    title: string
+    description?: string | null
+    fileUrl: string
+    fileType: string
+    uploadedAt?: Date | string
+    userCognitoId?: string | null
+  }
+
+  export type ReportCreateOrConnectWithoutAdminInput = {
+    where: ReportWhereUniqueInput
+    create: XOR<ReportCreateWithoutAdminInput, ReportUncheckedCreateWithoutAdminInput>
+  }
+
+  export type ReportCreateManyAdminInputEnvelope = {
+    data: ReportCreateManyAdminInput | ReportCreateManyAdminInput[]
     skipDuplicates?: boolean
   }
 
@@ -26103,6 +27847,7 @@ export namespace Prisma {
     auction?: StringFilter<"OutLots"> | string
     lotNo?: StringFilter<"OutLots"> | string
     broker?: EnumBrokerFilter<"OutLots"> | $Enums.Broker
+    sold?: BoolFilter<"OutLots"> | boolean
     sellingMark?: StringFilter<"OutLots"> | string
     grade?: EnumTeaGradeFilter<"OutLots"> | $Enums.TeaGrade
     invoiceNo?: StringFilter<"OutLots"> | string
@@ -26234,6 +27979,36 @@ export namespace Prisma {
     userCognitoId?: StringNullableFilter<"ShipmentHistory"> | string | null
     adminCognitoId?: StringNullableFilter<"ShipmentHistory"> | string | null
     details?: JsonNullableFilter<"ShipmentHistory">
+  }
+
+  export type ReportUpsertWithWhereUniqueWithoutAdminInput = {
+    where: ReportWhereUniqueInput
+    update: XOR<ReportUpdateWithoutAdminInput, ReportUncheckedUpdateWithoutAdminInput>
+    create: XOR<ReportCreateWithoutAdminInput, ReportUncheckedCreateWithoutAdminInput>
+  }
+
+  export type ReportUpdateWithWhereUniqueWithoutAdminInput = {
+    where: ReportWhereUniqueInput
+    data: XOR<ReportUpdateWithoutAdminInput, ReportUncheckedUpdateWithoutAdminInput>
+  }
+
+  export type ReportUpdateManyWithWhereWithoutAdminInput = {
+    where: ReportScalarWhereInput
+    data: XOR<ReportUpdateManyMutationInput, ReportUncheckedUpdateManyWithoutAdminInput>
+  }
+
+  export type ReportScalarWhereInput = {
+    AND?: ReportScalarWhereInput | ReportScalarWhereInput[]
+    OR?: ReportScalarWhereInput[]
+    NOT?: ReportScalarWhereInput | ReportScalarWhereInput[]
+    id?: IntFilter<"Report"> | number
+    title?: StringFilter<"Report"> | string
+    description?: StringNullableFilter<"Report"> | string | null
+    fileUrl?: StringFilter<"Report"> | string
+    fileType?: StringFilter<"Report"> | string
+    uploadedAt?: DateTimeFilter<"Report"> | Date | string
+    adminCognitoId?: StringNullableFilter<"Report"> | string | null
+    userCognitoId?: StringNullableFilter<"Report"> | string | null
   }
 
   export type ShipmentCreateWithoutUserInput = {
@@ -26406,6 +28181,35 @@ export namespace Prisma {
     skipDuplicates?: boolean
   }
 
+  export type ReportCreateWithoutUserInput = {
+    title: string
+    description?: string | null
+    fileUrl: string
+    fileType: string
+    uploadedAt?: Date | string
+    admin?: AdminCreateNestedOneWithoutReportsInput
+  }
+
+  export type ReportUncheckedCreateWithoutUserInput = {
+    id?: number
+    title: string
+    description?: string | null
+    fileUrl: string
+    fileType: string
+    uploadedAt?: Date | string
+    adminCognitoId?: string | null
+  }
+
+  export type ReportCreateOrConnectWithoutUserInput = {
+    where: ReportWhereUniqueInput
+    create: XOR<ReportCreateWithoutUserInput, ReportUncheckedCreateWithoutUserInput>
+  }
+
+  export type ReportCreateManyUserInputEnvelope = {
+    data: ReportCreateManyUserInput | ReportCreateManyUserInput[]
+    skipDuplicates?: boolean
+  }
+
   export type ShipmentUpsertWithWhereUniqueWithoutUserInput = {
     where: ShipmentWhereUniqueInput
     update: XOR<ShipmentUpdateWithoutUserInput, ShipmentUncheckedUpdateWithoutUserInput>
@@ -26537,6 +28341,22 @@ export namespace Prisma {
     createdAt?: DateTimeFilter<"Contact"> | Date | string
   }
 
+  export type ReportUpsertWithWhereUniqueWithoutUserInput = {
+    where: ReportWhereUniqueInput
+    update: XOR<ReportUpdateWithoutUserInput, ReportUncheckedUpdateWithoutUserInput>
+    create: XOR<ReportCreateWithoutUserInput, ReportUncheckedCreateWithoutUserInput>
+  }
+
+  export type ReportUpdateWithWhereUniqueWithoutUserInput = {
+    where: ReportWhereUniqueInput
+    data: XOR<ReportUpdateWithoutUserInput, ReportUncheckedUpdateWithoutUserInput>
+  }
+
+  export type ReportUpdateManyWithWhereWithoutUserInput = {
+    where: ReportScalarWhereInput
+    data: XOR<ReportUpdateManyMutationInput, ReportUncheckedUpdateManyWithoutUserInput>
+  }
+
   export type AdminCreateWithoutCatalogsInput = {
     adminCognitoId: string
     name?: string | null
@@ -26549,6 +28369,7 @@ export namespace Prisma {
     shipments?: ShipmentCreateNestedManyWithoutAdminInput
     stockHistory?: StockHistoryCreateNestedManyWithoutAdminInput
     shipmentHistory?: ShipmentHistoryCreateNestedManyWithoutAdminInput
+    reports?: ReportCreateNestedManyWithoutAdminInput
   }
 
   export type AdminUncheckedCreateWithoutCatalogsInput = {
@@ -26564,6 +28385,7 @@ export namespace Prisma {
     shipments?: ShipmentUncheckedCreateNestedManyWithoutAdminInput
     stockHistory?: StockHistoryUncheckedCreateNestedManyWithoutAdminInput
     shipmentHistory?: ShipmentHistoryUncheckedCreateNestedManyWithoutAdminInput
+    reports?: ReportUncheckedCreateNestedManyWithoutAdminInput
   }
 
   export type AdminCreateOrConnectWithoutCatalogsInput = {
@@ -26594,6 +28416,7 @@ export namespace Prisma {
     shipments?: ShipmentUpdateManyWithoutAdminNestedInput
     stockHistory?: StockHistoryUpdateManyWithoutAdminNestedInput
     shipmentHistory?: ShipmentHistoryUpdateManyWithoutAdminNestedInput
+    reports?: ReportUpdateManyWithoutAdminNestedInput
   }
 
   export type AdminUncheckedUpdateWithoutCatalogsInput = {
@@ -26609,6 +28432,7 @@ export namespace Prisma {
     shipments?: ShipmentUncheckedUpdateManyWithoutAdminNestedInput
     stockHistory?: StockHistoryUncheckedUpdateManyWithoutAdminNestedInput
     shipmentHistory?: ShipmentHistoryUncheckedUpdateManyWithoutAdminNestedInput
+    reports?: ReportUncheckedUpdateManyWithoutAdminNestedInput
   }
 
   export type AdminCreateWithoutSellingPricesInput = {
@@ -26623,6 +28447,7 @@ export namespace Prisma {
     shipments?: ShipmentCreateNestedManyWithoutAdminInput
     stockHistory?: StockHistoryCreateNestedManyWithoutAdminInput
     shipmentHistory?: ShipmentHistoryCreateNestedManyWithoutAdminInput
+    reports?: ReportCreateNestedManyWithoutAdminInput
   }
 
   export type AdminUncheckedCreateWithoutSellingPricesInput = {
@@ -26638,6 +28463,7 @@ export namespace Prisma {
     shipments?: ShipmentUncheckedCreateNestedManyWithoutAdminInput
     stockHistory?: StockHistoryUncheckedCreateNestedManyWithoutAdminInput
     shipmentHistory?: ShipmentHistoryUncheckedCreateNestedManyWithoutAdminInput
+    reports?: ReportUncheckedCreateNestedManyWithoutAdminInput
   }
 
   export type AdminCreateOrConnectWithoutSellingPricesInput = {
@@ -26668,6 +28494,7 @@ export namespace Prisma {
     shipments?: ShipmentUpdateManyWithoutAdminNestedInput
     stockHistory?: StockHistoryUpdateManyWithoutAdminNestedInput
     shipmentHistory?: ShipmentHistoryUpdateManyWithoutAdminNestedInput
+    reports?: ReportUpdateManyWithoutAdminNestedInput
   }
 
   export type AdminUncheckedUpdateWithoutSellingPricesInput = {
@@ -26683,6 +28510,7 @@ export namespace Prisma {
     shipments?: ShipmentUncheckedUpdateManyWithoutAdminNestedInput
     stockHistory?: StockHistoryUncheckedUpdateManyWithoutAdminNestedInput
     shipmentHistory?: ShipmentHistoryUncheckedUpdateManyWithoutAdminNestedInput
+    reports?: ReportUncheckedUpdateManyWithoutAdminNestedInput
   }
 
   export type AdminCreateWithoutOutLotsInput = {
@@ -26697,6 +28525,7 @@ export namespace Prisma {
     shipments?: ShipmentCreateNestedManyWithoutAdminInput
     stockHistory?: StockHistoryCreateNestedManyWithoutAdminInput
     shipmentHistory?: ShipmentHistoryCreateNestedManyWithoutAdminInput
+    reports?: ReportCreateNestedManyWithoutAdminInput
   }
 
   export type AdminUncheckedCreateWithoutOutLotsInput = {
@@ -26712,6 +28541,7 @@ export namespace Prisma {
     shipments?: ShipmentUncheckedCreateNestedManyWithoutAdminInput
     stockHistory?: StockHistoryUncheckedCreateNestedManyWithoutAdminInput
     shipmentHistory?: ShipmentHistoryUncheckedCreateNestedManyWithoutAdminInput
+    reports?: ReportUncheckedCreateNestedManyWithoutAdminInput
   }
 
   export type AdminCreateOrConnectWithoutOutLotsInput = {
@@ -26742,6 +28572,7 @@ export namespace Prisma {
     shipments?: ShipmentUpdateManyWithoutAdminNestedInput
     stockHistory?: StockHistoryUpdateManyWithoutAdminNestedInput
     shipmentHistory?: ShipmentHistoryUpdateManyWithoutAdminNestedInput
+    reports?: ReportUpdateManyWithoutAdminNestedInput
   }
 
   export type AdminUncheckedUpdateWithoutOutLotsInput = {
@@ -26757,6 +28588,7 @@ export namespace Prisma {
     shipments?: ShipmentUncheckedUpdateManyWithoutAdminNestedInput
     stockHistory?: StockHistoryUncheckedUpdateManyWithoutAdminNestedInput
     shipmentHistory?: ShipmentHistoryUncheckedUpdateManyWithoutAdminNestedInput
+    reports?: ReportUncheckedUpdateManyWithoutAdminNestedInput
   }
 
   export type AdminCreateWithoutStocksInput = {
@@ -26771,6 +28603,7 @@ export namespace Prisma {
     shipments?: ShipmentCreateNestedManyWithoutAdminInput
     stockHistory?: StockHistoryCreateNestedManyWithoutAdminInput
     shipmentHistory?: ShipmentHistoryCreateNestedManyWithoutAdminInput
+    reports?: ReportCreateNestedManyWithoutAdminInput
   }
 
   export type AdminUncheckedCreateWithoutStocksInput = {
@@ -26786,6 +28619,7 @@ export namespace Prisma {
     shipments?: ShipmentUncheckedCreateNestedManyWithoutAdminInput
     stockHistory?: StockHistoryUncheckedCreateNestedManyWithoutAdminInput
     shipmentHistory?: ShipmentHistoryUncheckedCreateNestedManyWithoutAdminInput
+    reports?: ReportUncheckedCreateNestedManyWithoutAdminInput
   }
 
   export type AdminCreateOrConnectWithoutStocksInput = {
@@ -26910,6 +28744,7 @@ export namespace Prisma {
     shipments?: ShipmentUpdateManyWithoutAdminNestedInput
     stockHistory?: StockHistoryUpdateManyWithoutAdminNestedInput
     shipmentHistory?: ShipmentHistoryUpdateManyWithoutAdminNestedInput
+    reports?: ReportUpdateManyWithoutAdminNestedInput
   }
 
   export type AdminUncheckedUpdateWithoutStocksInput = {
@@ -26925,6 +28760,7 @@ export namespace Prisma {
     shipments?: ShipmentUncheckedUpdateManyWithoutAdminNestedInput
     stockHistory?: StockHistoryUncheckedUpdateManyWithoutAdminNestedInput
     shipmentHistory?: ShipmentHistoryUncheckedUpdateManyWithoutAdminNestedInput
+    reports?: ReportUncheckedUpdateManyWithoutAdminNestedInput
   }
 
   export type StockAssignmentUpsertWithWhereUniqueWithoutStocksInput = {
@@ -26999,6 +28835,166 @@ export namespace Prisma {
   export type FavoriteUpdateManyWithWhereWithoutStocksInput = {
     where: FavoriteScalarWhereInput
     data: XOR<FavoriteUpdateManyMutationInput, FavoriteUncheckedUpdateManyWithoutStocksInput>
+  }
+
+  export type AdminCreateWithoutReportsInput = {
+    adminCognitoId: string
+    name?: string | null
+    email?: string | null
+    phoneNumber?: string | null
+    catalogs?: CatalogCreateNestedManyWithoutAdminInput
+    stocks?: StocksCreateNestedManyWithoutAdminInput
+    sellingPrices?: SellingPriceCreateNestedManyWithoutAdminInput
+    outLots?: OutLotsCreateNestedManyWithoutAdminInput
+    notifications?: AdminNotificationCreateNestedManyWithoutAdminInput
+    shipments?: ShipmentCreateNestedManyWithoutAdminInput
+    stockHistory?: StockHistoryCreateNestedManyWithoutAdminInput
+    shipmentHistory?: ShipmentHistoryCreateNestedManyWithoutAdminInput
+  }
+
+  export type AdminUncheckedCreateWithoutReportsInput = {
+    id?: number
+    adminCognitoId: string
+    name?: string | null
+    email?: string | null
+    phoneNumber?: string | null
+    catalogs?: CatalogUncheckedCreateNestedManyWithoutAdminInput
+    stocks?: StocksUncheckedCreateNestedManyWithoutAdminInput
+    sellingPrices?: SellingPriceUncheckedCreateNestedManyWithoutAdminInput
+    outLots?: OutLotsUncheckedCreateNestedManyWithoutAdminInput
+    notifications?: AdminNotificationUncheckedCreateNestedManyWithoutAdminInput
+    shipments?: ShipmentUncheckedCreateNestedManyWithoutAdminInput
+    stockHistory?: StockHistoryUncheckedCreateNestedManyWithoutAdminInput
+    shipmentHistory?: ShipmentHistoryUncheckedCreateNestedManyWithoutAdminInput
+  }
+
+  export type AdminCreateOrConnectWithoutReportsInput = {
+    where: AdminWhereUniqueInput
+    create: XOR<AdminCreateWithoutReportsInput, AdminUncheckedCreateWithoutReportsInput>
+  }
+
+  export type UserCreateWithoutReportsInput = {
+    userCognitoId: string
+    name?: string | null
+    email?: string | null
+    role?: string
+    phoneNumber?: string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    shipments?: ShipmentCreateNestedManyWithoutUserInput
+    stockHistory?: StockHistoryCreateNestedManyWithoutUserInput
+    shipmentHistory?: ShipmentHistoryCreateNestedManyWithoutUserInput
+    favorites?: FavoriteCreateNestedManyWithoutUserInput
+    assignments?: StockAssignmentCreateNestedManyWithoutUserInput
+    contacts?: ContactCreateNestedManyWithoutUserInput
+  }
+
+  export type UserUncheckedCreateWithoutReportsInput = {
+    id?: number
+    userCognitoId: string
+    name?: string | null
+    email?: string | null
+    role?: string
+    phoneNumber?: string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    shipments?: ShipmentUncheckedCreateNestedManyWithoutUserInput
+    stockHistory?: StockHistoryUncheckedCreateNestedManyWithoutUserInput
+    shipmentHistory?: ShipmentHistoryUncheckedCreateNestedManyWithoutUserInput
+    favorites?: FavoriteUncheckedCreateNestedManyWithoutUserInput
+    assignments?: StockAssignmentUncheckedCreateNestedManyWithoutUserInput
+    contacts?: ContactUncheckedCreateNestedManyWithoutUserInput
+  }
+
+  export type UserCreateOrConnectWithoutReportsInput = {
+    where: UserWhereUniqueInput
+    create: XOR<UserCreateWithoutReportsInput, UserUncheckedCreateWithoutReportsInput>
+  }
+
+  export type AdminUpsertWithoutReportsInput = {
+    update: XOR<AdminUpdateWithoutReportsInput, AdminUncheckedUpdateWithoutReportsInput>
+    create: XOR<AdminCreateWithoutReportsInput, AdminUncheckedCreateWithoutReportsInput>
+    where?: AdminWhereInput
+  }
+
+  export type AdminUpdateToOneWithWhereWithoutReportsInput = {
+    where?: AdminWhereInput
+    data: XOR<AdminUpdateWithoutReportsInput, AdminUncheckedUpdateWithoutReportsInput>
+  }
+
+  export type AdminUpdateWithoutReportsInput = {
+    adminCognitoId?: StringFieldUpdateOperationsInput | string
+    name?: NullableStringFieldUpdateOperationsInput | string | null
+    email?: NullableStringFieldUpdateOperationsInput | string | null
+    phoneNumber?: NullableStringFieldUpdateOperationsInput | string | null
+    catalogs?: CatalogUpdateManyWithoutAdminNestedInput
+    stocks?: StocksUpdateManyWithoutAdminNestedInput
+    sellingPrices?: SellingPriceUpdateManyWithoutAdminNestedInput
+    outLots?: OutLotsUpdateManyWithoutAdminNestedInput
+    notifications?: AdminNotificationUpdateManyWithoutAdminNestedInput
+    shipments?: ShipmentUpdateManyWithoutAdminNestedInput
+    stockHistory?: StockHistoryUpdateManyWithoutAdminNestedInput
+    shipmentHistory?: ShipmentHistoryUpdateManyWithoutAdminNestedInput
+  }
+
+  export type AdminUncheckedUpdateWithoutReportsInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    adminCognitoId?: StringFieldUpdateOperationsInput | string
+    name?: NullableStringFieldUpdateOperationsInput | string | null
+    email?: NullableStringFieldUpdateOperationsInput | string | null
+    phoneNumber?: NullableStringFieldUpdateOperationsInput | string | null
+    catalogs?: CatalogUncheckedUpdateManyWithoutAdminNestedInput
+    stocks?: StocksUncheckedUpdateManyWithoutAdminNestedInput
+    sellingPrices?: SellingPriceUncheckedUpdateManyWithoutAdminNestedInput
+    outLots?: OutLotsUncheckedUpdateManyWithoutAdminNestedInput
+    notifications?: AdminNotificationUncheckedUpdateManyWithoutAdminNestedInput
+    shipments?: ShipmentUncheckedUpdateManyWithoutAdminNestedInput
+    stockHistory?: StockHistoryUncheckedUpdateManyWithoutAdminNestedInput
+    shipmentHistory?: ShipmentHistoryUncheckedUpdateManyWithoutAdminNestedInput
+  }
+
+  export type UserUpsertWithoutReportsInput = {
+    update: XOR<UserUpdateWithoutReportsInput, UserUncheckedUpdateWithoutReportsInput>
+    create: XOR<UserCreateWithoutReportsInput, UserUncheckedCreateWithoutReportsInput>
+    where?: UserWhereInput
+  }
+
+  export type UserUpdateToOneWithWhereWithoutReportsInput = {
+    where?: UserWhereInput
+    data: XOR<UserUpdateWithoutReportsInput, UserUncheckedUpdateWithoutReportsInput>
+  }
+
+  export type UserUpdateWithoutReportsInput = {
+    userCognitoId?: StringFieldUpdateOperationsInput | string
+    name?: NullableStringFieldUpdateOperationsInput | string | null
+    email?: NullableStringFieldUpdateOperationsInput | string | null
+    role?: StringFieldUpdateOperationsInput | string
+    phoneNumber?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    shipments?: ShipmentUpdateManyWithoutUserNestedInput
+    stockHistory?: StockHistoryUpdateManyWithoutUserNestedInput
+    shipmentHistory?: ShipmentHistoryUpdateManyWithoutUserNestedInput
+    favorites?: FavoriteUpdateManyWithoutUserNestedInput
+    assignments?: StockAssignmentUpdateManyWithoutUserNestedInput
+    contacts?: ContactUpdateManyWithoutUserNestedInput
+  }
+
+  export type UserUncheckedUpdateWithoutReportsInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    userCognitoId?: StringFieldUpdateOperationsInput | string
+    name?: NullableStringFieldUpdateOperationsInput | string | null
+    email?: NullableStringFieldUpdateOperationsInput | string | null
+    role?: StringFieldUpdateOperationsInput | string
+    phoneNumber?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    shipments?: ShipmentUncheckedUpdateManyWithoutUserNestedInput
+    stockHistory?: StockHistoryUncheckedUpdateManyWithoutUserNestedInput
+    shipmentHistory?: ShipmentHistoryUncheckedUpdateManyWithoutUserNestedInput
+    favorites?: FavoriteUncheckedUpdateManyWithoutUserNestedInput
+    assignments?: StockAssignmentUncheckedUpdateManyWithoutUserNestedInput
+    contacts?: ContactUncheckedUpdateManyWithoutUserNestedInput
   }
 
   export type StocksCreateWithoutAssignmentsInput = {
@@ -27076,6 +29072,7 @@ export namespace Prisma {
     shipmentHistory?: ShipmentHistoryCreateNestedManyWithoutUserInput
     favorites?: FavoriteCreateNestedManyWithoutUserInput
     contacts?: ContactCreateNestedManyWithoutUserInput
+    reports?: ReportCreateNestedManyWithoutUserInput
   }
 
   export type UserUncheckedCreateWithoutAssignmentsInput = {
@@ -27092,6 +29089,7 @@ export namespace Prisma {
     shipmentHistory?: ShipmentHistoryUncheckedCreateNestedManyWithoutUserInput
     favorites?: FavoriteUncheckedCreateNestedManyWithoutUserInput
     contacts?: ContactUncheckedCreateNestedManyWithoutUserInput
+    reports?: ReportUncheckedCreateNestedManyWithoutUserInput
   }
 
   export type UserCreateOrConnectWithoutAssignmentsInput = {
@@ -27191,6 +29189,7 @@ export namespace Prisma {
     shipmentHistory?: ShipmentHistoryUpdateManyWithoutUserNestedInput
     favorites?: FavoriteUpdateManyWithoutUserNestedInput
     contacts?: ContactUpdateManyWithoutUserNestedInput
+    reports?: ReportUpdateManyWithoutUserNestedInput
   }
 
   export type UserUncheckedUpdateWithoutAssignmentsInput = {
@@ -27207,6 +29206,7 @@ export namespace Prisma {
     shipmentHistory?: ShipmentHistoryUncheckedUpdateManyWithoutUserNestedInput
     favorites?: FavoriteUncheckedUpdateManyWithoutUserNestedInput
     contacts?: ContactUncheckedUpdateManyWithoutUserNestedInput
+    reports?: ReportUncheckedUpdateManyWithoutUserNestedInput
   }
 
   export type ShipmentHistoryCreateWithoutShipmentInput = {
@@ -27299,6 +29299,7 @@ export namespace Prisma {
     favorites?: FavoriteCreateNestedManyWithoutUserInput
     assignments?: StockAssignmentCreateNestedManyWithoutUserInput
     contacts?: ContactCreateNestedManyWithoutUserInput
+    reports?: ReportCreateNestedManyWithoutUserInput
   }
 
   export type UserUncheckedCreateWithoutShipmentsInput = {
@@ -27315,6 +29316,7 @@ export namespace Prisma {
     favorites?: FavoriteUncheckedCreateNestedManyWithoutUserInput
     assignments?: StockAssignmentUncheckedCreateNestedManyWithoutUserInput
     contacts?: ContactUncheckedCreateNestedManyWithoutUserInput
+    reports?: ReportUncheckedCreateNestedManyWithoutUserInput
   }
 
   export type UserCreateOrConnectWithoutShipmentsInput = {
@@ -27334,6 +29336,7 @@ export namespace Prisma {
     notifications?: AdminNotificationCreateNestedManyWithoutAdminInput
     stockHistory?: StockHistoryCreateNestedManyWithoutAdminInput
     shipmentHistory?: ShipmentHistoryCreateNestedManyWithoutAdminInput
+    reports?: ReportCreateNestedManyWithoutAdminInput
   }
 
   export type AdminUncheckedCreateWithoutShipmentsInput = {
@@ -27349,6 +29352,7 @@ export namespace Prisma {
     notifications?: AdminNotificationUncheckedCreateNestedManyWithoutAdminInput
     stockHistory?: StockHistoryUncheckedCreateNestedManyWithoutAdminInput
     shipmentHistory?: ShipmentHistoryUncheckedCreateNestedManyWithoutAdminInput
+    reports?: ReportUncheckedCreateNestedManyWithoutAdminInput
   }
 
   export type AdminCreateOrConnectWithoutShipmentsInput = {
@@ -27428,6 +29432,7 @@ export namespace Prisma {
     favorites?: FavoriteUpdateManyWithoutUserNestedInput
     assignments?: StockAssignmentUpdateManyWithoutUserNestedInput
     contacts?: ContactUpdateManyWithoutUserNestedInput
+    reports?: ReportUpdateManyWithoutUserNestedInput
   }
 
   export type UserUncheckedUpdateWithoutShipmentsInput = {
@@ -27444,6 +29449,7 @@ export namespace Prisma {
     favorites?: FavoriteUncheckedUpdateManyWithoutUserNestedInput
     assignments?: StockAssignmentUncheckedUpdateManyWithoutUserNestedInput
     contacts?: ContactUncheckedUpdateManyWithoutUserNestedInput
+    reports?: ReportUncheckedUpdateManyWithoutUserNestedInput
   }
 
   export type AdminUpsertWithoutShipmentsInput = {
@@ -27469,6 +29475,7 @@ export namespace Prisma {
     notifications?: AdminNotificationUpdateManyWithoutAdminNestedInput
     stockHistory?: StockHistoryUpdateManyWithoutAdminNestedInput
     shipmentHistory?: ShipmentHistoryUpdateManyWithoutAdminNestedInput
+    reports?: ReportUpdateManyWithoutAdminNestedInput
   }
 
   export type AdminUncheckedUpdateWithoutShipmentsInput = {
@@ -27484,6 +29491,7 @@ export namespace Prisma {
     notifications?: AdminNotificationUncheckedUpdateManyWithoutAdminNestedInput
     stockHistory?: StockHistoryUncheckedUpdateManyWithoutAdminNestedInput
     shipmentHistory?: ShipmentHistoryUncheckedUpdateManyWithoutAdminNestedInput
+    reports?: ReportUncheckedUpdateManyWithoutAdminNestedInput
   }
 
   export type ShipmentCreateWithoutStocksInput = {
@@ -27769,6 +29777,7 @@ export namespace Prisma {
     favorites?: FavoriteCreateNestedManyWithoutUserInput
     assignments?: StockAssignmentCreateNestedManyWithoutUserInput
     contacts?: ContactCreateNestedManyWithoutUserInput
+    reports?: ReportCreateNestedManyWithoutUserInput
   }
 
   export type UserUncheckedCreateWithoutStockHistoryInput = {
@@ -27785,6 +29794,7 @@ export namespace Prisma {
     favorites?: FavoriteUncheckedCreateNestedManyWithoutUserInput
     assignments?: StockAssignmentUncheckedCreateNestedManyWithoutUserInput
     contacts?: ContactUncheckedCreateNestedManyWithoutUserInput
+    reports?: ReportUncheckedCreateNestedManyWithoutUserInput
   }
 
   export type UserCreateOrConnectWithoutStockHistoryInput = {
@@ -27804,6 +29814,7 @@ export namespace Prisma {
     notifications?: AdminNotificationCreateNestedManyWithoutAdminInput
     shipments?: ShipmentCreateNestedManyWithoutAdminInput
     shipmentHistory?: ShipmentHistoryCreateNestedManyWithoutAdminInput
+    reports?: ReportCreateNestedManyWithoutAdminInput
   }
 
   export type AdminUncheckedCreateWithoutStockHistoryInput = {
@@ -27819,6 +29830,7 @@ export namespace Prisma {
     notifications?: AdminNotificationUncheckedCreateNestedManyWithoutAdminInput
     shipments?: ShipmentUncheckedCreateNestedManyWithoutAdminInput
     shipmentHistory?: ShipmentHistoryUncheckedCreateNestedManyWithoutAdminInput
+    reports?: ReportUncheckedCreateNestedManyWithoutAdminInput
   }
 
   export type AdminCreateOrConnectWithoutStockHistoryInput = {
@@ -27954,6 +29966,7 @@ export namespace Prisma {
     favorites?: FavoriteUpdateManyWithoutUserNestedInput
     assignments?: StockAssignmentUpdateManyWithoutUserNestedInput
     contacts?: ContactUpdateManyWithoutUserNestedInput
+    reports?: ReportUpdateManyWithoutUserNestedInput
   }
 
   export type UserUncheckedUpdateWithoutStockHistoryInput = {
@@ -27970,6 +29983,7 @@ export namespace Prisma {
     favorites?: FavoriteUncheckedUpdateManyWithoutUserNestedInput
     assignments?: StockAssignmentUncheckedUpdateManyWithoutUserNestedInput
     contacts?: ContactUncheckedUpdateManyWithoutUserNestedInput
+    reports?: ReportUncheckedUpdateManyWithoutUserNestedInput
   }
 
   export type AdminUpsertWithoutStockHistoryInput = {
@@ -27995,6 +30009,7 @@ export namespace Prisma {
     notifications?: AdminNotificationUpdateManyWithoutAdminNestedInput
     shipments?: ShipmentUpdateManyWithoutAdminNestedInput
     shipmentHistory?: ShipmentHistoryUpdateManyWithoutAdminNestedInput
+    reports?: ReportUpdateManyWithoutAdminNestedInput
   }
 
   export type AdminUncheckedUpdateWithoutStockHistoryInput = {
@@ -28010,6 +30025,7 @@ export namespace Prisma {
     notifications?: AdminNotificationUncheckedUpdateManyWithoutAdminNestedInput
     shipments?: ShipmentUncheckedUpdateManyWithoutAdminNestedInput
     shipmentHistory?: ShipmentHistoryUncheckedUpdateManyWithoutAdminNestedInput
+    reports?: ReportUncheckedUpdateManyWithoutAdminNestedInput
   }
 
   export type ShipmentUpsertWithoutStockHistoryInput = {
@@ -28103,6 +30119,7 @@ export namespace Prisma {
     favorites?: FavoriteCreateNestedManyWithoutUserInput
     assignments?: StockAssignmentCreateNestedManyWithoutUserInput
     contacts?: ContactCreateNestedManyWithoutUserInput
+    reports?: ReportCreateNestedManyWithoutUserInput
   }
 
   export type UserUncheckedCreateWithoutShipmentHistoryInput = {
@@ -28119,6 +30136,7 @@ export namespace Prisma {
     favorites?: FavoriteUncheckedCreateNestedManyWithoutUserInput
     assignments?: StockAssignmentUncheckedCreateNestedManyWithoutUserInput
     contacts?: ContactUncheckedCreateNestedManyWithoutUserInput
+    reports?: ReportUncheckedCreateNestedManyWithoutUserInput
   }
 
   export type UserCreateOrConnectWithoutShipmentHistoryInput = {
@@ -28138,6 +30156,7 @@ export namespace Prisma {
     notifications?: AdminNotificationCreateNestedManyWithoutAdminInput
     shipments?: ShipmentCreateNestedManyWithoutAdminInput
     stockHistory?: StockHistoryCreateNestedManyWithoutAdminInput
+    reports?: ReportCreateNestedManyWithoutAdminInput
   }
 
   export type AdminUncheckedCreateWithoutShipmentHistoryInput = {
@@ -28153,6 +30172,7 @@ export namespace Prisma {
     notifications?: AdminNotificationUncheckedCreateNestedManyWithoutAdminInput
     shipments?: ShipmentUncheckedCreateNestedManyWithoutAdminInput
     stockHistory?: StockHistoryUncheckedCreateNestedManyWithoutAdminInput
+    reports?: ReportUncheckedCreateNestedManyWithoutAdminInput
   }
 
   export type AdminCreateOrConnectWithoutShipmentHistoryInput = {
@@ -28226,6 +30246,7 @@ export namespace Prisma {
     favorites?: FavoriteUpdateManyWithoutUserNestedInput
     assignments?: StockAssignmentUpdateManyWithoutUserNestedInput
     contacts?: ContactUpdateManyWithoutUserNestedInput
+    reports?: ReportUpdateManyWithoutUserNestedInput
   }
 
   export type UserUncheckedUpdateWithoutShipmentHistoryInput = {
@@ -28242,6 +30263,7 @@ export namespace Prisma {
     favorites?: FavoriteUncheckedUpdateManyWithoutUserNestedInput
     assignments?: StockAssignmentUncheckedUpdateManyWithoutUserNestedInput
     contacts?: ContactUncheckedUpdateManyWithoutUserNestedInput
+    reports?: ReportUncheckedUpdateManyWithoutUserNestedInput
   }
 
   export type AdminUpsertWithoutShipmentHistoryInput = {
@@ -28267,6 +30289,7 @@ export namespace Prisma {
     notifications?: AdminNotificationUpdateManyWithoutAdminNestedInput
     shipments?: ShipmentUpdateManyWithoutAdminNestedInput
     stockHistory?: StockHistoryUpdateManyWithoutAdminNestedInput
+    reports?: ReportUpdateManyWithoutAdminNestedInput
   }
 
   export type AdminUncheckedUpdateWithoutShipmentHistoryInput = {
@@ -28282,6 +30305,7 @@ export namespace Prisma {
     notifications?: AdminNotificationUncheckedUpdateManyWithoutAdminNestedInput
     shipments?: ShipmentUncheckedUpdateManyWithoutAdminNestedInput
     stockHistory?: StockHistoryUncheckedUpdateManyWithoutAdminNestedInput
+    reports?: ReportUncheckedUpdateManyWithoutAdminNestedInput
   }
 
   export type AdminCreateWithoutNotificationsInput = {
@@ -28296,6 +30320,7 @@ export namespace Prisma {
     shipments?: ShipmentCreateNestedManyWithoutAdminInput
     stockHistory?: StockHistoryCreateNestedManyWithoutAdminInput
     shipmentHistory?: ShipmentHistoryCreateNestedManyWithoutAdminInput
+    reports?: ReportCreateNestedManyWithoutAdminInput
   }
 
   export type AdminUncheckedCreateWithoutNotificationsInput = {
@@ -28311,6 +30336,7 @@ export namespace Prisma {
     shipments?: ShipmentUncheckedCreateNestedManyWithoutAdminInput
     stockHistory?: StockHistoryUncheckedCreateNestedManyWithoutAdminInput
     shipmentHistory?: ShipmentHistoryUncheckedCreateNestedManyWithoutAdminInput
+    reports?: ReportUncheckedCreateNestedManyWithoutAdminInput
   }
 
   export type AdminCreateOrConnectWithoutNotificationsInput = {
@@ -28341,6 +30367,7 @@ export namespace Prisma {
     shipments?: ShipmentUpdateManyWithoutAdminNestedInput
     stockHistory?: StockHistoryUpdateManyWithoutAdminNestedInput
     shipmentHistory?: ShipmentHistoryUpdateManyWithoutAdminNestedInput
+    reports?: ReportUpdateManyWithoutAdminNestedInput
   }
 
   export type AdminUncheckedUpdateWithoutNotificationsInput = {
@@ -28356,6 +30383,7 @@ export namespace Prisma {
     shipments?: ShipmentUncheckedUpdateManyWithoutAdminNestedInput
     stockHistory?: StockHistoryUncheckedUpdateManyWithoutAdminNestedInput
     shipmentHistory?: ShipmentHistoryUncheckedUpdateManyWithoutAdminNestedInput
+    reports?: ReportUncheckedUpdateManyWithoutAdminNestedInput
   }
 
   export type UserCreateWithoutContactsInput = {
@@ -28371,6 +30399,7 @@ export namespace Prisma {
     shipmentHistory?: ShipmentHistoryCreateNestedManyWithoutUserInput
     favorites?: FavoriteCreateNestedManyWithoutUserInput
     assignments?: StockAssignmentCreateNestedManyWithoutUserInput
+    reports?: ReportCreateNestedManyWithoutUserInput
   }
 
   export type UserUncheckedCreateWithoutContactsInput = {
@@ -28387,6 +30416,7 @@ export namespace Prisma {
     shipmentHistory?: ShipmentHistoryUncheckedCreateNestedManyWithoutUserInput
     favorites?: FavoriteUncheckedCreateNestedManyWithoutUserInput
     assignments?: StockAssignmentUncheckedCreateNestedManyWithoutUserInput
+    reports?: ReportUncheckedCreateNestedManyWithoutUserInput
   }
 
   export type UserCreateOrConnectWithoutContactsInput = {
@@ -28418,6 +30448,7 @@ export namespace Prisma {
     shipmentHistory?: ShipmentHistoryUpdateManyWithoutUserNestedInput
     favorites?: FavoriteUpdateManyWithoutUserNestedInput
     assignments?: StockAssignmentUpdateManyWithoutUserNestedInput
+    reports?: ReportUpdateManyWithoutUserNestedInput
   }
 
   export type UserUncheckedUpdateWithoutContactsInput = {
@@ -28434,6 +30465,7 @@ export namespace Prisma {
     shipmentHistory?: ShipmentHistoryUncheckedUpdateManyWithoutUserNestedInput
     favorites?: FavoriteUncheckedUpdateManyWithoutUserNestedInput
     assignments?: StockAssignmentUncheckedUpdateManyWithoutUserNestedInput
+    reports?: ReportUncheckedUpdateManyWithoutUserNestedInput
   }
 
   export type UserCreateWithoutFavoritesInput = {
@@ -28449,6 +30481,7 @@ export namespace Prisma {
     shipmentHistory?: ShipmentHistoryCreateNestedManyWithoutUserInput
     assignments?: StockAssignmentCreateNestedManyWithoutUserInput
     contacts?: ContactCreateNestedManyWithoutUserInput
+    reports?: ReportCreateNestedManyWithoutUserInput
   }
 
   export type UserUncheckedCreateWithoutFavoritesInput = {
@@ -28465,6 +30498,7 @@ export namespace Prisma {
     shipmentHistory?: ShipmentHistoryUncheckedCreateNestedManyWithoutUserInput
     assignments?: StockAssignmentUncheckedCreateNestedManyWithoutUserInput
     contacts?: ContactUncheckedCreateNestedManyWithoutUserInput
+    reports?: ReportUncheckedCreateNestedManyWithoutUserInput
   }
 
   export type UserCreateOrConnectWithoutFavoritesInput = {
@@ -28558,6 +30592,7 @@ export namespace Prisma {
     shipmentHistory?: ShipmentHistoryUpdateManyWithoutUserNestedInput
     assignments?: StockAssignmentUpdateManyWithoutUserNestedInput
     contacts?: ContactUpdateManyWithoutUserNestedInput
+    reports?: ReportUpdateManyWithoutUserNestedInput
   }
 
   export type UserUncheckedUpdateWithoutFavoritesInput = {
@@ -28574,6 +30609,7 @@ export namespace Prisma {
     shipmentHistory?: ShipmentHistoryUncheckedUpdateManyWithoutUserNestedInput
     assignments?: StockAssignmentUncheckedUpdateManyWithoutUserNestedInput
     contacts?: ContactUncheckedUpdateManyWithoutUserNestedInput
+    reports?: ReportUncheckedUpdateManyWithoutUserNestedInput
   }
 
   export type StocksUpsertWithoutFavoritesInput = {
@@ -28717,6 +30753,7 @@ export namespace Prisma {
     auction: string
     lotNo: string
     broker: $Enums.Broker
+    sold?: boolean
     sellingMark: string
     grade: $Enums.TeaGrade
     invoiceNo: string
@@ -28767,6 +30804,16 @@ export namespace Prisma {
     timestamp?: Date | string
     userCognitoId?: string | null
     details?: NullableJsonNullValueInput | InputJsonValue
+  }
+
+  export type ReportCreateManyAdminInput = {
+    id?: number
+    title: string
+    description?: string | null
+    fileUrl: string
+    fileType: string
+    uploadedAt?: Date | string
+    userCognitoId?: string | null
   }
 
   export type CatalogUpdateWithoutAdminInput = {
@@ -28982,6 +31029,7 @@ export namespace Prisma {
     auction?: StringFieldUpdateOperationsInput | string
     lotNo?: StringFieldUpdateOperationsInput | string
     broker?: EnumBrokerFieldUpdateOperationsInput | $Enums.Broker
+    sold?: BoolFieldUpdateOperationsInput | boolean
     sellingMark?: StringFieldUpdateOperationsInput | string
     grade?: EnumTeaGradeFieldUpdateOperationsInput | $Enums.TeaGrade
     invoiceNo?: StringFieldUpdateOperationsInput | string
@@ -29000,6 +31048,7 @@ export namespace Prisma {
     auction?: StringFieldUpdateOperationsInput | string
     lotNo?: StringFieldUpdateOperationsInput | string
     broker?: EnumBrokerFieldUpdateOperationsInput | $Enums.Broker
+    sold?: BoolFieldUpdateOperationsInput | boolean
     sellingMark?: StringFieldUpdateOperationsInput | string
     grade?: EnumTeaGradeFieldUpdateOperationsInput | $Enums.TeaGrade
     invoiceNo?: StringFieldUpdateOperationsInput | string
@@ -29018,6 +31067,7 @@ export namespace Prisma {
     auction?: StringFieldUpdateOperationsInput | string
     lotNo?: StringFieldUpdateOperationsInput | string
     broker?: EnumBrokerFieldUpdateOperationsInput | $Enums.Broker
+    sold?: BoolFieldUpdateOperationsInput | boolean
     sellingMark?: StringFieldUpdateOperationsInput | string
     grade?: EnumTeaGradeFieldUpdateOperationsInput | $Enums.TeaGrade
     invoiceNo?: StringFieldUpdateOperationsInput | string
@@ -29150,6 +31200,35 @@ export namespace Prisma {
     details?: NullableJsonNullValueInput | InputJsonValue
   }
 
+  export type ReportUpdateWithoutAdminInput = {
+    title?: StringFieldUpdateOperationsInput | string
+    description?: NullableStringFieldUpdateOperationsInput | string | null
+    fileUrl?: StringFieldUpdateOperationsInput | string
+    fileType?: StringFieldUpdateOperationsInput | string
+    uploadedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    user?: UserUpdateOneWithoutReportsNestedInput
+  }
+
+  export type ReportUncheckedUpdateWithoutAdminInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    title?: StringFieldUpdateOperationsInput | string
+    description?: NullableStringFieldUpdateOperationsInput | string | null
+    fileUrl?: StringFieldUpdateOperationsInput | string
+    fileType?: StringFieldUpdateOperationsInput | string
+    uploadedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    userCognitoId?: NullableStringFieldUpdateOperationsInput | string | null
+  }
+
+  export type ReportUncheckedUpdateManyWithoutAdminInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    title?: StringFieldUpdateOperationsInput | string
+    description?: NullableStringFieldUpdateOperationsInput | string | null
+    fileUrl?: StringFieldUpdateOperationsInput | string
+    fileType?: StringFieldUpdateOperationsInput | string
+    uploadedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    userCognitoId?: NullableStringFieldUpdateOperationsInput | string | null
+  }
+
   export type ShipmentCreateManyUserInput = {
     id?: number
     shipmentDate: Date | string
@@ -29203,6 +31282,16 @@ export namespace Prisma {
     message: string
     privacyConsent: boolean
     createdAt?: Date | string
+  }
+
+  export type ReportCreateManyUserInput = {
+    id?: number
+    title: string
+    description?: string | null
+    fileUrl: string
+    fileType: string
+    uploadedAt?: Date | string
+    adminCognitoId?: string | null
   }
 
   export type ShipmentUpdateWithoutUserInput = {
@@ -29368,6 +31457,35 @@ export namespace Prisma {
     message?: StringFieldUpdateOperationsInput | string
     privacyConsent?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type ReportUpdateWithoutUserInput = {
+    title?: StringFieldUpdateOperationsInput | string
+    description?: NullableStringFieldUpdateOperationsInput | string | null
+    fileUrl?: StringFieldUpdateOperationsInput | string
+    fileType?: StringFieldUpdateOperationsInput | string
+    uploadedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    admin?: AdminUpdateOneWithoutReportsNestedInput
+  }
+
+  export type ReportUncheckedUpdateWithoutUserInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    title?: StringFieldUpdateOperationsInput | string
+    description?: NullableStringFieldUpdateOperationsInput | string | null
+    fileUrl?: StringFieldUpdateOperationsInput | string
+    fileType?: StringFieldUpdateOperationsInput | string
+    uploadedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    adminCognitoId?: NullableStringFieldUpdateOperationsInput | string | null
+  }
+
+  export type ReportUncheckedUpdateManyWithoutUserInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    title?: StringFieldUpdateOperationsInput | string
+    description?: NullableStringFieldUpdateOperationsInput | string | null
+    fileUrl?: StringFieldUpdateOperationsInput | string
+    fileType?: StringFieldUpdateOperationsInput | string
+    uploadedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    adminCognitoId?: NullableStringFieldUpdateOperationsInput | string | null
   }
 
   export type StockAssignmentCreateManyStocksInput = {

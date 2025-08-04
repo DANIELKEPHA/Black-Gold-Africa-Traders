@@ -3,12 +3,11 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
-    "build": "rimraf dist && node --max-old-space-size=2048 node_modules/.bin/tsc",
+    "build": "rimraf dist && npx tsc",
     "start": "npm run build && node dist/index.js",
     "dev": "npm run build && concurrently \"npx tsc -w\" \"nodemon --exec ts-node src/index.ts\"",
     "seed": "ts-node src/prisma/seed.ts",
-    "prisma:generate": "npx prisma generate --schema=src/prisma/schema.prisma",
-    "prisma:push": "npx prisma db push --schema=src/prisma/schema.prisma",
+    "prisma:generate": "prisma generate",
     "postprisma:generate": "shx cp -r node_modules/.prisma/client/index.d.ts ../client/src/types/prismaTypes.d.ts"
   },
   "keywords": [],
@@ -23,6 +22,7 @@
     "@terraformer/wkt": "^2.2.1",
     "@types/csv-parse": "^1.1.12",
     "aws-jwt-verify": "^5.0.0",
+    "aws-sdk": "^2.1692.0",
     "axios": "^1.10.0",
     "body-parser": "^2.2.0",
     "cors": "^2.8.5",
@@ -70,5 +70,8 @@
     "ts-node": "^10.9.2",
     "tsconfig-paths": "^4.2.0",
     "typescript": "^5.8.3"
+  },
+  "prisma": {
+    "schema": "src/prisma/schema.prisma"
   }
 }

@@ -20,7 +20,7 @@
   {
     "stocksId": 3,
     "lotNo": "25756",
-    "userCognitoId": "us-east-2:12345678-aaaa-bbbb-cccc-111122223333",
+    "userCognitoId": "3408c408-5021-7092-4c4e-3a8fc204a8e2",
     "adminCognitoId": "04e8d4b8-90e1-704e-4ea4-746a81eedcd0",
     "assignedWeight": 1292.0,
     "createdAt": "2025-06-01T12:00:00Z",

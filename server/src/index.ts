@@ -1,10 +1,10 @@
-// src/index.ts
 import express from "express";
 import dotenv from "dotenv";
 import bodyParser from "body-parser";
 import cors from "cors";
 import helmet from "helmet";
 import morgan from "morgan";
+import rateLimit from "express-rate-limit";
 
 import catalogRoutes from "./routes/catalogRoutes";
 import userRoutes from "./routes/userRoutes";
@@ -13,6 +13,7 @@ import outLotsRoutes from "./routes/outLotsRoutes";
 import sellingPriceRouter from "./routes/sellingPriceRouter";
 import teaStocksRoutes from "./routes/teaStocksRoutes";
 import shipmentRoutes from "./routes/shipmentRoutes";
+import reportRoutes from "./routes/reportRoutes";
 
 /* CONFIGURATIONS */
 dotenv.config();
@@ -24,6 +25,13 @@ app.use(morgan("common"));
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(cors());
+
+// Rate limiter for presigned URL endpoints
+const presignedUrlLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 100, // Limit each IP to 100 requests per window
+    message: 'Too many requests for presigned URLs, please try again later.',
+});
 
 /* ROUTES */
 app.get("/", (req, res) => {
@@ -44,6 +52,7 @@ app.use("/outLots", outLotsRoutes);
 app.use("/sellingPrices", sellingPriceRouter);
 app.use("/stocks", teaStocksRoutes);
 app.use("/shipments", shipmentRoutes);
+app.use("/reports", presignedUrlLimiter, reportRoutes);
 
 /* SERVER */
 const port = Number(process.env.PORT) || 3002;

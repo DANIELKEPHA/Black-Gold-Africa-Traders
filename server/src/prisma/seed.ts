@@ -22,7 +22,8 @@ type ModelName =
     | 'shipmentHistory'
     | 'adminNotification'
     | 'contact'
-    | 'favorite';
+    | 'favorite'
+    | 'report';
 
 type PrismaModels = {
     [K in ModelName]: PrismaClient[K];
@@ -33,6 +34,7 @@ const tableNameMap: Record<string, string> = {
     ShipmentHistory: 'shipment_history',
     SellingPrice: 'selling_price',
     OutLots: 'out_lots',
+    Report: 'report',
 };
 
 function toPascalCase(str: string) {
@@ -68,6 +70,7 @@ async function deleteAllData() {
             'stockAssignment',
             'favorite',
             'contact',
+            'report',
             'shipment',
             'sellingPrice',
             'outLots',
@@ -185,7 +188,8 @@ async function seedTable(
     const validStatuses = ['Pending', 'Approved', 'Shipped', 'Delivered', 'Cancelled'];
     const validVessels = ['first', 'second', 'third', 'fourth'];
     const validPackaging = ['oneJutetwoPolly', 'oneJuteOnePolly'];
-    const validReprints = ['1', '2', '3', '4', '5', '6', '7', 'No', null]; // Allowed values for reprint field
+    const validReprints = ['1', '2', '3', '4', '5', '6', '7', 'No', null];
+    const validFileTypes = ['pdf', 'doc', 'docx', 'txt', 'csv', 'xlsx'];
 
     try {
         if (modelName === 'Admin') {
@@ -231,11 +235,11 @@ async function seedTable(
                     if (!adminRecord) throw new Error(`Invalid adminCognitoId ${item.adminCognitoId}`);
                     const existingCatalog = await tx.catalog.findUnique({ where: { lotNo: item.lotNo } });
                     if (existingCatalog) throw new Error(`Duplicate lotNo ${item.lotNo}`);
-                    const { adminCognitoId, ...catalogData } = item;
+                    const { adminCognitoId, userCognitoId, ...catalogData } = item;
                     await model.create({
                         data: {
                             ...catalogData,
-                            reprint: item.reprint, // Include reprint field
+                            reprint: item.reprint,
                             manufactureDate: new Date(item.manufactureDate),
                             createdAt: new Date(item.createdAt || Date.now()),
                             updatedAt: new Date(item.updatedAt || Date.now()),
@@ -254,11 +258,11 @@ async function seedTable(
                     if (!adminRecord) throw new Error(`Invalid adminCognitoId ${item.adminCognitoId}`);
                     const existingPrice = await tx.sellingPrice.findUnique({ where: { lotNo: item.lotNo } });
                     if (existingPrice) throw new Error(`Duplicate lotNo ${item.lotNo}`);
-                    const { adminCognitoId, ...sellingPriceData } = item;
+                    const { adminCognitoId, userCognitoId, ...sellingPriceData } = item;
                     await model.create({
                         data: {
                             ...sellingPriceData,
-                            reprint: item.reprint, // Include reprint field
+                            reprint: item.reprint,
                             manufactureDate: new Date(item.manufactureDate),
                             createdAt: new Date(item.createdAt || Date.now()),
                             updatedAt: new Date(item.updatedAt || Date.now()),
@@ -273,7 +277,7 @@ async function seedTable(
                     if (!adminRecord) throw new Error(`Invalid adminCognitoId ${item.adminCognitoId}`);
                     const existingOutLot = await tx.outLots.findUnique({ where: { lotNo: item.lotNo } });
                     if (existingOutLot) throw new Error(`Duplicate lotNo ${item.lotNo}`);
-                    const { adminCognitoId, ...outLotsData } = item;
+                    const { adminCognitoId, userCognitoId, ...outLotsData } = item;
                     await model.create({
                         data: {
                             ...outLotsData,
@@ -373,6 +377,11 @@ async function seedTable(
                         },
                     });
                     for (const shipmentItem of stocks || []) {
+                        if (!shipmentItem.lotNo) {
+                            console.warn(`Skipping ShipmentItem with missing or undefined lotNo for shipmark ${item.shipmark}`);
+                            seedStats[modelName].skipped++;
+                            continue;
+                        }
                         const stockRecord = await tx.stocks.findUnique({
                             where: { lotNo: shipmentItem.lotNo },
                             select: { id: true, weight: true },
@@ -564,6 +573,23 @@ async function seedTable(
                             createdAt: new Date(item.createdAt || Date.now()),
                         },
                     });
+                } else if (modelName === 'Report') {
+                    const adminRecord = await tx.admin.findUnique({ where: { adminCognitoId: item.adminCognitoId } });
+                    if (!adminRecord) throw new Error(`Invalid adminCognitoId ${item.adminCognitoId}`);
+                    const userRecord = item.userCognitoId ? await tx.user.findUnique({ where: { userCognitoId: item.userCognitoId } }) : null;
+                    if (item.userCognitoId && !userRecord) throw new Error(`Invalid userCognitoId ${item.userCognitoId}`);
+                    if (!item.title) throw new Error('Missing title');
+                    if (!item.fileUrl) throw new Error('Missing fileUrl');
+                    if (!validFileTypes.includes(item.fileType)) throw new Error(`Invalid fileType '${item.fileType}'`);
+                    const { adminCognitoId, userCognitoId, updatedAt, deletedAt, ...reportData } = item;
+                    await model.create({
+                        data: {
+                            ...reportData,
+                            uploadedAt: new Date(item.uploadedAt || Date.now()),
+                            admin: { connect: { adminCognitoId } },
+                            user: userCognitoId ? { connect: { userCognitoId } } : undefined,
+                        },
+                    });
                 } else {
                     await model.create({ data: item });
                 }
@@ -585,7 +611,7 @@ async function verifyData() {
     const models: ModelName[] = [
         'admin', 'user', 'catalog', 'sellingPrice', 'outLots', 'stocks',
         'stockAssignment', 'shipment', 'shipmentItem', 'stockHistory',
-        'shipmentHistory', 'adminNotification', 'contact', 'favorite',
+        'shipmentHistory', 'adminNotification', 'contact', 'favorite', 'report',
     ];
     for (const modelName of models) {
         const modelNameCamel = toCamelCase(modelName);
@@ -616,6 +642,7 @@ async function main() {
         'adminNotification.json',
         'contact.json',
         'favorite.json',
+        'report.json',
     ];
 
     try {

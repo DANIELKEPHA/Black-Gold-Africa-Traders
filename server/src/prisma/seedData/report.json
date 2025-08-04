@@ -1,0 +1,29 @@
+[
+  {
+    "title": "Quarterly Financial Report",
+    "description": "Detailed breakdown of Q2 financials.",
+    "fileUrl": "https://example.com/reports/q2-financials.pdf",
+    "fileType": "pdf",
+    "uploadedAt": "2025-07-30T10:00:00Z",
+    "adminCognitoId": "04e8d4b8-90e1-704e-4ea4-746a81eedcd0",
+    "userCognitoId": "3408c408-5021-7092-4c4e-3a8fc204a8e2"
+  },
+  {
+    "title": "Employee Onboarding Guide",
+    "description": "Instructions for onboarding new employees.",
+    "fileUrl": "https://example.com/reports/onboarding.docx",
+    "fileType": "docx",
+    "uploadedAt": "2025-07-28T09:15:00Z",
+    "adminCognitoId": "04e8d4b8-90e1-704e-4ea4-746a81eedcd0",
+    "userCognitoId": "3408c408-5021-7092-4c4e-3a8fc204a8e2"
+  },
+  {
+    "title": "System Architecture Diagram",
+    "description": "Overview of backend system design.",
+    "fileUrl": "https://example.com/reports/system-arch.xlsx",
+    "fileType": "xlsx",
+    "uploadedAt": "2025-07-25T14:30:00Z",
+    "adminCognitoId": "04e8d4b8-90e1-704e-4ea4-746a81eedcd0",
+    "userCognitoId": null
+  }
+]

@@ -13,6 +13,7 @@ import {
 import ReportsPage from '@/app/(dashboard)/admin/reports/shipment-reports/page';
 import UsersPage from "@/app/(dashboard)/admin/reports/users/page";
 import ContactSubmissions from "@/app/(dashboard)/admin/reports/contact-forms/pages";
+import GeneralReportsPage from "@/app/(dashboard)/admin/reports/general-reports/page";
 
 const theme = createTheme({
     palette: {
@@ -76,12 +77,14 @@ const ReportsDashboardPage: React.FC = () => {
                     <Tab label="Shipment Reports" />
                     <Tab label="Contact Submissions" />
                     <Tab label="Users Management" />
+                    <Tab label="General Reports" />
                 </Tabs>
 
                 <Box sx={{ mt: 3 }}>
                     {activeTab === 0 && <ReportsPage />}
                     {activeTab === 1 && <ContactSubmissions />}
                     {activeTab === 2 && <UsersPage />}
+                    {activeTab === 3 && <GeneralReportsPage />}
                 </Box>
             </Box>
         </ThemeProvider>

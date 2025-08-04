@@ -30,6 +30,13 @@ import {
 } from "@/state/stock";
 import {Broker, ShipmentStatus, TeaGrade} from "@/state/enums";
 import {Shipment} from "@/state/shipment";
+import {
+    CreateReportInput, DeleteReportsInput,
+    ExportReportsInput,
+    ReportFilterOptions,
+    ReportFilters,
+    ReportsResponse
+} from "@/state/report";
 
 // Configure base query with API base URL
 const rawBaseQuery = fetchBaseQuery({
@@ -86,6 +93,7 @@ export const api = createApi({
         "FilterPresets",
         "ShipmentHistory",
         'Contacts',
+        "Reports",
     ],
     endpoints: (builder) => ({
         // Existing Endpoints (Unchanged)
@@ -1574,6 +1582,267 @@ export const api = createApi({
                 });
             },
         }),
+
+        // Report Endpoints
+        getPresignedUrl: builder.mutation<{ url: string; key: string }, { fileName: string; fileType: string }>({
+            query: ({ fileName, fileType }) => ({
+                url: '/reports/upload-presigned-url',
+                method: 'POST',
+                body: { fileName, fileType },
+            }),
+            async onQueryStarted({ fileName, fileType }, { queryFulfilled }) {
+                const time = new Date().toLocaleString("en-US", { timeZone: "Africa/Nairobi" });
+                try {
+                    const { data } = await queryFulfilled;
+                    console.log(`[${time}] getPresignedUrl success:`, { fileName, fileType, key: data.key });
+                } catch (error: any) {
+                    console.error(`[${time}] getPresignedUrl error:`, {
+                        status: error?.error?.status,
+                        message: error?.error?.data?.message || 'Failed to generate presigned URL',
+                        details: error?.error?.data?.details,
+                        fileName,
+                        fileType,
+                    });
+                }
+            },
+        }),
+
+        getReports: builder.query<ReportsResponse, Partial<ReportFilters>>({
+            query: (filters) => {
+                const params = cleanParams({
+                    page: filters.page || 1,
+                    limit: filters.limit || 100,
+                    title: filters.title,
+                    fileType: filters.fileType,
+                    adminCognitoId: filters.adminCognitoId,
+                    userCognitoId: filters.userCognitoId,
+                    search: filters.search,
+                });
+                console.log(
+                    `[${new Date().toLocaleString("en-US", { timeZone: "Africa/Nairobi" })}] getReports: Sending query params:`,
+                    params
+                );
+                return {
+                    url: "/reports",
+                    params,
+                };
+            },
+            providesTags: (result) =>
+                result?.data
+                    ? [
+                        ...result.data.map(({ id }) => ({ type: "Reports" as const, id })),
+                        { type: "Reports" as const, id: "LIST" },
+                    ]
+                    : [{ type: "Reports" as const, id: "LIST" }],
+            async onQueryStarted(filters, { queryFulfilled }) {
+                const time = new Date().toLocaleString("en-US", { timeZone: "Africa/Nairobi" });
+                try {
+                    const { data } = await queryFulfilled;
+                    console.log(`[${time}] getReports success:`, { meta: data.meta, dataLength: data.data.length });
+                } catch (error: any) {
+                    console.error(`[${time}] getReports error:`, {
+                        status: error?.error?.status,
+                        message: error?.error?.data?.message || 'Failed to fetch reports',
+                        details: error?.error?.data?.details,
+                        params: filters,
+                    });
+                }
+            },
+        }),
+
+        getReportFilterOptions: builder.query<ReportFilterOptions, void>({
+            query: () => "/reports/filters",
+            providesTags: ["Reports"],
+            async onQueryStarted(_, { queryFulfilled }) {
+                const time = new Date().toLocaleString("en-US", { timeZone: "Africa/Nairobi" });
+                try {
+                    const { data } = await queryFulfilled;
+                    console.log(`[${time}] getReportFilterOptions success:`, data);
+                } catch (error: any) {
+                    console.error(`[${time}] getReportFilterOptions error:`, {
+                        status: error?.error?.status,
+                        message: error?.error?.data?.message || 'Failed to fetch filter options',
+                        details: error?.error?.data?.details,
+                    });
+                }
+            },
+        }),
+
+        createReport: builder.mutation<Report, CreateReportInput>({
+            query: (body) => ({
+                url: "/reports",
+                method: "POST",
+                body,
+            }),
+            invalidatesTags: [{ type: "Reports", id: "LIST" }],
+            async onQueryStarted(body, { queryFulfilled }) {
+                const time = new Date().toLocaleString("en-US", { timeZone: "Africa/Nairobi" });
+                try {
+                    const { data } = await queryFulfilled;
+                    await withToast(queryFulfilled, {
+                        success: "Report created successfully!",
+                        error: (err: any) => err?.error?.data?.message || "Failed to create report",
+                    });
+                } catch (error: any) {
+                    console.error(`[${time}] createReport error:`, {
+                        status: error?.error?.status,
+                        message: error?.error?.data?.message || 'Failed to create report',
+                        details: error?.error?.data?.details,
+                        body,
+                    });
+                }
+            },
+        }),
+
+        getReportById: builder.query<Report, number>({
+            query: (id) => `/reports/${id}`,
+            providesTags: (result, error, id): TagDescription<"Reports">[] => [{ type: "Reports", id }],
+            async onQueryStarted(id, { queryFulfilled }) {
+                const time = new Date().toLocaleString("en-US", { timeZone: "Africa/Nairobi" });
+                try {
+                    const { data } = await queryFulfilled;
+                    console.log(`[${time}] getReportById success:`, { id, data });
+                } catch (error: any) {
+                    console.error(`[${time}] getReportById error:`, {
+                        status: error?.error?.status,
+                        message: error?.error?.data?.message || 'Failed to fetch report',
+                        details: error?.error?.data?.details,
+                        id,
+                    });
+                }
+            },
+        }),
+
+        deleteReports: builder.mutation<
+            { message: string; associations: { id: number; title: string }[]; deletedCount: number },
+            DeleteReportsInput
+        >({
+            query: ({ ids }) => ({
+                url: "/reports/bulk",
+                method: "DELETE",
+                body: { ids },
+            }),
+            invalidatesTags: (result) =>
+                result?.associations
+                    ? [
+                        ...result.associations.map(({ id }) => ({ type: "Reports" as const, id })),
+                        { type: "Reports" as const, id: "LIST" },
+                    ]
+                    : [{ type: "Reports" as const, id: "LIST" }],
+            async onQueryStarted({ ids }, { queryFulfilled }) {
+                const time = new Date().toLocaleString("en-US", { timeZone: "Africa/Nairobi" });
+                try {
+                    const { data } = await queryFulfilled;
+                    console.log(`[${time}] deleteReports success:`, { deletedCount: data.deletedCount, ids });
+                    await withToast(queryFulfilled, {
+                        success: (data: { message: string; associations: { id: number; title: string }[]; deletedCount: number }) =>
+                            `Successfully deleted ${data.deletedCount} report(s)!`,
+                        error: (err: any) => err?.error?.data?.message || "Failed to delete reports",
+                    });
+                } catch (error: any) {
+                    console.error(`[${time}] deleteReports error:`, {
+                        status: error?.error?.status,
+                        message: error?.error?.data?.message || 'Failed to delete reports',
+                        details: error?.error?.data?.details,
+                        ids,
+                    });
+                }
+            },
+        }),
+
+        getDownloadPresignedUrl: builder.mutation<{ url: string }, { key: string }>({
+            query: ({ key }) => ({
+                url: '/reports/download-presigned-url',
+                method: 'POST',
+                body: { key },
+            }),
+            async onQueryStarted({ key }, { queryFulfilled }) {
+                const time = new Date().toLocaleString("en-US", { timeZone: "Africa/Nairobi" });
+                try {
+                    const { data } = await queryFulfilled;
+                    console.log(`[${time}] getDownloadPresignedUrl success:`, { key });
+                } catch (error: any) {
+                    console.error(`[${time}] getDownloadPresignedUrl error:`, {
+                        status: error?.error?.status,
+                        message: error?.error?.data?.message || 'Failed to generate download presigned URL',
+                        details: error?.error?.data?.details,
+                        key,
+                    });
+                }
+            },
+        }),
+
+        exportReportsXlsx: builder.mutation<{ success: boolean }, ExportReportsInput>({
+            query: (filters) => {
+                const params = cleanParams({
+                    reportIds: filters.reportIds?.join(","),
+                    title: filters.title,
+                    fileType: filters.fileType,
+                    adminCognitoId: filters.adminCognitoId,
+                    userCognitoId: filters.userCognitoId,
+                    search: filters.search,
+                    page: filters.page || 1,
+                    limit: filters.limit || 1000,
+                });
+                console.log(
+                    `[${new Date().toLocaleString("en-US", { timeZone: "Africa/Nairobi" })}] exportReportsXlsx: Sending params:`,
+                    params
+                );
+                return {
+                    url: "/reports/export/xlsx",
+                    method: "POST",
+                    body: params,
+                    responseHandler: async (response: Response) => {
+                        const time = new Date().toLocaleString("en-US", { timeZone: "Africa/Nairobi" });
+                        if (!response.ok) {
+                            let errorData: any;
+                            try {
+                                errorData = await response.json();
+                            } catch {
+                                errorData = await response.text();
+                            }
+                            console.error(`[${time}] exportReportsXlsx failed:`, {
+                                status: response.status,
+                                data: errorData,
+                            });
+                            throw new Error(errorData?.message || `Export failed: ${response.status} ${response.statusText}`);
+                        }
+                        const blob = await response.blob();
+                        if (!blob || blob.type !== "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet") {
+                            console.error(`[${time}] Unexpected response format:`, { type: blob?.type });
+                            throw new Error("Unexpected response format or empty XLSX");
+                        }
+                        const url = window.URL.createObjectURL(blob);
+                        const link = document.createElement("a");
+                        link.href = url;
+                        link.download = `reports_${new Date().toISOString().split("T")[0]}.xlsx`;
+                        document.body.appendChild(link);
+                        link.click();
+                        document.body.removeChild(link);
+                        window.URL.revokeObjectURL(url);
+                        console.log(`[${time}] exportReportsXlsx successful`);
+                        return { success: true };
+                    },
+                    cache: "no-cache",
+                };
+            },
+            async onQueryStarted(arg, { queryFulfilled }) {
+                const time = new Date().toLocaleString("en-US", { timeZone: "Africa/Nairobi" });
+                try {
+                    await queryFulfilled;
+                    console.log(`[${time}] Reports XLSX export successful`);
+                } catch (error: any) {
+                    console.error(`[${time}] Reports XLSX export failed:`, {
+                        message: error?.error?.data?.message || error.message || 'Failed to export reports',
+                        details: error?.error?.data?.details,
+                        params: arg,
+                    });
+                }
+            },
+            extraOptions: {
+                maxRetries: 0,
+            },
+        }),
     }),
 });
 
@@ -1633,4 +1902,12 @@ export const {
     useCreateContactMutation,
     useGetContactsQuery,
     useDeleteContactMutation,
+    useGetReportsQuery,
+    useGetReportFilterOptionsQuery,
+    useCreateReportMutation,
+    useGetReportByIdQuery,
+    useDeleteReportsMutation,
+    useExportReportsXlsxMutation,
+    useGetPresignedUrlMutation,
+    useGetDownloadPresignedUrlMutation
 } = api;

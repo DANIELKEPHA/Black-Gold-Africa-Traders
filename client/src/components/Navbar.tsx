@@ -61,7 +61,7 @@ const Navbar = () => {
         { href: "/admin/stock", label: "Stock", shortLabel: "STK", icon: NotebookPen },
         { href: "/admin/outLots", label: "Out Lots", shortLabel: "OL", icon: ShoppingCart },
         { href: "/admin/sellingPrices", label: "Selling Prices", shortLabel: "SP", icon: DollarSign },
-        { href: "/admin/reports", label: "Reports", shortLabel: "RPT", icon: BarChart },
+        { href: "/admin/reports", label: "Shipments", shortLabel: "RPT", icon: BarChart },
     ];
 
     const userLinks: NavLink[] = [
