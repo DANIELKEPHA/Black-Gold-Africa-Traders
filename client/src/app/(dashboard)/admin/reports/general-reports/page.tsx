@@ -1,18 +1,11 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { JSX, useState } from 'react';
 import {
     Box,
     Typography,
     TextField,
     Button,
-    Table,
-    TableBody,
-    TableCell,
-    TableContainer,
-    TableHead,
-    TableRow,
-    Paper,
     IconButton,
     Dialog,
     DialogTitle,
@@ -23,19 +16,21 @@ import {
     FormControl,
     InputLabel,
     CircularProgress,
-    TablePagination,
-    Tooltip,
     LinearProgress,
     Stack,
+    Card,
+    CardContent,
+    CardActions,
+    Pagination,
+    Tooltip,
 } from '@mui/material';
-import { Delete, Visibility, Download, Preview } from '@mui/icons-material';
+import { Delete, Download, Preview, CloudUpload, Add } from '@mui/icons-material';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
     useGetReportsQuery,
     useGetReportFilterOptionsQuery,
     useCreateReportMutation,
     useDeleteReportsMutation,
-    useExportReportsXlsxMutation,
     useGetPresignedUrlMutation,
     useGetDownloadPresignedUrlMutation,
 } from '@/state/api';
@@ -43,11 +38,8 @@ import { Report, ReportFilterOptions, ReportFilters, CreateReportInput } from '@
 import { format } from 'date-fns';
 
 const GeneralReportsPage: React.FC = () => {
-    const [filters, setFilters] = useState<ReportFilters>({ page: 1, limit: 10 });
+    const [filters, setFilters] = useState<ReportFilters>({ page: 1, limit: 9 });
     const [search, setSearch] = useState('');
-    const [fileType, setFileType] = useState('');
-    const [adminCognitoId, setAdminCognitoId] = useState('');
-    const [userCognitoId, setUserCognitoId] = useState('');
     const [openCreateModal, setOpenCreateModal] = useState(false);
     const [newReport, setNewReport] = useState<CreateReportInput>({
         title: '',
@@ -64,14 +56,10 @@ const GeneralReportsPage: React.FC = () => {
     const { data: reportsData, isLoading, error } = useGetReportsQuery({
         ...filters,
         search: search || undefined,
-        fileType: fileType || undefined,
-        adminCognitoId: adminCognitoId || undefined,
-        userCognitoId: userCognitoId || undefined,
     });
     const { data: filterOptions } = useGetReportFilterOptionsQuery();
     const [createReport, { isLoading: isCreating }] = useCreateReportMutation();
     const [deleteReports, { isLoading: isDeleting }] = useDeleteReportsMutation();
-    const [exportReportsXlsx, { isLoading: isExporting }] = useExportReportsXlsxMutation();
     const [getPresignedUrl, { isLoading: isGeneratingUrl }] = useGetPresignedUrlMutation();
     const [getDownloadPresignedUrl, { isLoading: isGeneratingDownloadUrl }] = useGetDownloadPresignedUrlMutation();
 
@@ -82,6 +70,15 @@ const GeneralReportsPage: React.FC = () => {
         'text/plain': 'txt',
         'text/csv': 'csv',
         'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': 'xlsx',
+    };
+
+    const fileTypeIcons: Record<string, JSX.Element> = {
+        pdf: <Preview />,
+        doc: <Preview />,
+        docx: <Preview />,
+        txt: <Preview />,
+        csv: <Preview />,
+        xlsx: <Preview />,
     };
 
     const handleFilterChange = (key: keyof ReportFilters, value: string | number) => {
@@ -312,43 +309,14 @@ const GeneralReportsPage: React.FC = () => {
         }
     };
 
-    const handleExport = async () => {
-        try {
-            console.log(`[${new Date().toLocaleString('en-US', { timeZone: 'Africa/Nairobi' })}] Exporting reports:`, {
-                filters,
-                search,
-                fileType,
-                adminCognitoId,
-                userCognitoId,
-            });
-            await exportReportsXlsx({
-                ...filters,
-                search: search || undefined,
-                fileType: fileType || undefined,
-                adminCognitoId: adminCognitoId || undefined,
-                userCognitoId: userCognitoId || undefined,
-            }).unwrap();
-        } catch (err: any) {
-            console.error(`[${new Date().toLocaleString('en-US', { timeZone: 'Africa/Nairobi' })}] Export failed:`, {
-                message: err.message,
-                data: err.data,
-            });
-            setUploadError('Failed to export reports. Please try again or contact support.');
-        }
-    };
-
     const handlePageChange = (_: unknown, newPage: number) => {
-        setFilters((prev) => ({ ...prev, page: newPage + 1 }));
+        setFilters((prev) => ({ ...prev, page: newPage }));
     };
 
-    const handleRowsPerPageChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-        setFilters((prev) => ({ ...prev, limit: parseInt(event.target.value, 10), page: 1 }));
-    };
-
-    const rowVariants = {
+    const cardVariants = {
         hidden: { opacity: 0, y: 20 },
-        visible: { opacity: 1, y: 0 },
-        exit: { opacity: 0, y: -20 },
+        visible: { opacity: 1, y: 0, transition: { duration: 0.3 } },
+        hover: { y: -5, boxShadow: '0 10px 20px rgba(0,0,0,0.1)' },
     };
 
     return (
@@ -373,24 +341,6 @@ const GeneralReportsPage: React.FC = () => {
                         variant="outlined"
                     />
                 </Box>
-                <Box sx={{ flex: 1, minWidth: 200 }}>
-                    <FormControl fullWidth>
-                        <InputLabel>File Type</InputLabel>
-                        <Select
-                            value={fileType}
-                            onChange={(e) => setFileType(e.target.value)}
-                            label="File Type"
-                        >
-                            <MenuItem value="">All</MenuItem>
-                            {filterOptions?.fileTypes.map((type) => (
-                                <MenuItem key={type} value={type}>
-                                    {type.toUpperCase()}
-                                </MenuItem>
-                            ))}
-                        </Select>
-                    </FormControl>
-                </Box>
-
             </Box>
 
             <Stack direction="row" spacing={2} sx={{ mb: 3 }}>
@@ -398,20 +348,11 @@ const GeneralReportsPage: React.FC = () => {
                     <Button
                         variant="contained"
                         color="primary"
+                        startIcon={<Add />}
                         onClick={() => setOpenCreateModal(true)}
                         disabled={isCreating || isGeneratingUrl}
                     >
                         Create Report
-                    </Button>
-                </motion.div>
-                <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                    <Button
-                        variant="outlined"
-                        startIcon={<Download />}
-                        onClick={handleExport}
-                        disabled={isExporting || !reportsData?.data?.length}
-                    >
-                        Export XLSX
                     </Button>
                 </motion.div>
             </Stack>
@@ -427,77 +368,116 @@ const GeneralReportsPage: React.FC = () => {
             ) : !reportsData?.data ? (
                 <Typography>No reports available.</Typography>
             ) : (
-                <TableContainer component={Paper}>
-                    <Table>
-                        <TableHead>
-                            <TableRow>
-                                <TableCell>ID</TableCell>
-                                <TableCell>Title</TableCell>
-                                <TableCell>File Type</TableCell>
-                                <TableCell>Uploaded At</TableCell>
-                                <TableCell>Creator</TableCell>
-                                <TableCell>Actions</TableCell>
-                            </TableRow>
-                        </TableHead>
-                        <TableBody>
-                            <AnimatePresence>
-                                {reportsData.data.map((report) => (
-                                    <motion.tr
-                                        key={report.id}
-                                        variants={rowVariants}
-                                        initial="hidden"
-                                        animate="visible"
-                                        exit="exit"
-                                        transition={{ duration: 0.3 }}
+                <>
+                    <Box sx={{
+                        display: 'flex',
+                        flexWrap: 'wrap',
+                        gap: 3,
+                        justifyContent: { xs: 'center', sm: 'flex-start' }
+                    }}>
+                        <AnimatePresence>
+                            {reportsData.data.map((report) => (
+                                <motion.div
+                                    key={report.id}
+                                    variants={cardVariants}
+                                    initial="hidden"
+                                    animate="visible"
+                                    whileHover="hover"
+                                    exit={{ opacity: 0, scale: 0.9 }}
+                                    transition={{ duration: 0.2 }}
+                                    style={{
+                                        flex: '0 0 auto',
+                                        minWidth: 200
+                                    }}
+                                >
+                                    <Card
+                                        sx={{
+                                            height: '200px',
+                                            width: '200px',
+                                            display: 'flex',
+                                            flexDirection: 'column',
+                                            boxShadow: 3,
+                                            borderRadius: 2,
+                                            transition: 'transform 0.2s, box-shadow 0.2s',
+                                            '&:hover': {
+                                                boxShadow: 6,
+                                            },
+                                            maxWidth: { xs: '100%', sm: 'calc(50% - 12px)', md: 'calc(33.333% - 12px)' }
+                                        }}
                                     >
-                                        <TableCell>{report.id}</TableCell>
-                                        <TableCell>{report.title}</TableCell>
-                                        <TableCell>{report.fileType.toUpperCase()}</TableCell>
-                                        <TableCell>{format(new Date(report.uploadedAt), 'PPp')}</TableCell>
-                                        <TableCell>
-                                            {report.admin?.name || report.user?.name || 'Unknown'}
-                                        </TableCell>
-                                        <TableCell>
+                                        <CardContent sx={{ flexGrow: 1, overflow: 'hidden' }}>
+                                            <Typography variant="caption" color="text.secondary">
+                                                {format(new Date(report.uploadedAt), 'PP')}
+                                            </Typography>
+                                            <Typography
+                                                variant="h6"
+                                                sx={{
+                                                    mb: 1,
+                                                    fontWeight: 'bold',
+                                                    overflow: 'hidden',
+                                                    textOverflow: 'ellipsis',
+                                                    whiteSpace: 'nowrap',
+                                                }}
+                                                title={report.title}
+                                            >
+                                                {report.title}
+                                            </Typography>
+                                            <Typography
+                                                variant="body2"
+                                                color="text.secondary"
+                                                sx={{
+                                                    mb: 2,
+                                                    overflow: 'hidden',
+                                                    textOverflow: 'ellipsis',
+                                                    display: '-webkit-box',
+                                                    WebkitLineClamp: 3,
+                                                    WebkitBoxOrient: 'vertical',
+                                                }}
+                                            >
+                                                {report.description || 'No description provided'}
+                                            </Typography>
+                                        </CardContent>
+                                        <CardActions sx={{ justifyContent: 'space-between', p: 2 }}>
                                             <Tooltip title={report.fileType === 'pdf' ? 'Preview PDF' : 'Download Report'}>
                                                 <IconButton
                                                     onClick={() => handleDownload(report)}
                                                     disabled={isGeneratingDownloadUrl || !!downloadProgress[report.id]}
+                                                    color="primary"
                                                 >
                                                     {report.fileType === 'pdf' ? <Preview /> : <Download />}
                                                 </IconButton>
                                             </Tooltip>
                                             <Tooltip title="Delete Report">
                                                 <IconButton
-                                                    color="error"
                                                     onClick={() => handleDelete([report.id])}
                                                     disabled={isDeleting}
+                                                    color="error"
                                                 >
                                                     <Delete />
                                                 </IconButton>
                                             </Tooltip>
-                                            {downloadProgress[report.id] > 0 && (
-                                                <LinearProgress
-                                                    variant="determinate"
-                                                    value={downloadProgress[report.id]}
-                                                    sx={{ width: '100%', mt: 1 }}
-                                                />
-                                            )}
-                                        </TableCell>
-                                    </motion.tr>
-                                ))}
-                            </AnimatePresence>
-                        </TableBody>
-                    </Table>
-                    <TablePagination
-                        rowsPerPageOptions={[5, 10, 25]}
-                        component="div"
-                        count={reportsData?.meta?.total ?? 0}
-                        rowsPerPage={filters.limit ?? 10}
-                        page={filters.page ? filters.page - 1 : 0}
-                        onPageChange={handlePageChange}
-                        onRowsPerPageChange={handleRowsPerPageChange}
-                    />
-                </TableContainer>
+                                        </CardActions>
+                                        {downloadProgress[report.id] > 0 && (
+                                            <LinearProgress
+                                                variant="determinate"
+                                                value={downloadProgress[report.id]}
+                                            />
+                                        )}
+                                    </Card>
+                                </motion.div>
+                            ))}
+                        </AnimatePresence>
+                    </Box>
+                    <Box sx={{ display: 'flex', justifyContent: 'center', mt: 3 }}>
+                        <Pagination
+                            count={Math.ceil((reportsData?.meta?.total ?? 0) / (filters.limit ?? 9))}
+                            page={filters.page}
+                            onChange={handlePageChange}
+                            color="primary"
+                            shape="rounded"
+                        />
+                    </Box>
+                </>
             )}
 
             <Dialog
@@ -548,6 +528,7 @@ const GeneralReportsPage: React.FC = () => {
                         <Button
                             component="label"
                             variant="outlined"
+                            startIcon={<CloudUpload />}
                             sx={{ mt: 2 }}
                             disabled={isGeneratingUrl || uploadProgress > 0}
                         >

@@ -219,7 +219,10 @@ export const getReports = async (req: Request, res: Response): Promise<void> => 
         if (authenticatedUser.role.toLowerCase() === "admin") {
             where.adminCognitoId = { equals: authenticatedUser.userId };
         } else {
-            where.userCognitoId = { equals: authenticatedUser.userId };
+            where.OR = [
+                { userCognitoId: { equals: authenticatedUser.userId } },
+                { adminCognitoId: { not: null } }, // Allow users to see admin reports
+            ];
         }
 
         if (title) {

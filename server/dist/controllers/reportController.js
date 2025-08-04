@@ -183,7 +183,10 @@ const getReports = (req, res) => __awaiter(void 0, void 0, void 0, function* () 
             where.adminCognitoId = { equals: authenticatedUser.userId };
         }
         else {
-            where.userCognitoId = { equals: authenticatedUser.userId };
+            where.OR = [
+                { userCognitoId: { equals: authenticatedUser.userId } },
+                { adminCognitoId: { not: null } }, // Allow users to see admin reports
+            ];
         }
         if (title) {
             where.title = { contains: String(title), mode: "insensitive" };
