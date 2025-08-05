@@ -402,7 +402,7 @@ const GeneralReportsPage: React.FC = () => {
                                             '&:hover': {
                                                 boxShadow: 6,
                                             },
-                                            maxWidth: { xs: '100%', sm: 'calc(50% - 12px)', md: 'calc(33.333% - 12px)' }
+
                                         }}
                                     >
 
