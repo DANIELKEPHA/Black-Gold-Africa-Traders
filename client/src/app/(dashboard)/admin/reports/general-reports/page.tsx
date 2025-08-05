@@ -405,7 +405,8 @@ const GeneralReportsPage: React.FC = () => {
                                             maxWidth: { xs: '100%', sm: 'calc(50% - 12px)', md: 'calc(33.333% - 12px)' }
                                         }}
                                     >
-                                        <CardContent sx={{ flexGrow: 1, overflow: 'hidden' }}>
+
+                                    <CardContent sx={{ flexGrow: 1, overflow: 'hidden' }}>
                                             <Typography variant="caption" color="text.secondary">
                                                 {format(new Date(report.uploadedAt), 'PP')}
                                             </Typography>
