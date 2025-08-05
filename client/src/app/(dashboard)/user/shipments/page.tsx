@@ -12,7 +12,7 @@ import { PackagingInstructions, Vessel } from "@/state/enums";
 import Stocks from "./Stocks";
 import NewShipment from "./NewShipment";
 import ExistingShipments from "./ExistingShipments";
-import UserReportsPage from "@/app/(dashboard)/user/shipments/UserReportsPage";
+
 
 const theme = createTheme({
   palette: {
@@ -252,10 +252,6 @@ const ShipmentController: React.FC = () => {
               handleChangeRowsPerPage={handleChangeRowsPerPage}
           />
       ),
-    },
-    {
-      label: "Reports",
-      component: <UserReportsPage />,
     },
   ];
 

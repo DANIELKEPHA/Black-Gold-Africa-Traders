@@ -70,6 +70,7 @@ const Navbar = () => {
         { href: "/user/stocks", label: "Stocks", shortLabel: "STK", icon: NotebookPen },
         { href: "/user/outLots", label: "Out Lots", shortLabel: "OL", icon: ShoppingCart },
         { href: "/user/sellingPrices", label: "Selling Prices", shortLabel: "SP", icon: DollarSign },
+        { href: "/user/general-reports", label: "Reports", shortLabel: "R", icon: FileText },
         { href: "/user/shipments", label: "Shipments", shortLabel: "SHP", icon: User },
     ];
 
