@@ -28,7 +28,7 @@ import {
     Heart,
     User,
     DollarSign,
-    ShoppingCart,
+    ShoppingCart, FileText,
 } from "lucide-react";
 
 interface NavLink {
@@ -61,6 +61,7 @@ const Navbar = () => {
         { href: "/admin/stock", label: "Stock", shortLabel: "STK", icon: NotebookPen },
         { href: "/admin/outLots", label: "Out Lots", shortLabel: "OL", icon: ShoppingCart },
         { href: "/admin/sellingPrices", label: "Selling Prices", shortLabel: "SP", icon: DollarSign },
+        { href: "/admin/reports/general-reports", label: "Reports", shortLabel: "R", icon: FileText },
         { href: "/admin/reports", label: "Shipments", shortLabel: "RPT", icon: BarChart },
     ];
 
