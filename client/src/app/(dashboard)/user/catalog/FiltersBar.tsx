@@ -37,7 +37,7 @@ interface FilterField {
 const FiltersBar: React.FC = () => {
     const { t } = useTranslation(["catalog", "general"]);
     const dispatch = useDispatch();
-    const isMobile = useMediaQuery("(max-width: 640px)"); // Adjusted to 640px for smaller phone screens
+    const isMobile = useMediaQuery("(max-width: 640px)");
     const isFiltersFullOpen = useSelector((state: any) => state.global.isFiltersFullOpen);
     const viewMode = useSelector((state: any) => state.global.viewMode);
     const {
@@ -75,9 +75,12 @@ const FiltersBar: React.FC = () => {
         { key: "lotNo", placeholder: "catalog:lotNoPlaceholder", type: "text" },
     ];
 
-    const getInputValue = (value: any): string | number => {
-        if (value === "any") return "";
-        return (value ?? "") as string | number;
+    // Updated getInputValue to handle boolean and number[] types
+    const getInputValue = (value: any): string | number | undefined => {
+        if (value === "any" || value == null) return "";
+        if (typeof value === "boolean") return value.toString(); // Convert boolean to string
+        if (Array.isArray(value)) return value.join(", "); // Convert array to comma-separated string
+        return value as string | number;
     };
 
     const handleMobileSubmit = () => {
@@ -93,9 +96,9 @@ const FiltersBar: React.FC = () => {
                     <div className="flex items-center flex-1">
                         <Input
                             placeholder={t("catalog:searchPlaceholder", { defaultValue: "Search catalogs..." })}
-                            value={localFilters.search ?? ""}
+                            value={getInputValue(localFilters.search)} // Use getInputValue for consistency
                             onChange={(e) => handleFilterChange("search", e.target.value)}
-                            className="flex-1 rounded-l-md rounded-r-none border-indigo-500 dark:border-indigo-600 border-r-0 focus:ring-indigo-500 text-sm h-10" // Increased height for touch
+                            className="flex-1 rounded-l-md rounded-r-none border-indigo-500 dark:border-indigo-600 border-r-0 focus:ring-indigo-500 text-sm h-10"
                             disabled={isFilterOptionsLoading}
                         />
                         <Button
@@ -103,14 +106,14 @@ const FiltersBar: React.FC = () => {
                             className="rounded-r-md rounded-l-none border-l-0 border-indigo-500 dark:border-indigo-600 hover:bg-indigo-600 hover:text-white dark:hover:bg-indigo-700 transition-colors h-10"
                             disabled={isFilterOptionsLoading}
                         >
-                            <Search className="w-5 h-5" /> {/* Larger icon */}
+                            <Search className="w-5 h-5" />
                         </Button>
                     </div>
                     <Drawer>
                         <DrawerTrigger asChild>
                             <Button
                                 variant="outline"
-                                className="ml-2 gap-2 rounded-md border-indigo-500 hover:bg-indigo-600 hover:text-white dark:hover:bg-indigo-700 transition-colors h-10 px-3" // Larger button
+                                className="ml-2 gap-2 rounded-md border-indigo-500 hover:bg-indigo-600 hover:text-white dark:hover:bg-indigo-700 transition-colors h-10 px-3"
                                 disabled={isFilterOptionsLoading}
                             >
                                 <Filter className="w-5 h-5" />
@@ -126,7 +129,7 @@ const FiltersBar: React.FC = () => {
                                         onClick={() => dispatch(toggleFiltersFullOpen())}
                                         className="p-0 h-auto"
                                     >
-                                        <X className="w-6 h-6" /> {/* Larger close icon */}
+                                        <X className="w-6 h-6" />
                                     </Button>
                                 </DrawerTitle>
                             </DrawerHeader>
@@ -165,7 +168,7 @@ const FiltersBar: React.FC = () => {
                                                 <Input
                                                     type={type}
                                                     placeholder={t(`catalog:${placeholder}`, { defaultValue: placeholder })}
-                                                    value={localFilters[key] === "any" ? "" : (localFilters[key] ?? "")}
+                                                    value={getInputValue(localFilters[key])} // Use getInputValue
                                                     onChange={(e) => handleFilterChange(key, e.target.value)}
                                                     className={cn(
                                                         "w-full rounded-md border-indigo-500 dark:border-indigo-600 bg-white dark:bg-gray-900 focus:ring-indigo-500 h-10 text-sm",
@@ -212,7 +215,7 @@ const FiltersBar: React.FC = () => {
                             <List className="w-5 h-5" />
                         </Button>
                         <Button
-                            variant="ghost" // Enabled grid button (removed disabled={true})
+                            variant="ghost"
                             className={cn(
                                 "px-3 py-1 rounded-r-md hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors",
                                 viewMode === "grid" && "bg-indigo-100 text-indigo-600 dark:bg-indigo-700 dark:text-white"
@@ -257,7 +260,7 @@ const FiltersBar: React.FC = () => {
                                     <Input
                                         type={type}
                                         placeholder={t(`catalog:${placeholder}`, { defaultValue: placeholder })}
-                                        value={localFilters[key] === "any" ? "" : (localFilters[key] ?? "")}
+                                        value={getInputValue(localFilters[key])} // Use getInputValue
                                         onChange={(e) => handleFilterChange(key, e.target.value)}
                                         className={cn(
                                             "w-full rounded-md border-indigo-500 dark:border-indigo-600 bg-white dark:bg-gray-900 focus:ring-indigo-500 h-10 text-sm",
@@ -274,7 +277,6 @@ const FiltersBar: React.FC = () => {
         );
     }
 
-    // Desktop view remains unchanged
     return (
         <div className="w-full p-4 bg-white dark:bg-gray-900 rounded-lg shadow-md">
             <Toaster position="top-right" richColors />
@@ -296,7 +298,7 @@ const FiltersBar: React.FC = () => {
                     <div className="flex items-center">
                         <Input
                             placeholder={t("catalog:searchPlaceholder", { defaultValue: "Search catalogs..." })}
-                            value={localFilters.search ?? ""}
+                            value={getInputValue(localFilters.search)} // Use getInputValue
                             onChange={(e) => handleFilterChange("search", e.target.value)}
                             className="w-40 sm:w-56 rounded-l-md rounded-r-none border-indigo-500 dark:border-indigo-600 border-r-0 focus:ring-indigo-500"
                             aria-label={t("catalog:searchPlaceholder", { defaultValue: "Search catalogs..." })}
@@ -376,7 +378,7 @@ const FiltersBar: React.FC = () => {
                                         <Input
                                             type={type}
                                             placeholder={t(`catalog:${placeholder}`, { defaultValue: placeholder })}
-                                            value={getInputValue(key)}
+                                            value={getInputValue(localFilters[key])} // Fixed: Use getInputValue with localFilters[key]
                                             onChange={(e) => handleFilterChange(key, e.target.value)}
                                             className={cn(
                                                 "w-full rounded-md border-indigo-500 dark:border-indigo-600 bg-white dark:bg-gray-900 focus:ring-indigo-500",
@@ -385,9 +387,7 @@ const FiltersBar: React.FC = () => {
                                             disabled={isFilterOptionsLoading}
                                         />
                                     )}
-                                    {errors[key] && (
-                                        <p className="text-red-500 text-xs mt-1.5">{errors[key]}</p>
-                                    )}
+                                    {errors[key] && <p className="text-red-500 text-xs mt-1.5">{errors[key]}</p>}
                                 </div>
                             ))}
                         </div>
@@ -442,7 +442,7 @@ const FiltersBar: React.FC = () => {
                                     key={key}
                                     type={type}
                                     placeholder={t(`catalog:${placeholder}`, { defaultValue: placeholder })}
-                                    value={getInputValue(key)}
+                                    value={getInputValue(localFilters[key])} // Use getInputValue
                                     onChange={(e) => handleFilterChange(key, e.target.value)}
                                     className={cn(
                                         "w-32 sm:w-36 rounded-md border-indigo-500 dark:border-indigo-600 bg-white dark:bg-gray-900 focus:ring-indigo-500",
