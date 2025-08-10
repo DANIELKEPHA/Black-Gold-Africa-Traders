@@ -77,7 +77,6 @@ const ReportsDashboardPage: React.FC = () => {
                     <Tab label="Shipment Reports" />
                     <Tab label="Contact Submissions" />
                     <Tab label="Users Management" />
-                    <Tab label="General Reports" />
                 </Tabs>
 
                 <Box sx={{ mt: 3 }}>

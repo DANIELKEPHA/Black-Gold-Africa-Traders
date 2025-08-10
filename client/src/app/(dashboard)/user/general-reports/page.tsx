@@ -1,44 +1,25 @@
-"use client";
+'use client';
 
-import React, {JSX, useState} from "react";
+import React, { useState } from 'react';
 import {
     Box,
     Typography,
     TextField,
-    IconButton,
-    CircularProgress,
-    LinearProgress,
     Pagination,
-    Tooltip,
-    Card,
-    CardContent,
-    CardActions,
-    Snackbar,
-    Alert,
-    Skeleton,
-} from "@mui/material";
-import { Download, Preview } from "@mui/icons-material";
-import { motion, AnimatePresence } from "framer-motion";
-import { styled } from "@mui/material/styles";
-import { useGetReportsQuery, useGetDownloadPresignedUrlMutation } from "@/state/api";
-import { Report, ReportFilters } from "@/state/report";
-import { format } from "date-fns";
+    Accordion,
+    AccordionSummary,
+    AccordionDetails, CircularProgress,
+} from '@mui/material';
+import { ExpandMore } from '@mui/icons-material';
+import { motion, AnimatePresence } from 'framer-motion';
+import {useGetDownloadPresignedUrlMutation, useGetReportsQuery} from '@/state/api';
+import { Report, ReportFilters } from '@/state/report';
+import { format, startOfWeek, endOfWeek, parseISO } from 'date-fns';
+import ReportCard from "@/app/(dashboard)/user/general-reports/ReportCard";
 
-const StyledMotionDiv = styled(motion.div)(({ theme }) => ({
-    width: `calc(100% - ${theme.spacing(2)})`,
-    maxWidth: 200,
-    flex: "1 1 auto",
-    [theme.breakpoints.up("sm")]: {
-        width: `calc(50% - ${theme.spacing(2)})`,
-    },
-    [theme.breakpoints.up("md")]: {
-        width: `calc(33.33% - ${theme.spacing(2)})`,
-    },
-}));
-
-const UserReportsPage: React.FC = () => {
+const GeneralReportsPage: React.FC = () => {
     const [filters, setFilters] = useState<ReportFilters>({ page: 1, limit: 9 });
-    const [search, setSearch] = useState("");
+    const [search, setSearch] = useState('');
     const [downloadProgress, setDownloadProgress] = useState<{ [key: number]: number }>({});
     const [downloadError, setDownloadError] = useState<string | null>(null);
 
@@ -48,21 +29,36 @@ const UserReportsPage: React.FC = () => {
     });
     const [getDownloadPresignedUrl, { isLoading: isGeneratingDownloadUrl }] = useGetDownloadPresignedUrlMutation();
 
-    const fileTypeIcons: Record<string, JSX.Element> = {
-        pdf: <Preview />,
-        doc: <Preview />,
-        docx: <Preview />,
-        txt: <Preview />,
-        csv: <Preview />,
-        xlsx: <Preview />,
+    const groupReportsByWeek = (reports: Report[]) => {
+        if (!reports || reports.length === 0) return {};
+
+        return reports.reduce((acc: Record<string, Report[]>, report) => {
+            const date = parseISO(report.uploadedAt);
+            const weekStart = startOfWeek(date, { weekStartsOn: 1 });
+            const weekEnd = endOfWeek(date, { weekStartsOn: 1 });
+            const weekKey = `${format(weekStart, 'MMM d, yyyy')} - ${format(weekEnd, 'MMM d, yyyy')}`;
+
+            if (!acc[weekKey]) {
+                acc[weekKey] = [];
+            }
+            acc[weekKey].push(report);
+            acc[weekKey].sort((a, b) => new Date(b.uploadedAt).getTime() - new Date(a.uploadedAt).getTime());
+            return acc;
+        }, {});
+    };
+
+    const reportsByWeek = reportsData?.data ? groupReportsByWeek(reportsData.data) : {};
+
+    const handlePageChange = (_: unknown, newPage: number) => {
+        setFilters((prev) => ({ ...prev, page: newPage }));
     };
 
     const downloadFile = (url: string, fileName: string, reportId: number): Promise<void> => {
         return new Promise((resolve, reject) => {
             const xhr = new XMLHttpRequest();
-            xhr.open("GET", url, true);
-            xhr.responseType = "blob";
-            xhr.timeout = 30000;
+            xhr.open('GET', url, true);
+            xhr.responseType = 'blob';
+            xhr.timeout = 60000;
 
             xhr.onprogress = (event) => {
                 if (event.lengthComputable) {
@@ -73,9 +69,9 @@ const UserReportsPage: React.FC = () => {
 
             xhr.onload = () => {
                 if (xhr.status === 200) {
-                    console.log(`[${new Date().toLocaleString("en-US", { timeZone: "Africa/Nairobi" })}] File downloaded successfully:`, { fileName, url });
+                    console.log(`[${new Date().toLocaleString('en-US', { timeZone: 'Africa/Nairobi' })}] File downloaded successfully:`, { fileName, url });
                     const blob = xhr.response;
-                    const link = document.createElement("a");
+                    const link = document.createElement('a');
                     link.href = window.URL.createObjectURL(blob);
                     link.download = fileName;
                     document.body.appendChild(link);
@@ -84,24 +80,38 @@ const UserReportsPage: React.FC = () => {
                     window.URL.revokeObjectURL(link.href);
                     resolve();
                 } else {
-                    console.error(`[${new Date().toLocaleString("en-US", { timeZone: "Africa/Nairobi" })}] Download failed:`, {
+                    const errorMsg = `Download failed with status ${xhr.status}: ${xhr.statusText || 'Unknown error'}`;
+                    console.error(`[${new Date().toLocaleString('en-US', { timeZone: 'Africa/Nairobi' })}] ${errorMsg}`, {
                         fileName,
                         url,
                         status: xhr.status,
-                        statusText: xhr.statusText,
+                        response: xhr.responseText,
+                        headers: xhr.getAllResponseHeaders(),
                     });
-                    reject(new Error(`Download failed with status ${xhr.status}: ${xhr.statusText}`));
+                    reject(new Error(errorMsg));
                 }
             };
 
             xhr.onerror = () => {
-                console.error(`[${new Date().toLocaleString("en-US", { timeZone: "Africa/Nairobi" })}] Network error during download:`, { fileName, url });
-                reject(new Error("Network error during download. Please try again."));
+                const errorMsg = 'Network error during download. This may be due to a CORS misconfiguration, invalid presigned URL, or network issue.';
+                console.error(`[${new Date().toLocaleString('en-US', { timeZone: 'Africa/Nairobi' })}] ${errorMsg}`, {
+                    fileName,
+                    url,
+                    response: xhr.responseText,
+                    status: xhr.status,
+                    headers: xhr.getAllResponseHeaders(),
+                });
+                reject(new Error(errorMsg));
             };
 
             xhr.ontimeout = () => {
-                console.error(`[${new Date().toLocaleString("en-US", { timeZone: "Africa/Nairobi" })}] Download timed out:`, { fileName, url });
-                reject(new Error("Download timed out. Please check your network connection."));
+                const errorMsg = 'Download timed out. Please check your network connection.';
+                console.error(`[${new Date().toLocaleString('en-US', { timeZone: 'Africa/Nairobi' })}] ${errorMsg}`, {
+                    fileName,
+                    url,
+                    timeout: xhr.timeout,
+                });
+                reject(new Error(errorMsg));
             };
 
             xhr.send();
@@ -110,184 +120,128 @@ const UserReportsPage: React.FC = () => {
 
     const handleDownload = async (report: Report) => {
         try {
+            if (!report.fileUrl) {
+                console.error(`[${new Date().toLocaleString("en-US", { timeZone: "Africa/Nairobi" })}] Invalid fileUrl for report:`, { reportId: report.id, report });
+                throw new Error('Invalid fileUrl');
+            }
+            console.log(`[${new Date().toLocaleString("en-US", { timeZone: "Africa/Nairobi" })}] Report data:`, { report });
             const url = new URL(report.fileUrl);
             const key = url.pathname.slice(1);
-            const fileName = key.split("/").pop() || `report-${report.id}.${report.fileType}`;
+            console.log(`[${new Date().toLocaleString("en-US", { timeZone: "Africa/Nairobi" })}] Downloading report:`, {
+                fileUrl: report.fileUrl,
+                key,
+                reportId: report.id,
+            });
+            const fileName = key.split('/').pop() || `report-${report.id}.${report.fileType}`;
             const { url: downloadUrl } = await getDownloadPresignedUrl({ key }).unwrap();
-            console.log(`[${new Date().toLocaleString("en-US", { timeZone: "Africa/Nairobi" })}] Generated download presigned URL:`, { downloadUrl, key });
+            console.log(`[${new Date().toLocaleString("en-US", { timeZone: "Africa/Nairobi" })}] Generated download presigned URL:`, { downloadUrl });
 
-            if (report.fileType === "pdf") {
-                window.open(downloadUrl, "_blank");
+            if (report.fileType === 'pdf') {
+                window.open(downloadUrl, '_blank');
             } else {
                 await downloadFile(downloadUrl, fileName, report.id);
             }
             setDownloadProgress((prev) => ({ ...prev, [report.id]: 0 }));
             setDownloadError(null);
         } catch (err: any) {
+            const errorMessage = err?.error?.data?.message || err.message || 'Failed to download/preview file';
             console.error(`[${new Date().toLocaleString("en-US", { timeZone: "Africa/Nairobi" })}] Failed to download/preview file:`, {
-                message: err.message,
+                message: errorMessage,
                 reportId: report.id,
+                fileUrl: report.fileUrl,
+                error: JSON.stringify(err, null, 2),
             });
-            setDownloadError(err.message || "Failed to download/preview file. Please try again or contact support.");
+            setDownloadError(errorMessage);
             setDownloadProgress((prev) => ({ ...prev, [report.id]: 0 }));
         }
     };
 
-    const handlePageChange = (_: unknown, newPage: number) => {
-        setFilters((prev) => ({ ...prev, page: newPage }));
-    };
-
-    const handleCloseSnackbar = () => {
-        setDownloadError(null);
-    };
-
-    const cardVariants = {
-        hidden: { opacity: 0, y: 20 },
-        visible: { opacity: 1, y: 0, transition: { duration: 0.3 } },
-        hover: { y: -5, boxShadow: "0 8px 16px rgba(0,0,0,0.1)" },
-    };
-
     return (
-        <Box sx={{ mx: { xs: 2, sm: 4 }, my: 2, maxWidth: "100%", boxSizing: "border-box" }}>
-            <Typography variant="h5" sx={{ mb: 2, fontWeight: 600, color: "primary.main" }}>
+        <Box sx={{ p: 3 }}>
+            <Typography variant="h5" sx={{ mb: 3, color: 'primary.main', fontWeight: 'bold' }}>
                 General Reports
             </Typography>
 
-            <Box sx={{ display: "flex", flexDirection: { xs: "column", sm: "row" }, gap: 1.5, mb: 2 }}>
-                <TextField
-                    fullWidth
-                    label="Search by Title"
-                    value={search}
-                    onChange={(e) => setSearch(e.target.value)}
-                    variant="outlined"
-                    size="small"
-                    sx={{ maxWidth: 300 }}
-                    aria-label="Search reports by title"
-                />
+            <Box sx={{
+                display: 'flex',
+                flexDirection: { xs: 'column', sm: 'row' },
+                flexWrap: 'wrap',
+                gap: 2,
+                mb: 3
+            }}>
+                <Box sx={{ flex: 1, minWidth: 200 }}>
+                    <TextField
+                        fullWidth
+                        label="Search by Title"
+                        value={search}
+                        onChange={(e) => setSearch(e.target.value)}
+                        variant="outlined"
+                    />
+                </Box>
             </Box>
 
             {isLoading ? (
-                <Box sx={{ display: "flex", flexWrap: "wrap", gap: 2, justifyContent: "flex-start" }}>
-                    {[...Array(6)].map((_, i) => (
-                        <Skeleton key={i} variant="rectangular" width={200} height={180} sx={{ borderRadius: 2 }} />
-                    ))}
+                <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}>
+                    <CircularProgress />
                 </Box>
             ) : error ? (
-                <Typography color="error" sx={{ fontSize: "0.875rem", textAlign: "center" }}>
-                    Error loading reports: {(error as any).data?.message || "Unable to load reports. Please try again or contact support."}
+                <Typography color="error">
+                    Error loading reports: {(error as any).message || 'Unknown error. Please check the server.'}
                 </Typography>
-            ) : !reportsData?.data || reportsData.data.length === 0 ? (
-                <Typography sx={{ fontSize: "0.875rem", textAlign: "center", color: "text.secondary" }}>
-                    No reports available. {search ? "Try adjusting your search." : "Please check back later."}
-                </Typography>
+            ) : Object.keys(reportsByWeek).length === 0 ? (
+                <Typography>No reports available.</Typography>
             ) : (
                 <>
-                    <Box sx={{ display: "flex", flexWrap: "wrap", gap: 2, justifyContent: "flex-start" }}>
-                        <AnimatePresence>
-                            {reportsData.data.map((report) => (
-                                <StyledMotionDiv
-                                    key={report.id}
-                                    variants={cardVariants}
-                                    initial="hidden"
-                                    animate="visible"
-                                    whileHover="hover"
-                                    exit={{ opacity: 0, scale: 0.9 }}
-                                    transition={{ duration: 0.2 }}
-                                >
-                                    <Card
-                                        sx={{
-                                            height: 180,
-                                            display: "flex",
-                                            flexDirection: "column",
-                                            boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
-                                            borderRadius: 2,
-                                            overflow: "hidden",
-                                            bgcolor: "background.paper",
-                                        }}
-                                    >
-                                        <CardContent sx={{ flexGrow: 1, p: 1.5, pb: 0 }}>
-                                            <Typography variant="caption" color="text.secondary" sx={{ fontSize: "0.75rem" }}>
-                                                {format(new Date(report.uploadedAt), "PP")}
-                                            </Typography>
-                                            <Typography
-                                                variant="h6"
-                                                sx={{
-                                                    fontSize: "1rem",
-                                                    fontWeight: 500,
-                                                    mb: 0.5,
-                                                    overflow: "hidden",
-                                                    textOverflow: "ellipsis",
-                                                    whiteSpace: "nowrap",
-                                                }}
-                                                title={report.title}
-                                            >
-                                                {report.title}
-                                            </Typography>
-                                            <Typography
-                                                variant="body2"
-                                                color="text.secondary"
-                                                sx={{
-                                                    fontSize: "0.75rem",
-                                                    overflow: "hidden",
-                                                    textOverflow: "ellipsis",
-                                                    display: "-webkit-box",
-                                                    WebkitLineClamp: 2,
-                                                    WebkitBoxOrient: "vertical",
-                                                }}
-                                            >
-                                                {report.description || "No description provided"}
-                                            </Typography>
-                                        </CardContent>
-                                        <CardActions sx={{ p: 1, justifyContent: "flex-end" }}>
-                                            <Tooltip title={report.fileType === "pdf" ? "Preview PDF" : "Download Report"}>
-                        <span>
-                          <IconButton
-                              onClick={() => handleDownload(report)}
-                              disabled={isGeneratingDownloadUrl || !!downloadProgress[report.id]}
-                              color="primary"
-                              size="small"
-                              aria-label={report.fileType === "pdf" ? `Preview ${report.title}` : `Download ${report.title}`}
-                          >
-                            {fileTypeIcons[report.fileType] || <Download />}
-                          </IconButton>
-                        </span>
-                                            </Tooltip>
-                                        </CardActions>
-                                        {downloadProgress[report.id] > 0 && (
-                                            <LinearProgress variant="determinate" value={downloadProgress[report.id]} sx={{ height: 3 }} />
-                                        )}
-                                    </Card>
-                                </StyledMotionDiv>
-                            ))}
-                        </AnimatePresence>
-                    </Box>
-                    <Box sx={{ display: "flex", justifyContent: "center", mt: 2 }}>
+                    {Object.entries(reportsByWeek)
+                        .sort(([a], [b]) => new Date(b.split(' - ')[0]).getTime() - new Date(a.split(' - ')[0]).getTime())
+                        .map(([weekRange, weekReports]) => (
+                            <Accordion key={weekRange} defaultExpanded sx={{ mb: 3 }}>
+                                <AccordionSummary expandIcon={<ExpandMore />}>
+                                    <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
+                                        Week of {weekRange}
+                                    </Typography>
+                                </AccordionSummary>
+                                <AccordionDetails>
+                                    <Box sx={{
+                                        display: 'flex',
+                                        flexWrap: 'wrap',
+                                        gap: 3,
+                                        justifyContent: { xs: 'center', sm: 'flex-start' }
+                                    }}>
+                                        <AnimatePresence>
+                                            {weekReports.map((report) => (
+                                                <ReportCard
+                                                    key={report.id}
+                                                    report={report}
+                                                    handleDownload={handleDownload}
+                                                    downloadProgress={downloadProgress}
+                                                    isGeneratingDownloadUrl={isGeneratingDownloadUrl}
+                                                />
+                                            ))}
+                                        </AnimatePresence>
+                                    </Box>
+                                </AccordionDetails>
+                            </Accordion>
+                        ))}
+                    <Box sx={{ display: 'flex', justifyContent: 'center', mt: 3 }}>
                         <Pagination
-                            count={Math.ceil((reportsData?.meta?.total || 0) / (filters.limit || 9))}
+                            count={Math.ceil((reportsData?.meta?.total ?? 0) / (filters.limit ?? 9))}
                             page={filters.page}
                             onChange={handlePageChange}
                             color="primary"
-                            size="small"
                             shape="rounded"
-                            sx={{ "& .MuiPaginationItem-root": { fontSize: "0.8rem" } }}
-                            aria-label="Report pagination"
                         />
                     </Box>
                 </>
             )}
 
-            <Snackbar
-                open={!!downloadError}
-                autoHideDuration={6000}
-                onClose={handleCloseSnackbar}
-                anchorOrigin={{ vertical: "top", horizontal: "center" }}
-            >
-                <Alert onClose={handleCloseSnackbar} severity="error" sx={{ width: "100%" }}>
+            {downloadError && (
+                <Typography variant="body2" sx={{ mt: 2, color: 'error.main' }}>
                     {downloadError}
-                </Alert>
-            </Snackbar>
+                </Typography>
+            )}
         </Box>
     );
 };
 
-export default UserReportsPage;
+export default GeneralReportsPage;

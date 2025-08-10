@@ -75,12 +75,13 @@ const generatePresignedUrl = (req, res) => __awaiter(void 0, void 0, void 0, fun
             res.status(500).json({ message: "Server configuration error: S3 bucket name is missing" });
             return;
         }
-        const key = `reports/${authenticatedUser.userId}/${Date.now()}-${fileName}`;
+        const sanitizedFileName = fileName.replace(/\s+/g, '_'); // Replace spaces with underscores
+        const key = `reports/${authenticatedUser.userId}/${Date.now()}-${sanitizedFileName}`;
         const params = {
             Bucket: bucket,
             Key: key,
             Expires: 60 * 5,
-            ContentType: fileType, // Include ContentType
+            ContentType: fileType,
         };
         const url = yield s3_1.default.getSignedUrlPromise('putObject', params);
         console.log("Generated presigned URL:", { url, key, fileType });
@@ -121,28 +122,59 @@ const generateDownloadPresignedUrl = (req, res) => __awaiter(void 0, void 0, voi
             res.status(500).json({ message: "Server configuration error: S3 bucket name is missing" });
             return;
         }
+        const region = process.env.AWS_REGION || 'us-east-1'; // Use AWS_REGION with fallback
+        console.log(`[${new Date().toLocaleString("en-US", { timeZone: "Africa/Nairobi" })}] Environment variables:`, {
+            bucket,
+            region,
+        });
+        const decodedKey = decodeURIComponent(key); // e.g., reports/44382498-3081-7097-27fc-f170dd46ea5a/1754838366519-todays_poster.pdf
+        console.log(`[${new Date().toLocaleString("en-US", { timeZone: "Africa/Nairobi" })}] Decoded key:`, { key, decodedKey });
+        // Construct the expected fileUrl for exact match
+        const expectedFileUrl = `https://${bucket}.s3.${region}.amazonaws.com/${decodedKey}`;
+        console.log(`[${new Date().toLocaleString("en-US", { timeZone: "Africa/Nairobi" })}] Expected fileUrl:`, { expectedFileUrl });
         // Verify the user has access to the report
         const report = yield prisma.report.findFirst({
             where: {
-                fileUrl: { contains: key },
+                fileUrl: expectedFileUrl, // Exact match
                 OR: [
                     { adminCognitoId: authenticatedUser.userId },
                     { userCognitoId: authenticatedUser.userId },
+                    { adminCognitoId: { not: null } }, // Allow users to access admin-uploaded reports
                 ],
             },
+            select: { id: true, fileUrl: true, userCognitoId: true, adminCognitoId: true },
         });
         if (!report) {
-            console.error("Report not found or unauthorized");
+            console.error(`[${new Date().toLocaleString("en-US", { timeZone: "Africa/Nairobi" })}] Report not found or unauthorized`, {
+                key,
+                decodedKey,
+                expectedFileUrl,
+                userId: authenticatedUser.userId,
+                role: authenticatedUser.role,
+            });
+            // Log all reports with matching fileUrl for debugging
+            const allReports = yield prisma.report.findMany({
+                where: { fileUrl: { contains: decodedKey } },
+                select: { id: true, fileUrl: true, userCognitoId: true, adminCognitoId: true },
+            });
+            console.log(`[${new Date().toLocaleString("en-US", { timeZone: "Africa/Nairobi" })}] All matching reports:`, { allReports });
+            // Additional query to check if report exists by ID
+            const reportById = yield prisma.report.findUnique({
+                where: { id: 12 },
+                select: { id: true, fileUrl: true, userCognitoId: true, adminCognitoId: true },
+            });
+            console.log(`[${new Date().toLocaleString("en-US", { timeZone: "Africa/Nairobi" })}] Report by ID 12:`, { reportById });
             res.status(404).json({ message: "Report not found or unauthorized" });
             return;
         }
+        console.log(`[${new Date().toLocaleString("en-US", { timeZone: "Africa/Nairobi" })}] Report found:`, { report });
         const params = {
             Bucket: bucket,
-            Key: key,
+            Key: decodedKey,
             Expires: 60 * 5, // URL expires in 5 minutes
         };
         const url = yield s3_1.default.getSignedUrlPromise('getObject', params);
-        console.log("Generated download presigned URL:", { url, key });
+        console.log(`[${new Date().toLocaleString("en-US", { timeZone: "Africa/Nairobi" })}] Generated download presigned URL:`, { url, key: decodedKey });
         res.status(200).json({ url });
     }
     catch (error) {
