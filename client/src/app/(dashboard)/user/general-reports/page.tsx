@@ -8,26 +8,30 @@ import {
     Pagination,
     Accordion,
     AccordionSummary,
-    AccordionDetails, CircularProgress,
+    AccordionDetails,
+    CircularProgress,
+    IconButton,
+    Snackbar,
+    Alert,
 } from '@mui/material';
-import { ExpandMore } from '@mui/icons-material';
+import { ExpandMore, Close } from '@mui/icons-material';
 import { motion, AnimatePresence } from 'framer-motion';
-import {useGetDownloadPresignedUrlMutation, useGetReportsQuery} from '@/state/api';
+import { useGetDownloadPresignedUrlMutation, useGetReportsQuery } from '@/state/api';
 import { Report, ReportFilters } from '@/state/report';
 import { format, startOfWeek, endOfWeek, parseISO } from 'date-fns';
 import ReportCard from "@/app/(dashboard)/user/general-reports/ReportCard";
 
 const GeneralReportsPage: React.FC = () => {
-    const [filters, setFilters] = useState<ReportFilters>({ page: 1, limit: 9 });
+    const [filters, setFilters] = useState<ReportFilters>({ page: 1, limit: 12 });
     const [search, setSearch] = useState('');
     const [downloadProgress, setDownloadProgress] = useState<{ [key: number]: number }>({});
-    const [downloadError, setDownloadError] = useState<string | null>(null);
+    const [snackbar, setSnackbar] = useState<{ open: boolean, message: string, severity: 'success' | 'error' } | null>(null);
 
     const { data: reportsData, isLoading, error } = useGetReportsQuery({
         ...filters,
         search: search || undefined,
     });
-    const [getDownloadPresignedUrl, { isLoading: isGeneratingDownloadUrl }] = useGetDownloadPresignedUrlMutation();
+    const [getDownloadPresignedUrl] = useGetDownloadPresignedUrlMutation();
 
     const groupReportsByWeek = (reports: Report[]) => {
         if (!reports || reports.length === 0) return {};
@@ -69,51 +73,25 @@ const GeneralReportsPage: React.FC = () => {
 
             xhr.onload = () => {
                 if (xhr.status === 200) {
-                    console.log(`[${new Date().toLocaleString('en-US', { timeZone: 'Africa/Nairobi' })}] File downloaded successfully:`, { fileName, url });
                     const blob = xhr.response;
                     const link = document.createElement('a');
                     link.href = window.URL.createObjectURL(blob);
                     link.download = fileName;
+                    link.style.display = 'none';
                     document.body.appendChild(link);
                     link.click();
-                    document.body.removeChild(link);
-                    window.URL.revokeObjectURL(link.href);
-                    resolve();
+                    setTimeout(() => {
+                        document.body.removeChild(link);
+                        window.URL.revokeObjectURL(link.href);
+                        resolve();
+                    }, 100);
                 } else {
-                    const errorMsg = `Download failed with status ${xhr.status}: ${xhr.statusText || 'Unknown error'}`;
-                    console.error(`[${new Date().toLocaleString('en-US', { timeZone: 'Africa/Nairobi' })}] ${errorMsg}`, {
-                        fileName,
-                        url,
-                        status: xhr.status,
-                        response: xhr.responseText,
-                        headers: xhr.getAllResponseHeaders(),
-                    });
-                    reject(new Error(errorMsg));
+                    reject(new Error(`Download failed with status ${xhr.status}`));
                 }
             };
 
-            xhr.onerror = () => {
-                const errorMsg = 'Network error during download. This may be due to a CORS misconfiguration, invalid presigned URL, or network issue.';
-                console.error(`[${new Date().toLocaleString('en-US', { timeZone: 'Africa/Nairobi' })}] ${errorMsg}`, {
-                    fileName,
-                    url,
-                    response: xhr.responseText,
-                    status: xhr.status,
-                    headers: xhr.getAllResponseHeaders(),
-                });
-                reject(new Error(errorMsg));
-            };
-
-            xhr.ontimeout = () => {
-                const errorMsg = 'Download timed out. Please check your network connection.';
-                console.error(`[${new Date().toLocaleString('en-US', { timeZone: 'Africa/Nairobi' })}] ${errorMsg}`, {
-                    fileName,
-                    url,
-                    timeout: xhr.timeout,
-                });
-                reject(new Error(errorMsg));
-            };
-
+            xhr.onerror = () => reject(new Error('Network error during download'));
+            xhr.ontimeout = () => reject(new Error('Download timed out'));
             xhr.send();
         });
     };
@@ -121,63 +99,53 @@ const GeneralReportsPage: React.FC = () => {
     const handleDownload = async (report: Report) => {
         try {
             if (!report.fileUrl) {
-                console.error(`[${new Date().toLocaleString("en-US", { timeZone: "Africa/Nairobi" })}] Invalid fileUrl for report:`, { reportId: report.id, report });
                 throw new Error('Invalid fileUrl');
             }
-            console.log(`[${new Date().toLocaleString("en-US", { timeZone: "Africa/Nairobi" })}] Report data:`, { report });
+
+            setDownloadProgress((prev) => ({ ...prev, [report.id]: 1 }));
             const url = new URL(report.fileUrl);
             const key = url.pathname.slice(1);
-            console.log(`[${new Date().toLocaleString("en-US", { timeZone: "Africa/Nairobi" })}] Downloading report:`, {
-                fileUrl: report.fileUrl,
-                key,
-                reportId: report.id,
-            });
             const fileName = key.split('/').pop() || `report-${report.id}.${report.fileType}`;
-            const { url: downloadUrl } = await getDownloadPresignedUrl({ key }).unwrap();
-            console.log(`[${new Date().toLocaleString("en-US", { timeZone: "Africa/Nairobi" })}] Generated download presigned URL:`, { downloadUrl });
 
-            if (report.fileType === 'pdf') {
-                window.open(downloadUrl, '_blank');
-            } else {
-                await downloadFile(downloadUrl, fileName, report.id);
-            }
-            setDownloadProgress((prev) => ({ ...prev, [report.id]: 0 }));
-            setDownloadError(null);
+            const { url: downloadUrl } = await getDownloadPresignedUrl({ key }).unwrap();
+            await downloadFile(downloadUrl, fileName, report.id);
+
+            setSnackbar({ open: true, message: `${report.title} downloaded successfully`, severity: 'success' });
         } catch (err: any) {
-            const errorMessage = err?.error?.data?.message || err.message || 'Failed to download/preview file';
-            console.error(`[${new Date().toLocaleString("en-US", { timeZone: "Africa/Nairobi" })}] Failed to download/preview file:`, {
-                message: errorMessage,
-                reportId: report.id,
-                fileUrl: report.fileUrl,
-                error: JSON.stringify(err, null, 2),
-            });
-            setDownloadError(errorMessage);
-            setDownloadProgress((prev) => ({ ...prev, [report.id]: 0 }));
+            const errorMessage = err?.error?.data?.message || err.message || 'Failed to download file';
+            setSnackbar({ open: true, message: errorMessage, severity: 'error' });
+        } finally {
+            setTimeout(() => {
+                setDownloadProgress((prev) => ({ ...prev, [report.id]: 0 }));
+            }, 1000);
         }
     };
 
+    const handleCloseSnackbar = () => {
+        setSnackbar(null);
+    };
+
     return (
-        <Box sx={{ p: 3 }}>
+        <Box sx={{ p: { xs: 2, md: 3 } }}>
             <Typography variant="h5" sx={{ mb: 3, color: 'primary.main', fontWeight: 'bold' }}>
                 General Reports
             </Typography>
 
-            <Box sx={{
-                display: 'flex',
-                flexDirection: { xs: 'column', sm: 'row' },
-                flexWrap: 'wrap',
-                gap: 2,
-                mb: 3
-            }}>
-                <Box sx={{ flex: 1, minWidth: 200 }}>
-                    <TextField
-                        fullWidth
-                        label="Search by Title"
-                        value={search}
-                        onChange={(e) => setSearch(e.target.value)}
-                        variant="outlined"
-                    />
-                </Box>
+            <Box sx={{ mb: 3, maxWidth: 400 }}>
+                <TextField
+                    fullWidth
+                    label="Search reports"
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    variant="outlined"
+                    InputProps={{
+                        endAdornment: search && (
+                            <IconButton size="small" onClick={() => setSearch('')}>
+                                <Close fontSize="small" />
+                            </IconButton>
+                        ),
+                    }}
+                />
             </Box>
 
             {isLoading ? (
@@ -186,27 +154,31 @@ const GeneralReportsPage: React.FC = () => {
                 </Box>
             ) : error ? (
                 <Typography color="error">
-                    Error loading reports: {(error as any).message || 'Unknown error. Please check the server.'}
+                    Error loading reports: {(error as any).message || 'Unknown error'}
                 </Typography>
             ) : Object.keys(reportsByWeek).length === 0 ? (
-                <Typography>No reports available.</Typography>
+                <Typography>No reports found</Typography>
             ) : (
                 <>
                     {Object.entries(reportsByWeek)
                         .sort(([a], [b]) => new Date(b.split(' - ')[0]).getTime() - new Date(a.split(' - ')[0]).getTime())
                         .map(([weekRange, weekReports]) => (
-                            <Accordion key={weekRange} defaultExpanded sx={{ mb: 3 }}>
+                            <Accordion key={weekRange} defaultExpanded sx={{ mb: 3, boxShadow: 'none', border: '1px solid #eee' }}>
                                 <AccordionSummary expandIcon={<ExpandMore />}>
-                                    <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
+                                    <Typography variant="subtitle1" sx={{ fontWeight: 'bold' }}>
                                         Week of {weekRange}
                                     </Typography>
                                 </AccordionSummary>
-                                <AccordionDetails>
+                                <AccordionDetails sx={{ p: 0 }}>
                                     <Box sx={{
-                                        display: 'flex',
-                                        flexWrap: 'wrap',
-                                        gap: 3,
-                                        justifyContent: { xs: 'center', sm: 'flex-start' }
+                                        display: 'grid',
+                                        gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))',
+                                        gap: 2,
+                                        p: 2,
+                                        '@media (max-width: 600px)': {
+                                            gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))',
+                                            gap: 1.5,
+                                        },
                                     }}>
                                         <AnimatePresence>
                                             {weekReports.map((report) => (
@@ -215,7 +187,6 @@ const GeneralReportsPage: React.FC = () => {
                                                     report={report}
                                                     handleDownload={handleDownload}
                                                     downloadProgress={downloadProgress}
-                                                    isGeneratingDownloadUrl={isGeneratingDownloadUrl}
                                                 />
                                             ))}
                                         </AnimatePresence>
@@ -223,9 +194,10 @@ const GeneralReportsPage: React.FC = () => {
                                 </AccordionDetails>
                             </Accordion>
                         ))}
+
                     <Box sx={{ display: 'flex', justifyContent: 'center', mt: 3 }}>
                         <Pagination
-                            count={Math.ceil((reportsData?.meta?.total ?? 0) / (filters.limit ?? 9))}
+                            count={Math.ceil((reportsData?.meta?.total ?? 0) / (filters.limit ?? 12))}
                             page={filters.page}
                             onChange={handlePageChange}
                             color="primary"
@@ -235,11 +207,20 @@ const GeneralReportsPage: React.FC = () => {
                 </>
             )}
 
-            {downloadError && (
-                <Typography variant="body2" sx={{ mt: 2, color: 'error.main' }}>
-                    {downloadError}
-                </Typography>
-            )}
+            <Snackbar
+                open={!!snackbar}
+                autoHideDuration={6000}
+                onClose={handleCloseSnackbar}
+                anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+            >
+                <Alert
+                    onClose={handleCloseSnackbar}
+                    severity={snackbar?.severity}
+                    sx={{ width: '100%' }}
+                >
+                    {snackbar?.message}
+                </Alert>
+            </Snackbar>
         </Box>
     );
 };

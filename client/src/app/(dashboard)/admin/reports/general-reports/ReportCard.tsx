@@ -1,4 +1,4 @@
-import React, { JSX } from 'react';
+import React from 'react';
 import {
     Card,
     CardContent,
@@ -7,8 +7,9 @@ import {
     IconButton,
     LinearProgress,
     Tooltip,
+    Box,
 } from '@mui/material';
-import { Delete, Download, Preview } from '@mui/icons-material';
+import { Delete, Download } from '@mui/icons-material';
 import { motion } from 'framer-motion';
 import { format } from 'date-fns';
 import { Report } from '@/state/report';
@@ -18,91 +19,99 @@ interface ReportCardProps {
     handleDownload: (report: Report) => void;
     handleDelete: (ids: number[]) => void;
     downloadProgress: { [key: number]: number };
-    isGeneratingDownloadUrl: boolean;
     isDeleting: boolean;
 }
 
+const fileTypeColors: Record<string, string> = {
+    pdf: '#FF5252',
+    doc: '#2196F3',
+    docx: '#2196F3',
+    xls: '#4CAF50',
+    xlsx: '#4CAF50',
+    csv: '#FFC107',
+    txt: '#9E9E9E',
+};
+
 const ReportCard: React.FC<ReportCardProps> = ({
-    report,
-    handleDownload,
-    handleDelete,
-    downloadProgress,
-    isGeneratingDownloadUrl,
-    isDeleting,
-}) => {
-    const fileTypeIcons: Record<string, JSX.Element> = {
-        pdf: <Preview />,
-        doc: <Preview />,
-        docx: <Preview />,
-        txt: <Preview />,
-        csv: <Preview />,
-        xlsx: <Preview />,
-    };
-
+                                                   report,
+                                                   handleDownload,
+                                                   handleDelete,
+                                                   downloadProgress,
+                                                   isDeleting
+                                               }) => {
     const cardVariants = {
-        hidden: { opacity: 0, y: 20 },
-        visible: { opacity: 1, y: 0, transition: { duration: 0.3 } },
-        hover: { y: -5, boxShadow: '0 10px 20px rgba(0,0,0,0.1)' },
-    };
-
-    const handleCardClick = (e: React.MouseEvent<HTMLDivElement>) => {
-        // Prevent download if clicking on buttons or during download/delete
-        if (
-            (e.target as HTMLElement).closest('button') ||
-            isGeneratingDownloadUrl ||
-            isDeleting ||
-            downloadProgress[report.id] > 0
-        ) {
-            return;
-        }
-        handleDownload(report);
+        hidden: { opacity: 0, y: 10 },
+        visible: { opacity: 1, y: 0 },
+        hover: { y: -2, boxShadow: '0 6px 12px rgba(0,0,0,0.1)' },
     };
 
     return (
         <motion.div
-            key={report.id}
             variants={cardVariants}
             initial="hidden"
             animate="visible"
             whileHover="hover"
-            exit={{ opacity: 0, scale: 0.9 }}
             transition={{ duration: 0.2 }}
-            style={{
-                flex: '0 0 auto',
-                minWidth: 200,
-            }}
+            style={{ display: 'flex' }}
         >
-            <Card
-                sx={{
-                    height: '200px',
-                    width: '200px',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    boxShadow: 3,
-                    borderRadius: 2,
-                    transition: 'transform 0.2s, box-shadow 0.2s',
-                    '&:hover': {
-                        boxShadow: 6,
-                        cursor: 'pointer',
-                    },
-                }}
-                onClick={handleCardClick}
-                aria-label={`Download ${report.title}`}
-            >
-                <CardContent sx={{ flexGrow: 1, overflow: 'hidden' }}>
-                    <Typography variant="caption" color="text.secondary">
-                        {format(new Date(report.uploadedAt), 'PP')}
+            <Card sx={{
+                width: 160,
+                height: 160,
+                '@media (max-width: 600px)': {
+                    width: 140,
+                    height: 140,
+                },
+                display: 'flex',
+                flexDirection: 'column',
+                borderRadius: '8px',
+                boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
+                transition: 'all 0.2s ease',
+                position: 'relative',
+                overflow: 'hidden',
+            }}>
+                {/* File type indicator */}
+                <Box sx={{
+                    position: 'absolute',
+                    top: 0,
+                    right: 0,
+                    width: 0,
+                    height: 0,
+                    borderStyle: 'solid',
+                    borderWidth: '0 40px 40px 0',
+                    borderColor: `transparent ${fileTypeColors[report.fileType] || '#607D8B'} transparent transparent`,
+                }} />
+
+                <Box sx={{
+                    position: 'absolute',
+                    top: 4,
+                    right: 4,
+                    color: 'white',
+                    fontSize: '0.7rem',
+                    fontWeight: 'bold',
+                    transform: 'rotate(45deg)',
+                    transformOrigin: '0 0',
+                    width: 60,
+                    textAlign: 'center',
+                }}>
+                    {report.fileType.toUpperCase()}
+                </Box>
+
+                <CardContent sx={{ flexGrow: 1, p: 2, pb: 1 }}>
+                    <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.7rem' }}>
+                        {format(new Date(report.uploadedAt), 'MMM d')}
                     </Typography>
                     <Typography
-                        variant="h6"
+                        variant="subtitle2"
                         sx={{
-                            mb: 1,
                             fontWeight: 'bold',
                             overflow: 'hidden',
                             textOverflow: 'ellipsis',
-                            whiteSpace: 'nowrap',
+                            display: '-webkit-box',
+                            WebkitLineClamp: 2,
+                            WebkitBoxOrient: 'vertical',
+                            lineHeight: '1.2',
+                            mb: 0.5,
                         }}
-                        title={report.title}
                     >
                         {report.title}
                     </Typography>
@@ -110,47 +119,58 @@ const ReportCard: React.FC<ReportCardProps> = ({
                         variant="body2"
                         color="text.secondary"
                         sx={{
-                            mb: 2,
+                            fontSize: '0.75rem',
                             overflow: 'hidden',
                             textOverflow: 'ellipsis',
                             display: '-webkit-box',
-                            WebkitLineClamp: 3,
+                            WebkitLineClamp: 2,
                             WebkitBoxOrient: 'vertical',
+                            lineHeight: '1.3',
                         }}
                     >
-                        {report.description || 'No description provided'}
+                        {report.description || 'No description'}
                     </Typography>
                 </CardContent>
-                <CardActions sx={{ justifyContent: 'space-between', p: 2 }}>
-                    <Tooltip title={report.fileType === 'pdf' ? 'Preview PDF' : 'Download Report'}>
+
+                <CardActions sx={{ p: 0, justifyContent: 'space-between' }}>
+                    <Tooltip title="Download">
                         <IconButton
                             onClick={() => handleDownload(report)}
-                            disabled={isGeneratingDownloadUrl || !!downloadProgress[report.id]}
-                            color="primary"
-                            aria-label={report.fileType === 'pdf' ? 'Preview PDF' : 'Download report'}
+                            disabled={downloadProgress[report.id] > 0}
+                            size="small"
+                            sx={{ mr: 1 }}
                         >
-                            {report.fileType === 'pdf' ? <Preview /> : <Download />}
+                            <Download fontSize="small" />
                         </IconButton>
                     </Tooltip>
-                    <Tooltip title="Delete Report">
+                    <Tooltip title="Delete">
                         <IconButton
                             onClick={(e) => {
                                 e.stopPropagation();
                                 handleDelete([report.id]);
                             }}
                             disabled={isDeleting}
+                            size="small"
                             color="error"
-                            aria-label="Delete report"
                         >
-                            <Delete />
+                            <Delete fontSize="small" />
                         </IconButton>
                     </Tooltip>
                 </CardActions>
+
                 {downloadProgress[report.id] > 0 && (
-                    <LinearProgress
-                        variant="determinate"
-                        value={downloadProgress[report.id]}
-                    />
+                    <Box sx={{ width: '100%', position: 'absolute', bottom: 0 }}>
+                        <LinearProgress
+                            variant={downloadProgress[report.id] === 100 ? 'indeterminate' : 'determinate'}
+                            value={downloadProgress[report.id]}
+                            sx={{
+                                height: '3px',
+                                '& .MuiLinearProgress-bar': {
+                                    backgroundColor: fileTypeColors[report.fileType] || '#607D8B',
+                                },
+                            }}
+                        />
+                    </Box>
                 )}
             </Card>
         </motion.div>
