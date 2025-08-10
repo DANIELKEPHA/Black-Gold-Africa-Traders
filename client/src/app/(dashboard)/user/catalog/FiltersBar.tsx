@@ -1,11 +1,10 @@
-
 "use client";
 
 import { useDispatch, useSelector } from "react-redux";
 import { usePathname, useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { Filter, Search, Grid, List } from "lucide-react";
+import { Filter, Search, Grid, List, X } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -19,8 +18,15 @@ import { useTranslation } from "react-i18next";
 import { Toaster } from "sonner";
 import { FiltersState, toggleFiltersFullOpen, setViewMode } from "@/state";
 import { useCatalogFilters } from "@/app/(dashboard)/admin/catalog/useCatalogFilters";
+import {
+    Drawer,
+    DrawerContent,
+    DrawerHeader,
+    DrawerTitle,
+    DrawerTrigger,
+} from "@/components/ui/drawer";
+import { useMediaQuery } from "@/app/(dashboard)/user/catalog/use-media-query";
 
-// Define an interface for filter field objects
 interface FilterField {
     key: keyof FiltersState;
     placeholder: string;
@@ -31,8 +37,7 @@ interface FilterField {
 const FiltersBar: React.FC = () => {
     const { t } = useTranslation(["catalog", "general"]);
     const dispatch = useDispatch();
-    const router = useRouter();
-    const pathname = usePathname();
+    const isMobile = useMediaQuery("(max-width: 640px)"); // Adjusted to 640px for smaller phone screens
     const isFiltersFullOpen = useSelector((state: any) => state.global.isFiltersFullOpen);
     const viewMode = useSelector((state: any) => state.global.viewMode);
     const {
@@ -70,21 +75,206 @@ const FiltersBar: React.FC = () => {
         { key: "lotNo", placeholder: "catalog:lotNoPlaceholder", type: "text" },
     ];
 
-    const formatDate = (date?: string): string => {
-        if (!date) return "";
-        try {
-            return date.split("T")[0] || "";
-        } catch {
-            return "";
-        }
-    };
-
-    const getInputValue = (key: keyof FiltersState): string | number => {
-        const value = localFilters[key];
+    const getInputValue = (value: any): string | number => {
         if (value === "any") return "";
         return (value ?? "") as string | number;
     };
 
+    const handleMobileSubmit = () => {
+        handleSubmit();
+        dispatch(toggleFiltersFullOpen());
+    };
+
+    if (isMobile) {
+        return (
+            <div className="w-full p-3 bg-white dark:bg-gray-900 rounded-lg shadow-sm">
+                <Toaster position="top-right" richColors />
+                <div className="flex justify-between items-center mb-3">
+                    <div className="flex items-center flex-1">
+                        <Input
+                            placeholder={t("catalog:searchPlaceholder", { defaultValue: "Search catalogs..." })}
+                            value={localFilters.search ?? ""}
+                            onChange={(e) => handleFilterChange("search", e.target.value)}
+                            className="flex-1 rounded-l-md rounded-r-none border-indigo-500 dark:border-indigo-600 border-r-0 focus:ring-indigo-500 text-sm h-10" // Increased height for touch
+                            disabled={isFilterOptionsLoading}
+                        />
+                        <Button
+                            onClick={handleSubmit}
+                            className="rounded-r-md rounded-l-none border-l-0 border-indigo-500 dark:border-indigo-600 hover:bg-indigo-600 hover:text-white dark:hover:bg-indigo-700 transition-colors h-10"
+                            disabled={isFilterOptionsLoading}
+                        >
+                            <Search className="w-5 h-5" /> {/* Larger icon */}
+                        </Button>
+                    </div>
+                    <Drawer>
+                        <DrawerTrigger asChild>
+                            <Button
+                                variant="outline"
+                                className="ml-2 gap-2 rounded-md border-indigo-500 hover:bg-indigo-600 hover:text-white dark:hover:bg-indigo-700 transition-colors h-10 px-3" // Larger button
+                                disabled={isFilterOptionsLoading}
+                            >
+                                <Filter className="w-5 h-5" />
+                                <span className="sr-only">Filters</span>
+                            </Button>
+                        </DrawerTrigger>
+                        <DrawerContent className="w-full max-h-[85vh] p-0">
+                            <DrawerHeader className="text-left px-4 pt-4">
+                                <DrawerTitle className="flex justify-between items-center text-lg">
+                                    {t("catalog:actions.allFilters", { defaultValue: "Filters" })}
+                                    <Button
+                                        variant="ghost"
+                                        onClick={() => dispatch(toggleFiltersFullOpen())}
+                                        className="p-0 h-auto"
+                                    >
+                                        <X className="w-6 h-6" /> {/* Larger close icon */}
+                                    </Button>
+                                </DrawerTitle>
+                            </DrawerHeader>
+                            <div className="p-4 overflow-y-auto">
+                                <div className="space-y-3">
+                                    {fullFilterFields.map(({ key, placeholder, options, type }) => (
+                                        <div key={key} className="flex flex-col">
+                                            <Label className="font-medium text-gray-700 dark:text-gray-300 mb-1.5 text-sm">
+                                                {t(`catalog:${placeholder}`, { defaultValue: placeholder })}
+                                            </Label>
+                                            {options ? (
+                                                <Select
+                                                    value={(localFilters[key] ?? "any") as string}
+                                                    onValueChange={(value) => handleFilterChange(key, value)}
+                                                    disabled={isFilterOptionsLoading}
+                                                >
+                                                    <SelectTrigger className="w-full rounded-md border-indigo-500 dark:border-indigo-600 bg-white dark:bg-gray-900 focus:ring-indigo-500 h-10 text-sm">
+                                                        <SelectValue
+                                                            placeholder={t(`catalog:${placeholder}`, { defaultValue: placeholder })}
+                                                        />
+                                                    </SelectTrigger>
+                                                    <SelectContent className="bg-white dark:bg-gray-900 border-indigo-500 max-h-60">
+                                                        <SelectItem value="any">
+                                                            {t(`catalog:any${key.charAt(0).toUpperCase() + key.slice(1)}`, {
+                                                                defaultValue: `Any ${key}`,
+                                                            })}
+                                                        </SelectItem>
+                                                        {options.map((option) => (
+                                                            <SelectItem key={option} value={option}>
+                                                                {key === "broker" ? option.replace(/_/g, " ") : option}
+                                                            </SelectItem>
+                                                        ))}
+                                                    </SelectContent>
+                                                </Select>
+                                            ) : (
+                                                <Input
+                                                    type={type}
+                                                    placeholder={t(`catalog:${placeholder}`, { defaultValue: placeholder })}
+                                                    value={localFilters[key] === "any" ? "" : (localFilters[key] ?? "")}
+                                                    onChange={(e) => handleFilterChange(key, e.target.value)}
+                                                    className={cn(
+                                                        "w-full rounded-md border-indigo-500 dark:border-indigo-600 bg-white dark:bg-gray-900 focus:ring-indigo-500 h-10 text-sm",
+                                                        errors[key] && "border-red-500 focus:ring-red-500"
+                                                    )}
+                                                    disabled={isFilterOptionsLoading}
+                                                />
+                                            )}
+                                            {errors[key] && (
+                                                <p className="text-red-500 text-xs mt-1">{errors[key]}</p>
+                                            )}
+                                        </div>
+                                    ))}
+                                </div>
+                                <div className="flex gap-3 mt-4">
+                                    <Button
+                                        onClick={handleMobileSubmit}
+                                        className="flex-1 bg-indigo-600 text-white hover:bg-indigo-700 rounded-md transition-colors h-10 text-sm"
+                                        disabled={isFilterOptionsLoading || Object.values(errors).some((e) => e)}
+                                    >
+                                        {t("catalog:apply", { defaultValue: "Apply" })}
+                                    </Button>
+                                    <Button
+                                        variant="outline"
+                                        onClick={handleReset}
+                                        className="flex-1 rounded-md border-indigo-500 text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-900 transition-colors h-10 text-sm"
+                                        disabled={isFilterOptionsLoading}
+                                    >
+                                        {t("catalog:resetFilters", { defaultValue: "Reset" })}
+                                    </Button>
+                                </div>
+                            </div>
+                        </DrawerContent>
+                    </Drawer>
+                    <div className="flex border rounded-md border-indigo-500 ml-2">
+                        <Button
+                            variant="ghost"
+                            className={cn(
+                                "px-3 py-1 rounded-l-md hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors",
+                                viewMode === "list" && "bg-indigo-100 text-indigo-600 dark:bg-indigo-700 dark:text-white"
+                            )}
+                            onClick={() => dispatch(setViewMode("list"))}
+                        >
+                            <List className="w-5 h-5" />
+                        </Button>
+                        <Button
+                            variant="ghost" // Enabled grid button (removed disabled={true})
+                            className={cn(
+                                "px-3 py-1 rounded-r-md hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors",
+                                viewMode === "grid" && "bg-indigo-100 text-indigo-600 dark:bg-indigo-700 dark:text-white"
+                            )}
+                            onClick={() => dispatch(setViewMode("grid"))}
+                        >
+                            <Grid className="w-5 h-5" />
+                        </Button>
+                    </div>
+                </div>
+                <div className="bg-gray-50 dark:bg-gray-800 rounded-md p-3">
+                    <div className="flex space-x-2 overflow-x-auto pb-2 -mx-2 px-2 snap-x snap-mandatory">
+                        {compactFilterFields.map(({ key, placeholder, options, type }) =>
+                            options ? (
+                                <div key={key} className="flex-shrink-0 w-32 snap-center">
+                                    <Select
+                                        value={(localFilters[key] ?? "any") as string}
+                                        onValueChange={(value) => handleFilterChange(key, value)}
+                                        disabled={isFilterOptionsLoading}
+                                    >
+                                        <SelectTrigger className="w-full rounded-md border-indigo-500 dark:border-indigo-600 bg-white dark:bg-gray-900 focus:ring-indigo-500 h-10 text-sm">
+                                            <SelectValue
+                                                placeholder={t(`catalog:${placeholder}`, { defaultValue: placeholder })}
+                                            />
+                                        </SelectTrigger>
+                                        <SelectContent className="bg-white dark:bg-gray-900 border-indigo-500 max-h-60">
+                                            <SelectItem value="any">
+                                                {t(`catalog:any${key.charAt(0).toUpperCase() + key.slice(1)}`, {
+                                                    defaultValue: `Any ${key}`,
+                                                })}
+                                            </SelectItem>
+                                            {options.map((option) => (
+                                                <SelectItem key={option} value={option}>
+                                                    {key === "broker" ? option.replace(/_/g, " ") : option}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                            ) : (
+                                <div key={key} className="flex-shrink-0 w-32 snap-center">
+                                    <Input
+                                        type={type}
+                                        placeholder={t(`catalog:${placeholder}`, { defaultValue: placeholder })}
+                                        value={localFilters[key] === "any" ? "" : (localFilters[key] ?? "")}
+                                        onChange={(e) => handleFilterChange(key, e.target.value)}
+                                        className={cn(
+                                            "w-full rounded-md border-indigo-500 dark:border-indigo-600 bg-white dark:bg-gray-900 focus:ring-indigo-500 h-10 text-sm",
+                                            errors[key] && "border-red-500 focus:ring-red-500"
+                                        )}
+                                        disabled={isFilterOptionsLoading}
+                                    />
+                                </div>
+                            )
+                        )}
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
+    // Desktop view remains unchanged
     return (
         <div className="w-full p-4 bg-white dark:bg-gray-900 rounded-lg shadow-md">
             <Toaster position="top-right" richColors />
@@ -136,7 +326,6 @@ const FiltersBar: React.FC = () => {
                             <List className="w-4 h-4" />
                         </Button>
                         <Button
-                            disabled={true}
                             variant="ghost"
                             className={cn(
                                 "px-3 py-1 rounded-r-md hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors",
@@ -197,9 +386,7 @@ const FiltersBar: React.FC = () => {
                                         />
                                     )}
                                     {errors[key] && (
-                                        <p className="text-red-500 text-xs mt-1.5">
-                                            {errors[key]}
-                                        </p>
+                                        <p className="text-red-500 text-xs mt-1.5">{errors[key]}</p>
                                     )}
                                 </div>
                             ))}

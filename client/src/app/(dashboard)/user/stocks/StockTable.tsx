@@ -1,15 +1,16 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Checkbox } from '@/components/ui/checkbox';
 import { StockData, UserStockTableProps } from '@/state/stock';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
-import { Star } from 'lucide-react';
+import { Star, ChevronDown, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import {useMediaQuery} from "@/app/(dashboard)/user/catalog/use-media-query";
 
 const StockTable: React.FC<UserStockTableProps> = ({
                                                        stocks,
@@ -23,6 +24,8 @@ const StockTable: React.FC<UserStockTableProps> = ({
                                                        handleFavoriteToggle,
                                                    }) => {
     const { t } = useTranslation(['stocks', 'general']);
+    const [expandedRows, setExpandedRows] = useState<number[]>([]);
+    const isMobile = useMediaQuery('(max-width: 768px)');
 
     const handleSelectAll = () => {
         if (selectedItems.length === stocks.length && stocks.length > 0) {
@@ -35,6 +38,158 @@ const StockTable: React.FC<UserStockTableProps> = ({
         }
     };
 
+    const toggleRowExpand = (id: number) => {
+        setExpandedRows(prev =>
+            prev.includes(id) ? prev.filter(rowId => rowId !== id) : [...prev, id]
+        );
+    };
+
+    // Mobile view render
+    if (isMobile) {
+        return (
+            <div className="space-y-2">
+                {loading ? (
+                    Array.from({ length: 5 }).map((_, i) => (
+                        <div key={i} className="border rounded-lg p-3 space-y-2">
+                            {Array.from({ length: 6 }).map((_, j) => (
+                                <Skeleton key={j} className="h-4 w-full rounded" />
+                            ))}
+                        </div>
+                    ))
+                ) : stocks.length === 0 ? (
+                    <Alert>
+                        <AlertDescription>
+                            {t('stocks:noStocksFound', { defaultValue: 'No stocks found.' })}
+                        </AlertDescription>
+                    </Alert>
+                ) : (
+                    stocks.map((stock) => (
+                        <div
+                            key={stock.id}
+                            className={cn(
+                                'border rounded-lg p-3',
+                                selectedItems.includes(stock.id)
+                                    ? 'bg-indigo-50 dark:bg-indigo-900/30 border-indigo-200 dark:border-indigo-700'
+                                    : stock.isLowStock
+                                        ? 'bg-red-50 dark:bg-red-900/30 border-red-200 dark:border-red-700'
+                                        : stock.isFavorited
+                                            ? 'bg-yellow-50 dark:bg-yellow-900/30 border-yellow-200 dark:border-yellow-700'
+                                            : 'bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-700'
+                            )}
+                        >
+                            <div className="flex items-start justify-between gap-2">
+                                <div className="flex items-center gap-2">
+                                    <Checkbox
+                                        checked={selectedItems.includes(stock.id)}
+                                        onCheckedChange={() => handleSelectItem(stock.id)}
+                                        className="border-gray-300 dark:border-gray-600 mt-1"
+                                        disabled={isExporting}
+                                    />
+                                    <div>
+                                        <div className="font-medium text-sm text-gray-800 dark:text-gray-200">
+                      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-200 mr-1">
+                        {stock.lotNo}
+                      </span>
+                                        </div>
+                                        <div className="text-xs text-gray-500 dark:text-gray-400">
+                                            {stock.grade} • {stock.bags} bags
+                                        </div>
+                                    </div>
+                                </div>
+                                <div className="text-right">
+                                    <div className="font-medium text-sm">
+                                        ${stock.total.toFixed(2)}
+                                    </div>
+                                    <div className="text-xs text-red-600 dark:text-red-400">
+                                        {stock.agingDays} days
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="flex items-center justify-between mt-2">
+                                <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => handleFavoriteToggle(stock.id, !stock.isFavorited)}
+                                    disabled={isExporting || isCreatingFavorite || isDeletingFavorite}
+                                    className={cn(
+                                        'p-1 h-6',
+                                        stock.isFavorited
+                                            ? 'text-yellow-500 hover:text-yellow-600 dark:text-yellow-400 dark:hover:text-yellow-300'
+                                            : 'text-gray-400 hover:text-gray-500 dark:text-gray-500 dark:hover:text-gray-400'
+                                    )}
+                                >
+                                    <Star className={cn('w-4 h-4', stock.isFavorited && 'fill-current')} />
+                                </Button>
+
+                                <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="text-xs gap-1"
+                                    onClick={() => toggleRowExpand(stock.id)}
+                                >
+                                    {expandedRows.includes(stock.id) ? (
+                                        <>
+                                            <span>Less details</span>
+                                            <ChevronDown className="h-4 w-4" />
+                                        </>
+                                    ) : (
+                                        <>
+                                            <span>More details</span>
+                                            <ChevronRight className="h-4 w-4" />
+                                        </>
+                                    )}
+                                </Button>
+                            </div>
+
+                            {expandedRows.includes(stock.id) && (
+                                <div className="mt-2 grid grid-cols-2 gap-2 text-xs">
+                                    <div>
+                                        <div className="text-gray-500 dark:text-gray-400">Mark</div>
+                                        <div>{stock.mark}</div>
+                                    </div>
+                                    <div>
+                                        <div className="text-gray-500 dark:text-gray-400">Sale Code</div>
+                                        <div>{stock.saleCode}</div>
+                                    </div>
+                                    <div>
+                                        <div className="text-gray-500 dark:text-gray-400">Broker</div>
+                                        <div>{stock.broker.replace(/_/g, ' ')}</div>
+                                    </div>
+                                    <div>
+                                        <div className="text-gray-500 dark:text-gray-400">Weight</div>
+                                        <div>{stock.weight.toFixed(2)} kg</div>
+                                    </div>
+                                    <div>
+                                        <div className="text-gray-500 dark:text-gray-400">Purchase Value</div>
+                                        <div>${stock.purchaseValue.toFixed(2)}</div>
+                                    </div>
+                                    <div>
+                                        <div className="text-gray-500 dark:text-gray-400">Total Purchase</div>
+                                        <div>${stock.totalPurchaseValue.toFixed(2)}</div>
+                                    </div>
+                                    <div>
+                                        <div className="text-gray-500 dark:text-gray-400">Penalty</div>
+                                        <div>${stock.penalty.toFixed(2)}</div>
+                                    </div>
+                                    <div>
+                                        <div className="text-gray-500 dark:text-gray-400">Commission</div>
+                                        <div>${stock.commission.toFixed(2)}</div>
+                                    </div>
+                                    <div className="col-span-2">
+                                        <div className="text-gray-500 dark:text-gray-400">Invoice No</div>
+                                        <div>{stock.invoiceNo}</div>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    ))
+                )}
+            </div>
+        );
+    }
+
+    // Desktop view render
     return (
         <div className="space-y-4 overflow-x-auto">
             <Table className="rounded-sm overflow-hidden border border-gray-200 dark:border-gray-700 min-w-full">
@@ -120,11 +275,6 @@ const StockTable: React.FC<UserStockTableProps> = ({
                                         size="sm"
                                         onClick={() => handleFavoriteToggle(stock.id, !stock.isFavorited)}
                                         disabled={isExporting || isCreatingFavorite || isDeletingFavorite}
-                                        aria-label={
-                                            stock.isFavorited
-                                                ? t('stocks:removeFavorite', { defaultValue: 'Remove Favorite' })
-                                                : t('stocks:addFavorite', { defaultValue: 'Add Favorite' })
-                                        }
                                         className={cn(
                                             'p-1.5 rounded-full',
                                             stock.isFavorited
@@ -136,9 +286,9 @@ const StockTable: React.FC<UserStockTableProps> = ({
                                     </Button>
                                 </TableCell>
                                 <TableCell className="text-xs sm:text-sm text-gray-800 dark:text-gray-200">
-                                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-200">
-                                        {stock.lotNo}
-                                    </span>
+                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-200">
+                    {stock.lotNo}
+                  </span>
                                 </TableCell>
                                 <TableCell className="hidden sm:table-cell text-xs sm:text-sm text-gray-800 dark:text-gray-200">{stock.mark}</TableCell>
                                 <TableCell className="hidden md:table-cell text-xs sm:text-sm text-gray-800 dark:text-gray-200">{stock.saleCode}</TableCell>

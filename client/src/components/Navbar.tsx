@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import { NAVBAR_HEIGHT } from "@/lib/constants";
 import Image from "next/image";
@@ -28,7 +28,9 @@ import {
     Heart,
     User,
     DollarSign,
-    ShoppingCart, FileText,
+    ShoppingCart,
+    FileText,
+    Menu,
 } from "lucide-react";
 
 interface NavLink {
@@ -85,10 +87,10 @@ const Navbar = () => {
             className="fixed top-0 left-0 w-full z-50 shadow-xl"
             style={{ height: `${NAVBAR_HEIGHT}px` }}
         >
-            <div className="flex justify-between items-center w-full py-3 px-8 bg-primary-700 text-white">
-                <div className="flex items-center gap-4 md:gap-6">
+            <div className="flex justify-between items-center w-full py-3 px-4 sm:px-8 bg-primary-700 text-white">
+                <div className="flex items-center gap-3 sm:gap-6">
                     {isDashboardPage && (
-                        <div className="md:hidden">
+                        <div className="sm:hidden">
                             <SidebarTrigger />
                         </div>
                     )}
@@ -97,7 +99,7 @@ const Navbar = () => {
                         className="cursor-pointer hover:!text-primary-300"
                         scroll={false}
                     >
-                        <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-2 sm:gap-3">
                             <Image
                                 src="/logo.png"
                                 alt="Logo"
@@ -105,34 +107,74 @@ const Navbar = () => {
                                 height={24}
                                 className="w-6 h-6"
                             />
-                            <div className="text-xl font-bold">
+                            <div className="text-lg sm:text-xl font-bold">
                                 Black Gold
-                                <span className="hidden md:inline text-yellow-500 font-light hover:!text-yellow-300">
-                                     Africa Traders Ltd
+                                <span className="hidden sm:inline text-yellow-500 font-light hover:!text-yellow-300">
+                                     Africa Traders Ltd
                                 </span>
                             </div>
                         </div>
                     </Link>
                 </div>
 
-                <div className="flex items-center gap-5">
+                <div className="flex items-center gap-3 sm:gap-5">
                     {/* Desktop Navigation */}
-                    <nav className="hidden md:flex gap-6">
+                    <nav className="hidden sm:flex gap-4 sm:gap-6">
                         {navLinks.map((link) => (
                             <Link
                                 key={link.href}
                                 href={link.href}
-                                className={`flex items-center gap-2 transition-colors duration-200 ${
+                                className={`flex items-center gap-2 transition-colors duration-200 text-sm sm:text-base ${
                                     pathname === link.href
                                         ? "text-secondary-500 font-semibold"
                                         : "hover:text-primary-300"
                                 }`}
                             >
-                                <link.icon className="h-5 w-5" />
+                                <link.icon className="h-4 w-4 sm:h-5 sm:w-5" />
                                 {link.label}
                             </Link>
                         ))}
                     </nav>
+
+                    {/* Mobile Navigation Dropdown */}
+                    <div className="sm:hidden">
+                        <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                                <Button
+                                    variant="ghost"
+                                    className="p-1 text-white hover:bg-primary-600"
+                                    aria-label="Open navigation menu"
+                                >
+                                    <Menu className="h-6 w-6" />
+                                </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent className="bg-white text-primary-700 w-48">
+                                {navLinks.map((link) => (
+                                    <DropdownMenuItem
+                                        key={link.href}
+                                        asChild
+                                        className={`cursor-pointer hover:!bg-primary-700 hover:!text-primary-100 ${
+                                            pathname === link.href ? "bg-primary-100 text-primary-700" : ""
+                                        }`}
+                                    >
+                                        <Link href={link.href} className="flex items-center gap-2">
+                                            <link.icon className="h-4 w-4" />
+                                            {link.label}
+                                        </Link>
+                                    </DropdownMenuItem>
+                                ))}
+                                <DropdownMenuSeparator />
+                                {authUser && (
+                                    <DropdownMenuItem
+                                        className="cursor-pointer hover:!bg-primary-700 hover:!text-primary-100"
+                                        onClick={handleSignOut}
+                                    >
+                                        Sign out
+                                    </DropdownMenuItem>
+                                )}
+                            </DropdownMenuContent>
+                        </DropdownMenu>
+                    </div>
 
                     {authUser ? (
                         <DropdownMenu>
@@ -142,7 +184,7 @@ const Navbar = () => {
                                         {authUser.userRole?.[0].toUpperCase()}
                                     </AvatarFallback>
                                 </Avatar>
-                                <p className="text-primary-200 hidden md:block">
+                                <p className="text-primary-200 hidden sm:block text-sm">
                                     {authUser.userInfo?.name}
                                 </p>
                             </DropdownMenuTrigger>
@@ -160,7 +202,7 @@ const Navbar = () => {
                             <Link href="/signin">
                                 <Button
                                     variant="outline"
-                                    className="text-white border-white bg-transparent hover:bg-white hover:text-primary-700 rounded-lg"
+                                    className="text-white border-white bg-transparent hover:bg-white hover:text-primary-700 rounded-lg text-sm px-3 py-1"
                                 >
                                     Sign In
                                 </Button>
@@ -168,7 +210,7 @@ const Navbar = () => {
                             <Link href="/signup">
                                 <Button
                                     variant="secondary"
-                                    className="text-white bg-secondary-600 hover:bg-white hover:text-primary-700 rounded-lg"
+                                    className="text-white bg-secondary-600 hover:bg-white hover:text-primary-700 rounded-lg text-sm px-3 py-1"
                                 >
                                     Sign Up
                                 </Button>
@@ -176,29 +218,6 @@ const Navbar = () => {
                         </>
                     )}
                 </div>
-            </div>
-
-            {/* Mobile Menu (Always Visible on Mobile) */}
-            <div
-                className="md:hidden fixed left-0 w-full bg-primary-700 text-white z-40 flex flex-row flex-nowrap overflow-x-auto gap-3 py-3 px-4 whitespace-nowrap"
-                style={{ top: `${NAVBAR_HEIGHT}px` }}
-            >
-                <nav className="flex flex-row gap-3">
-                    {navLinks.map((link) => (
-                        <Link
-                            key={link.href}
-                            href={link.href}
-                            className={`flex items-center gap-2 px-3 py-1 text-sm transition-colors duration-200 ${
-                                pathname === link.href
-                                    ? "bg-secondary-500 text-white font-semibold"
-                                    : "hover:bg-primary-600"
-                            }`}
-                        >
-                            <link.icon className="h-4 w-4" />
-                            {link.shortLabel}
-                        </Link>
-                    ))}
-                </nav>
             </div>
         </div>
     );
