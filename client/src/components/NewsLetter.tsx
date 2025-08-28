@@ -32,6 +32,13 @@ const contacts = [
         extra: '+254 719 110110',
     },
     {
+        country: 'Dubai, UAE',
+        flag: '/pakistan-flag.jpg',
+        address: 'Meydan  Free Zone',
+        tel: '+254722239804',
+        extra: '',
+    },
+    {
         country: 'Tanzania',
         flag: '/tanzania-flag.jpg',
         address: 'P.O Box 20035, Dar es Salaam',
