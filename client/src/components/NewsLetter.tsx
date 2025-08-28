@@ -33,7 +33,7 @@ const contacts = [
     },
     {
         country: 'Dubai, UAE',
-        flag: '/pakistan-flag.jpg',
+        flag: '/dubai-flag.jpg',
         address: 'Meydan  Free Zone',
         tel: '+254722239804',
         extra: '',
