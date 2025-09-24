@@ -34,8 +34,8 @@ const contacts = [
     {
         country: 'Dubai, UAE',
         flag: '/dubai-flag.jpg',
-        address: 'Meydan  Free Zone',
-        tel: '+254722239804',
+        address: 'Meydan F.Z Dubai, 6th Floor',
+        tel: '+971 52 608 3663‬',
         extra: '',
     },
     {
