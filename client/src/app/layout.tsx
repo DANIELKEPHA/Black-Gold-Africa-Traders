@@ -5,7 +5,6 @@ import Providers from "./providers";
 import { Toaster } from "@/components/ui/sonner";
 import { Suspense } from "react";
 
-// Import i18n to ensure initialization
 import "../i18n";
 import ServiceWorkerRegistration from "@/components/ServiceWorkerRegistration";
 

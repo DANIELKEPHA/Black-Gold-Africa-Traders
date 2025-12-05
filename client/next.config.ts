@@ -7,7 +7,7 @@ const withPWA = require("next-pwa")({
     skipWaiting: true,
     runtimeCaching: [
         {
-            urlPattern: /\.(?:png|jpg|jpeg|svg|webp)$/,
+            urlPattern: /\.(?:png|jpg|jpeg|svg|webp)$/i,
             handler: "CacheFirst",
             options: {
                 cacheName: "images-cache",
@@ -18,14 +18,14 @@ const withPWA = require("next-pwa")({
             },
         },
         {
-            urlPattern: /\.(?:js|css)$/,
+            urlPattern: /\.(?:js|css)$/i,
             handler: "StaleWhileRevalidate",
             options: {
                 cacheName: "static-assets",
             },
         },
         {
-            urlPattern: /^https?.*/,
+            urlPattern: /^https?.*/i,
             handler: "NetworkFirst",
             options: {
                 cacheName: "offline-fallback",
@@ -47,7 +47,9 @@ const withPWA = require("next-pwa")({
 });
 
 const nextConfig: NextConfig = {
+    output: "export", // <-- REQUIRED for static export
     images: {
+        unoptimized: true, // <-- REQUIRED for static export
         remotePatterns: [
             {
                 protocol: "https",
