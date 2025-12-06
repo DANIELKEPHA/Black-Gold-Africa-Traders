@@ -1,4 +1,5 @@
 import type { NextConfig } from "next";
+
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const withPWA = require("next-pwa")({
     dest: "public",
@@ -47,9 +48,9 @@ const withPWA = require("next-pwa")({
 });
 
 const nextConfig: NextConfig = {
-    output: "export", // <-- REQUIRED for static export
+    // ❌ REMOVE: output: "export"
+    // ❌ REMOVE: images.unoptimized
     images: {
-        unoptimized: true, // <-- REQUIRED for static export
         remotePatterns: [
             {
                 protocol: "https",
