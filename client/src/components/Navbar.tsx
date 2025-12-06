@@ -108,7 +108,7 @@ const Navbar = () => {
                                 className="w-6 h-6"
                             />
                             <div className="text-lg sm:text-xl font-bold">
-                                Black Gold
+                                Black Gold&nbsp;
                                 <span className="hidden sm:inline text-yellow-500 font-light hover:!text-yellow-300">
                                      Africa Traders Ltd
                                 </span>
